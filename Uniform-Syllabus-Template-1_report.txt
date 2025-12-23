@@ -1,0 +1,137 @@
+================================================================================
+SYLLABUS ASSESSMENT REPORT
+================================================================================
+
+DOCUMENT STATISTICS
+--------------------------------------------------------------------------------
+Total paragraphs analyzed: 298
+  - Top-level paragraphs: 183
+  - Paragraphs in tables: 115
+Total tables: 4
+
+SECTION COMPLETENESS
+--------------------------------------------------------------------------------
+[X] MISSING 1 REQUIRED SECTIONS:
+  - Important Dates
+
+ACCESSIBILITY: HEADING STRUCTURE
+--------------------------------------------------------------------------------
+Heading usage:
+  - Heading 1: 10
+  - Heading 2: 28
+  - Heading 5: 8
+[OK] Heading structure looks good
+
+ACCESSIBILITY: HEADING LEVEL RECOMMENDATIONS
+--------------------------------------------------------------------------------
+[OK] All headings are properly styled
+
+ACCESSIBILITY: TABLE USAGE
+--------------------------------------------------------------------------------
+Total tables: 4
+[OK] Table usage appears reasonable
+
+ACCESSIBILITY: TABLE HEADERS
+--------------------------------------------------------------------------------
+[OK] All tables appear to have headers
+
+ACCESSIBILITY: LAYOUT vs. DATA TABLES
+--------------------------------------------------------------------------------
+[OK] Tables appear to contain tabular data (not layout)
+
+ACCESSIBILITY: TEXT FORMATTING
+--------------------------------------------------------------------------------
+[X] WARNING: Found 10 instances of manual bold formatting that look like headings. Use Heading styles instead of bold text for section headers.
+
+ACCESSIBILITY: LIST FORMATTING
+--------------------------------------------------------------------------------
+Proper list items: 56
+Manual list items: 0
+[OK] List formatting looks good
+
+ACCESSIBILITY: MANUAL ALIGNMENT (PSEUDO-TABLES)
+--------------------------------------------------------------------------------
+[OK] No manual alignment detected
+
+ACCESSIBILITY: FONT SIZES
+--------------------------------------------------------------------------------
+[OK] All text meets minimum font size requirements
+
+ACCESSIBILITY: DECORATIVE/INACCESSIBLE FONTS
+--------------------------------------------------------------------------------
+[OK] All fonts are accessible and readable
+
+ACCESSIBILITY: FONT CONSISTENCY
+--------------------------------------------------------------------------------
+[OK] Font usage is consistent throughout the document
+
+ACCESSIBILITY: COLOR CONTRAST
+--------------------------------------------------------------------------------
+[OK] All text meets WCAG AA color contrast requirements
+
+ACCESSIBILITY: COLOR AS SOLE INDICATOR
+--------------------------------------------------------------------------------
+[OK] No issues with color as sole indicator detected
+
+ACCESSIBILITY: TEXT OVER COLORED BACKGROUNDS
+--------------------------------------------------------------------------------
+[OK] No issues with text over colored backgrounds detected
+
+ACCESSIBILITY: EMPTY TABLE ROWS/COLUMNS
+--------------------------------------------------------------------------------
+[OK] No empty table rows or columns detected
+
+ACCESSIBILITY: DOCUMENT METADATA
+--------------------------------------------------------------------------------
+[X] Document is missing a title in metadata (File > Info > Properties)
+
+ACCESSIBILITY: DOCUMENT LANGUAGE SETTING
+--------------------------------------------------------------------------------
+[X] Document is missing language setting. Set document language in Word (Review > Language > Set Proofing Language) for screen reader accessibility.
+
+ACCESSIBILITY: MULTILINGUAL CONTENT
+--------------------------------------------------------------------------------
+[OK] No multilingual content issues detected
+
+ACCESSIBILITY: UNDERLINED TEXT
+--------------------------------------------------------------------------------
+[OK] No non-link underlined text detected
+
+ACCESSIBILITY: LINE SPACING
+--------------------------------------------------------------------------------
+[OK] Line spacing meets minimum requirements
+
+ACCESSIBILITY: TEXT JUSTIFICATION
+--------------------------------------------------------------------------------
+[OK] No full justification detected
+
+ACCESSIBILITY: ALL CAPS BLOCKS
+--------------------------------------------------------------------------------
+[OK] No large ALL CAPS blocks detected
+
+ACCESSIBILITY: NON-DESCRIPTIVE LINKS
+--------------------------------------------------------------------------------
+[OK] No non-descriptive links detected
+
+ACCESSIBILITY: HYPERLINKS
+--------------------------------------------------------------------------------
+[i] No hyperlinks detected
+
+ACCESSIBILITY: IMAGES
+--------------------------------------------------------------------------------
+[i] INFO: Document contains 1 image(s). Verify all images have descriptive alt text.
+
+================================================================================
+SUMMARY
+================================================================================
+[!] This syllabus has 4 issues that should be addressed.
+
+RECOMMENDATIONS:
+1. Add all missing required sections from the template
+2. Use Heading 1, Heading 2, etc. styles (not bold text) for section headers
+3. Avoid using tables for layout; use headings and paragraphs instead
+4. Ensure all data tables have proper header rows
+5. Use descriptive hyperlink text instead of displaying URLs
+6. Ensure all images have descriptive alt text
+7. Use built-in list formatting instead of manual bullets
+8. Don't use tabs or multiple spaces for alignment; use tables or proper formatting

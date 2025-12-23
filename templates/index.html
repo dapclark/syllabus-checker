@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syllabus Accessibility Checker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #ffbd00 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 2px solid #ffbd00;
+        }
+        .drop-zone {
+            border: 3px dashed #ffbd00;
+            border-radius: 10px;
+            padding: 60px;
+            text-align: center;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            background-color: #fffbf0;
+            border-color: #000000;
+            transform: scale(1.02);
+        }
+        .drop-zone i {
+            font-size: 4rem;
+            color: #ffbd00;
+            margin-bottom: 20px;
+        }
+        .btn-primary {
+            background: #ffbd00;
+            color: #000000;
+            border: 2px solid #000000;
+            padding: 12px 40px;
+            font-size: 1.1rem;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: #000000;
+            color: #ffbd00;
+            border-color: #ffbd00;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 189, 0, 0.4);
+        }
+        h1 {
+            color: #ffbd00;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        .file-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fffbf0;
+            border: 1px solid #ffbd00;
+            border-radius: 8px;
+            display: none;
+        }
+        .feature-list {
+            color: #ffbd00;
+            margin-top: 30px;
+        }
+        .feature-list li {
+            margin-bottom: 10px;
+        }
+        .feature-list i {
+            color: #ffbd00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">📄 Syllabus Accessibility Checker</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-4">Upload Your Syllabus</h5>
+
+                <form id="uploadForm" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+                    <div class="drop-zone" id="dropZone">
+                        <i class="bi bi-cloud-upload"></i>
+                        <h4>Drag & Drop Your Syllabus Here</h4>
+                        <p class="text-muted">or click to browse</p>
+                        <p class="text-muted small">Accepts: .docx files (max 16MB)</p>
+                        <input type="file" name="file" id="fileInput" accept=".docx" hidden>
+                    </div>
+
+                    <div class="file-info" id="fileInfo">
+                        <i class="bi bi-file-earmark-word text-primary"></i>
+                        <strong>Selected file:</strong> <span id="fileName"></span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary float-end" onclick="clearFile()">
+                            <i class="bi bi-x"></i> Clear
+                        </button>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
+                            <i class="bi bi-check-circle"></i> Check Accessibility
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-4 text-center">
+                    <small class="text-muted">
+                        This tool checks your syllabus for 40+ accessibility issues including:
+                        tables, headings, fonts, color contrast, images, and more.
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="feature-list mt-4">
+            <div class="row text-center">
+                <div class="col-md-4">
+                    <i class="bi bi-shield-check" style="font-size: 2rem;"></i>
+                    <p class="mt-2"><strong>40+ Checks</strong><br>Comprehensive accessibility testing</p>
+                </div>
+                <div class="col-md-4">
+                    <i class="bi bi-file-earmark-arrow-down" style="font-size: 2rem;"></i>
+                    <p class="mt-2"><strong>Marked Document</strong><br>Download with issues highlighted</p>
+                </div>
+                <div class="col-md-4">
+                    <i class="bi bi-lightning" style="font-size: 2rem;"></i>
+                    <p class="mt-2"><strong>Instant Results</strong><br>Get feedback in seconds</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Click to browse
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // File selection
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Drag and drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file) {
+                if (!file.name.endsWith('.docx')) {
+                    alert('Please select a .docx file');
+                    fileInput.value = '';
+                    return;
+                }
+                fileName.textContent = file.name;
+                fileInfo.style.display = 'block';
+                submitBtn.disabled = false;
+            }
+        }
+
+        function clearFile() {
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            submitBtn.disabled = true;
+        }
+
+        // Show loading state on submit
+        document.getElementById('uploadForm').addEventListener('submit', function() {
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Checking...';
+            submitBtn.disabled = true;
+        });
+    </script>
+</body>
+</html>

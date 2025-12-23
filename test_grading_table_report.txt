@@ -1,0 +1,229 @@
+================================================================================
+SYLLABUS ASSESSMENT REPORT
+================================================================================
+
+DOCUMENT STATISTICS
+--------------------------------------------------------------------------------
+Total paragraphs analyzed: 29
+  - Top-level paragraphs: 1
+  - Paragraphs in tables: 28
+Total tables: 1
+
+SECTION COMPLETENESS
+--------------------------------------------------------------------------------
+[X] MISSING 19 REQUIRED SECTIONS:
+  - Course Title
+  - Instructor
+  - Welcome Statement
+  - Course Overview
+  - Course Objectives
+  - Student Learning Outcomes
+  - Assessment
+  - Prerequisites
+  - Course Modality
+  - Course Materials
+  - Time Investment
+  - Grading Scheme
+  - Grading Scale
+  - Course Policies
+  - University Policies
+  - Resources
+  - Academic Supports
+  - Important Dates
+  - Calendar
+
+ACCESSIBILITY: HEADING STRUCTURE
+--------------------------------------------------------------------------------
+Heading usage:
+  - Heading 1: 1
+[X] WARNING: Limited heading hierarchy. Use multiple heading levels for better structure.
+
+ACCESSIBILITY: HEADING LEVEL RECOMMENDATIONS
+--------------------------------------------------------------------------------
+[OK] All headings are properly styled
+
+ACCESSIBILITY: TABLE USAGE
+--------------------------------------------------------------------------------
+Total tables: 1
+[OK] Table usage appears reasonable
+
+ACCESSIBILITY: TABLE HEADERS
+--------------------------------------------------------------------------------
+[OK] All tables appear to have headers
+
+ACCESSIBILITY: LAYOUT vs. DATA TABLES
+--------------------------------------------------------------------------------
+[OK] Tables appear to contain tabular data (not layout)
+
+ACCESSIBILITY: TEXT FORMATTING
+--------------------------------------------------------------------------------
+[OK] Text formatting uses proper styles
+
+ACCESSIBILITY: LIST FORMATTING
+--------------------------------------------------------------------------------
+Proper list items: 0
+Manual list items: 0
+[OK] List formatting looks good
+
+ACCESSIBILITY: NESTED LIST HIERARCHY
+--------------------------------------------------------------------------------
+[OK] List hierarchy is consistent
+
+ACCESSIBILITY: LISTS USED FOR LAYOUT
+--------------------------------------------------------------------------------
+[OK] Lists appear to be used semantically
+
+ACCESSIBILITY: MANUAL ALIGNMENT (PSEUDO-TABLES)
+--------------------------------------------------------------------------------
+[OK] No manual alignment detected
+
+ACCESSIBILITY: FONT SIZES
+--------------------------------------------------------------------------------
+[OK] All text meets minimum font size requirements
+
+ACCESSIBILITY: DECORATIVE/INACCESSIBLE FONTS
+--------------------------------------------------------------------------------
+[OK] All fonts are accessible and readable
+
+ACCESSIBILITY: FONT CONSISTENCY
+--------------------------------------------------------------------------------
+[OK] Font usage is consistent throughout the document
+
+ACCESSIBILITY: COLOR CONTRAST
+--------------------------------------------------------------------------------
+[OK] All text meets WCAG AA color contrast requirements
+
+ACCESSIBILITY: COLOR AS SOLE INDICATOR
+--------------------------------------------------------------------------------
+[OK] No issues with color as sole indicator detected
+
+ACCESSIBILITY: TEXT OVER COLORED BACKGROUNDS
+--------------------------------------------------------------------------------
+[OK] No issues with text over colored backgrounds detected
+
+ACCESSIBILITY: EMPTY TABLE ROWS/COLUMNS
+--------------------------------------------------------------------------------
+[X] Found 1 empty table row(s) (used for spacing):
+  - Table 1, Row 14 is completely empty (likely used for spacing)
+    (Use proper table spacing/padding instead of empty rows/columns)
+
+ACCESSIBILITY: TABLE SCOPE DECLARATIONS
+--------------------------------------------------------------------------------
+[X] Found 1 table(s) missing proper scope declarations:
+  - Table 1 has header row but may lack proper scope declarations for screen readers (consider using Table Tools > Layout > Repeat Header Rows)
+
+ACCESSIBILITY: TABLE CAPTIONS/DESCRIPTIONS
+--------------------------------------------------------------------------------
+[X] Found 1 table(s) missing captions or descriptions:
+  - Table 1 is missing a caption or description (Right-click table > Table Properties > Alt Text). Preview: "Grade | Scale..."
+
+ACCESSIBILITY: TABLE MERGED CELLS
+--------------------------------------------------------------------------------
+[OK] No merged cells detected
+
+ACCESSIBILITY: TABLE NUMERIC ALIGNMENT
+--------------------------------------------------------------------------------
+[OK] Numeric data alignment is consistent
+
+ACCESSIBILITY: TABLE READING ORDER
+--------------------------------------------------------------------------------
+[OK] Table reading order appears logical
+
+ACCESSIBILITY: TABLE COLOR-CODED MEANING
+--------------------------------------------------------------------------------
+[OK] No color-coded meaning detected in tables
+
+ACCESSIBILITY: TABLE EMBEDDED IMAGES
+--------------------------------------------------------------------------------
+[OK] No embedded images in table cells
+
+ACCESSIBILITY: DOCUMENT METADATA
+--------------------------------------------------------------------------------
+[X] Document is missing a title in metadata (File > Info > Properties)
+
+ACCESSIBILITY: DOCUMENT LANGUAGE SETTING
+--------------------------------------------------------------------------------
+[X] Document is missing language setting. Set document language in Word (Review > Language > Set Proofing Language) for screen reader accessibility.
+
+ACCESSIBILITY: MULTILINGUAL CONTENT
+--------------------------------------------------------------------------------
+[OK] No multilingual content issues detected
+
+ACCESSIBILITY: UNDERLINED TEXT
+--------------------------------------------------------------------------------
+[OK] No non-link underlined text detected
+
+ACCESSIBILITY: LINE SPACING
+--------------------------------------------------------------------------------
+[OK] Line spacing meets minimum requirements
+
+ACCESSIBILITY: TEXT JUSTIFICATION
+--------------------------------------------------------------------------------
+[OK] No full justification detected
+
+ACCESSIBILITY: ALL CAPS BLOCKS
+--------------------------------------------------------------------------------
+[OK] No large ALL CAPS blocks detected
+
+ACCESSIBILITY: EXCESSIVE/INCONSISTENT FORMATTING
+--------------------------------------------------------------------------------
+[OK] Formatting usage is appropriate
+
+ACCESSIBILITY: NON-DESCRIPTIVE LINKS
+--------------------------------------------------------------------------------
+[OK] No non-descriptive links detected
+
+ACCESSIBILITY: HYPERLINKS
+--------------------------------------------------------------------------------
+[i] No hyperlinks detected
+
+ACCESSIBILITY: UNSTYLED LINKS
+--------------------------------------------------------------------------------
+[OK] All links have distinguishable styling
+
+ACCESSIBILITY: LONG URLs
+--------------------------------------------------------------------------------
+[OK] No excessively long URLs detected
+
+ACCESSIBILITY: LINKS TO PDFs
+--------------------------------------------------------------------------------
+[OK] No links to external PDFs detected
+
+ACCESSIBILITY: TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+[OK] Document has table of contents or is short enough not to require one
+
+ACCESSIBILITY: INTERNAL NAVIGATION/BOOKMARKS
+--------------------------------------------------------------------------------
+[OK] Document has internal navigation or is short enough not to require it
+
+ACCESSIBILITY: SENTENCE LENGTH
+--------------------------------------------------------------------------------
+[OK] Sentence lengths are within recommended limits
+
+ACCESSIBILITY: IMAGE ALT TEXT
+--------------------------------------------------------------------------------
+[OK] All images have alt text or no images detected
+
+ACCESSIBILITY: DECORATIVE IMAGE MARKING
+--------------------------------------------------------------------------------
+[OK] Decorative image marking appears appropriate
+
+ACCESSIBILITY: IMAGES
+--------------------------------------------------------------------------------
+[OK] No images detected
+
+================================================================================
+SUMMARY
+================================================================================
+[X] This syllabus has 23 issues that need attention.
+
+RECOMMENDATIONS:
+1. Add all missing required sections from the template
+2. Use Heading 1, Heading 2, etc. styles (not bold text) for section headers
+3. Avoid using tables for layout; use headings and paragraphs instead
+4. Ensure all data tables have proper header rows
+5. Use descriptive hyperlink text instead of displaying URLs
+6. Ensure all images have descriptive alt text
+7. Use built-in list formatting instead of manual bullets
+8. Don't use tabs or multiple spaces for alignment; use tables or proper formatting

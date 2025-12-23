@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Syllabus Accessibility Checker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f5f7fa;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #000000 0%, #2a2a2a 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            border-bottom: 3px solid #ffbd00;
+        }
+        .content-section {
+            background: white;
+            border-radius: 10px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-left: 4px solid #ffbd00;
+        }
+        .content-section h3, .content-section h5 {
+            color: #000000;
+            font-weight: 600;
+        }
+        .text-primary {
+            color: #ffbd00 !important;
+        }
+        .btn-primary {
+            background: #ffbd00;
+            color: #000000;
+            border: 2px solid #000000;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: #000000;
+            color: #ffbd00;
+            border-color: #ffbd00;
+        }
+        .alert-info {
+            background-color: #fffbf0;
+            border-left: 4px solid #ffbd00;
+            color: #000000;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark mb-4">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="bi bi-file-earmark-check"></i> Syllabus Accessibility Checker
+            </span>
+            <a href="{{ url_for('index') }}" class="btn btn-light btn-sm">
+                <i class="bi bi-arrow-left"></i> Back to Checker
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="content-section">
+            <h1 class="mb-4">About the Syllabus Accessibility Checker</h1>
+
+            <h3>What is this tool?</h3>
+            <p>
+                The Syllabus Accessibility Checker is a comprehensive tool designed to help instructors create
+                more accessible and inclusive course syllabi. It performs 40+ algorithmic checks to identify
+                accessibility barriers that might prevent students from accessing course information.
+            </p>
+
+            <h3 class="mt-4">Why does accessibility matter?</h3>
+            <p>
+                An accessible syllabus ensures that all students, including those who use assistive technologies
+                like screen readers, can access critical course information. Accessibility benefits everyone:
+            </p>
+            <ul>
+                <li>Students with visual impairments using screen readers</li>
+                <li>Students with dyslexia or cognitive disabilities</li>
+                <li>Students with color vision deficiencies</li>
+                <li>International students learning in a second language</li>
+                <li>Students using mobile devices or slow internet connections</li>
+            </ul>
+
+            <h3 class="mt-4">What does it check?</h3>
+            <p>The tool performs 40+ checks across multiple categories:</p>
+
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <h5><i class="bi bi-table text-primary"></i> Tables (10 checks)</h5>
+                    <ul class="small">
+                        <li>Layout tables vs. data tables</li>
+                        <li>Missing header rows</li>
+                        <li>Table captions and descriptions</li>
+                        <li>Merged cells and reading order</li>
+                        <li>Color-coded meaning</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h5><i class="bi bi-fonts text-primary"></i> Typography (8 checks)</h5>
+                    <ul class="small">
+                        <li>Font sizes and readability</li>
+                        <li>Decorative fonts</li>
+                        <li>Font consistency</li>
+                        <li>Line spacing</li>
+                        <li>ALL CAPS blocks</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <h5><i class="bi bi-palette text-primary"></i> Color & Contrast (3 checks)</h5>
+                    <ul class="small">
+                        <li>WCAG contrast requirements</li>
+                        <li>Color as sole indicator</li>
+                        <li>Text over backgrounds</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h5><i class="bi bi-link-45deg text-primary"></i> Links & Navigation (7 checks)</h5>
+                    <ul class="small">
+                        <li>Descriptive link text</li>
+                        <li>Link styling</li>
+                        <li>Long URLs</li>
+                        <li>Table of contents</li>
+                        <li>Bookmarks</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <h5><i class="bi bi-image text-primary"></i> Images (3 checks)</h5>
+                    <ul class="small">
+                        <li>Missing alt text</li>
+                        <li>Decorative marking</li>
+                        <li>Image presence verification</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h5><i class="bi bi-list-ul text-primary"></i> Lists (3 checks)</h5>
+                    <ul class="small">
+                        <li>Manual vs. built-in formatting</li>
+                        <li>List hierarchy</li>
+                        <li>Layout misuse</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3 class="mt-4">How to use the tool</h3>
+            <ol>
+                <li>Upload your syllabus (.docx format)</li>
+                <li>Review the detailed accessibility report</li>
+                <li>Download the marked document with issues highlighted</li>
+                <li>Fix the issues in your original document</li>
+                <li>Run the check again to verify improvements</li>
+            </ol>
+
+            <h3 class="mt-4">Standards and Guidelines</h3>
+            <p>This tool is based on:</p>
+            <ul>
+                <li><strong>WCAG 2.1/2.2</strong> - Web Content Accessibility Guidelines</li>
+                <li><strong>PDF/UA</strong> - Universal Accessibility standards</li>
+                <li><strong>Section 508</strong> - U.S. accessibility requirements</li>
+                <li><strong>Best practices</strong> for educational materials</li>
+            </ul>
+
+            <div class="alert alert-info mt-4">
+                <h5><i class="bi bi-info-circle"></i> Note</h5>
+                <p class="mb-0">
+                    This tool performs algorithmic checks and may not catch all accessibility issues.
+                    Manual review and user testing are still important for ensuring full accessibility.
+                </p>
+            </div>
+        </div>
+
+        <div class="text-center mb-4">
+            <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-arrow-left"></i> Start Checking Your Syllabus
+            </a>
+        </div>
+    </div>
+
+    <footer class="text-center text-muted py-4">
+        <p>&copy; 2025 Syllabus Accessibility Checker | Helping create inclusive course materials</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

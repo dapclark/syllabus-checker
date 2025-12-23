@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accessibility Report - {{ results.filename }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #000000 0%, #2a2a2a 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            border-bottom: 3px solid #ffbd00;
+        }
+        .summary-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border: 2px solid #ffbd00;
+        }
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0 auto;
+            border: 3px solid #000000;
+        }
+        .score-good {
+            background: #ffbd00;
+            color: #000000;
+        }
+        .score-warning {
+            background: linear-gradient(135deg, #ffbd00 0%, #ffd700 100%);
+            color: #000000;
+        }
+        .score-poor {
+            background: #000000;
+            color: #ffbd00;
+            border-color: #ffbd00;
+        }
+        .report-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-left: 4px solid #ffbd00;
+        }
+        .btn-download {
+            background: #ffbd00;
+            color: #000000;
+            border: 2px solid #000000;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+        .btn-download:hover {
+            background: #000000;
+            color: #ffbd00;
+            border-color: #ffbd00;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 189, 0, 0.4);
+        }
+        .report-text {
+            background-color: #f8f9fa;
+            border-left: 4px solid #ffbd00;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            max-height: 600px;
+            overflow-y: auto;
+            border-radius: 5px;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #fffbf0 0%, #ffbd00 100%);
+            border: 2px solid #000000;
+        }
+        .stat-box h3 {
+            margin: 0;
+            color: #000000;
+            font-weight: 700;
+        }
+        .stat-box p {
+            margin: 5px 0 0 0;
+            color: #333;
+        }
+        .btn-outline-primary {
+            color: #000000;
+            border-color: #ffbd00;
+        }
+        .btn-outline-primary:hover {
+            background: #ffbd00;
+            color: #000000;
+            border-color: #000000;
+        }
+        .badge.bg-primary {
+            background-color: #ffbd00 !important;
+            color: #000000;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark mb-4">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="bi bi-file-earmark-check"></i> Syllabus Accessibility Checker
+            </span>
+            <a href="{{ url_for('index') }}" class="btn btn-light btn-sm">
+                <i class="bi bi-arrow-left"></i> Check Another
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Summary Card -->
+        <div class="card summary-card">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        {% if results.total_issues == 0 %}
+                            <div class="score-circle score-good">
+                                <i class="bi bi-check-circle"></i>
+                            </div>
+                        {% elif results.total_issues < 10 %}
+                            <div class="score-circle score-warning">
+                                {{ results.total_issues }}
+                            </div>
+                        {% else %}
+                            <div class="score-circle score-poor">
+                                {{ results.total_issues }}
+                            </div>
+                        {% endif %}
+                        <p class="text-center mt-2 mb-0"><strong>Total Issues</strong></p>
+                    </div>
+                    <div class="col-md-9">
+                        <h3 class="mb-3">{{ results.filename }}</h3>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="stat-box mb-3">
+                                    <h3>{{ results.missing_sections|length }}</h3>
+                                    <p>Missing Sections</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="stat-box mb-3">
+                                    <h3>{{ results.category_counts|length }}</h3>
+                                    <p>Issue Categories</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-clock"></i> Checked on {{ results.timestamp }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Download Button -->
+        <div class="text-center mb-4">
+            <a href="{{ url_for('download_file', filename=results.marked_file) }}" class="btn btn-download btn-lg">
+                <i class="bi bi-download"></i> Download Marked Document
+            </a>
+            <p class="text-muted mt-2 small">The marked document has comments and highlights showing all issues</p>
+        </div>
+
+        <!-- Missing Sections -->
+        {% if results.missing_sections %}
+        <div class="report-section">
+            <h4 class="mb-3"><i class="bi bi-exclamation-triangle text-warning"></i> Missing Required Sections</h4>
+            <div class="alert alert-warning">
+                The following {{ results.missing_sections|length }} required section(s) are missing from your syllabus:
+            </div>
+            <ul class="list-group">
+                {% for section in results.missing_sections %}
+                <li class="list-group-item">
+                    <i class="bi bi-x-circle text-danger"></i> {{ section }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Combined Issues by Category with Expandable Details -->
+        {% if results.category_counts %}
+        <div class="report-section">
+            <h4 class="mb-3"><i class="bi bi-list-check"></i> Issues by Category</h4>
+            <p class="text-muted mb-3">
+                Click on each category to expand and see detailed information about the issues.
+            </p>
+
+            <div class="accordion" id="issuesAccordion">
+                {% for category, count in results.category_counts.items() %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ loop.index }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapse{{ loop.index }}" aria-expanded="false"
+                                aria-controls="collapse{{ loop.index }}">
+                            <strong>{{ category }}</strong>
+                            <span class="badge bg-primary ms-2">{{ count }}</span>
+                        </button>
+                    </h2>
+                    <div id="collapse{{ loop.index }}" class="accordion-collapse collapse"
+                         aria-labelledby="heading{{ loop.index }}" data-bs-parent="#issuesAccordion">
+                        <div class="accordion-body">
+                            <div class="issue-details">
+                                {% if category in results.category_details %}
+                                    <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">{{ results.category_details[category] }}</pre>
+                                {% else %}
+                                    <p class="text-muted">Details not available for this category.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Full Text Report (Collapsible) -->
+        <div class="report-section">
+            <h4 class="mb-3"><i class="bi bi-file-text"></i> Complete Text Report</h4>
+            <p class="text-muted mb-3">
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#fullReport" aria-expanded="false" aria-controls="fullReport">
+                    <i class="bi bi-chevron-down"></i> Show/Hide Full Report
+                </button>
+            </p>
+            <div class="collapse" id="fullReport">
+                <div class="report-text">{{ results.report_text }}</div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="text-center mb-5">
+            <a href="{{ url_for('index') }}" class="btn btn-outline-primary me-2">
+                <i class="bi bi-arrow-left"></i> Check Another Document
+            </a>
+            <button onclick="window.print()" class="btn btn-outline-secondary">
+                <i class="bi bi-printer"></i> Print Report
+            </button>
+        </div>
+    </div>
+
+    <footer class="text-center text-muted py-4">
+        <p>&copy; 2025 Syllabus Accessibility Checker | Helping create inclusive course materials</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

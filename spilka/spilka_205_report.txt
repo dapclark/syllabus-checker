@@ -1,0 +1,137 @@
+================================================================================
+SYLLABUS ASSESSMENT REPORT
+================================================================================
+
+DOCUMENT STATISTICS
+--------------------------------------------------------------------------------
+Total paragraphs analyzed: 131
+  - Top-level paragraphs: 131
+  - Paragraphs in tables: 0
+Total tables: 0
+
+SECTION COMPLETENESS
+--------------------------------------------------------------------------------
+[X] MISSING 15 REQUIRED SECTIONS:
+  - Course Title
+  - Welcome Statement
+  - Course Overview
+  - Student Learning Outcomes
+  - Assessment
+  - Prerequisites
+  - Course Modality
+  - Course Materials
+  - Time Investment
+  - Grading Scheme
+  - Grading Scale
+  - Course Policies
+  - University Policies
+  - Resources
+  - Academic Supports
+
+ACCESSIBILITY: HEADING STRUCTURE
+--------------------------------------------------------------------------------
+Heading usage:
+  - Heading 1: 4
+  - Heading 2: 7
+[OK] Heading structure looks good
+
+ACCESSIBILITY: HEADING LEVEL RECOMMENDATIONS
+--------------------------------------------------------------------------------
+[OK] All headings are properly styled
+
+ACCESSIBILITY: TABLE USAGE
+--------------------------------------------------------------------------------
+Total tables: 0
+[OK] No tables (good for accessibility)
+
+ACCESSIBILITY: TABLE HEADERS
+--------------------------------------------------------------------------------
+[OK] No tables to check
+
+ACCESSIBILITY: LAYOUT vs. DATA TABLES
+--------------------------------------------------------------------------------
+[OK] No tables to check
+
+ACCESSIBILITY: TEXT FORMATTING
+--------------------------------------------------------------------------------
+[X] WARNING: Found 11 instances of manual bold formatting on short lines. Use Heading styles instead of bold text for section headers.
+
+ACCESSIBILITY: LIST FORMATTING
+--------------------------------------------------------------------------------
+Proper list items: 0
+Manual list items: 0
+[OK] List formatting looks good
+
+ACCESSIBILITY: MANUAL ALIGNMENT (PSEUDO-TABLES)
+--------------------------------------------------------------------------------
+[X] Found 5 paragraph(s) using tabs or spaces for alignment:
+    (This creates pseudo-tables that are difficult for screen readers to parse)
+  - Paragraph 85: Uses tabs for columnar alignment: "January 6	Business Correspondence:  The “You Approach” "
+  - Paragraph 90: Uses tabs for columnar alignment: "January 7	Proposal:  Choosing topics; writing problem statem..."
+  - Paragraph 98: Uses tabs for columnar alignment: "January 9	Discussion:  Problem sections of proposals; use of..."
+  - Paragraph 102: Uses tabs for columnar alignment: "January 10	Discussion:  Proposal solution section, matrix, f..."
+  - Paragraph 122: Uses tabs for columnar alignment: "January 16	If not done on January 15:  Peer Review of Tutori..."
+
+ACCESSIBILITY: FONT SIZES
+--------------------------------------------------------------------------------
+[X] Found 1 paragraph(s) with font size below 11pt:
+    (Minimum recommended size is 11pt for accessibility)
+  - Paragraph 18: Font size 9.0pt (minimum 11pt): "This course will help you become more proficient in research..."
+
+ACCESSIBILITY: EMPTY TABLE ROWS/COLUMNS
+--------------------------------------------------------------------------------
+[OK] No tables to check
+
+ACCESSIBILITY: DOCUMENT METADATA
+--------------------------------------------------------------------------------
+[OK] Document has title metadata
+
+ACCESSIBILITY: UNDERLINED TEXT
+--------------------------------------------------------------------------------
+[X] Found 6 underlined text(s) that are not hyperlinks:
+    (Underlined text is often confused with links by users)
+  - Paragraph 25: Underlined text that is not a hyperlink: "Because all these skills contribute to effective communicati..."
+  - Paragraph 51: Underlined text that is not a hyperlink: "Since this course is intense and short, regular attendance i..."
+  - Paragraph 53: Underlined text that is not a hyperlink: "You will be unable to make up graded assignments done during..."
+  - Paragraph 55: Underlined text that is not a hyperlink: "You are required to attend all hours of all classes during t..."
+  - Paragraph 60: Underlined text that is not a hyperlink: "I won’t be able to give extensions for any assignment that i..."
+  ... and 1 more
+
+ACCESSIBILITY: LINE SPACING
+--------------------------------------------------------------------------------
+[OK] Line spacing meets minimum requirements
+
+ACCESSIBILITY: TEXT JUSTIFICATION
+--------------------------------------------------------------------------------
+[OK] No full justification detected
+
+ACCESSIBILITY: ALL CAPS BLOCKS
+--------------------------------------------------------------------------------
+[OK] No large ALL CAPS blocks detected
+
+ACCESSIBILITY: NON-DESCRIPTIVE LINKS
+--------------------------------------------------------------------------------
+[OK] No non-descriptive links detected
+
+ACCESSIBILITY: HYPERLINKS
+--------------------------------------------------------------------------------
+[i] No hyperlinks detected
+
+ACCESSIBILITY: IMAGES
+--------------------------------------------------------------------------------
+[OK] No images detected
+
+================================================================================
+SUMMARY
+================================================================================
+[X] This syllabus has 28 issues that need attention.
+
+RECOMMENDATIONS:
+1. Add all missing required sections from the template
+2. Use Heading 1, Heading 2, etc. styles (not bold text) for section headers
+3. Avoid using tables for layout; use headings and paragraphs instead
+4. Ensure all data tables have proper header rows
+5. Use descriptive hyperlink text instead of displaying URLs
+6. Ensure all images have descriptive alt text
+7. Use built-in list formatting instead of manual bullets
+8. Don't use tabs or multiple spaces for alignment; use tables or proper formatting
