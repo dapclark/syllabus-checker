@@ -81,9 +81,9 @@ def upload_file():
             'Text Formatting': ['PSEUDO_TABLE', 'UNDERLINE_NON_LINK', 'INSUFFICIENT_LINE_SPACING',
                                'FULL_JUSTIFICATION', 'ALL_CAPS_BLOCK', 'EXCESSIVE_BOLD',
                                'EXCESSIVE_ITALIC', 'EXCESSIVE_UNDERLINE', 'INCONSISTENT_FORMATTING'],
-            'Readability': ['LONG_SENTENCE'],
-            'Images': ['MISSING_ALT_TEXT', 'QUESTIONABLE_DECORATIVE'],
-            'Document Properties': ['MISSING_TITLE', 'MISSING_LANGUAGE', 'MULTILINGUAL_CONTENT'],
+            'Readability': ['LONG_SENTENCE', 'NUMERIC_DATE_FORMAT'],
+            'Images': ['IMAGE_MISSING_ALT', 'DECORATIVE_IMAGE_QUESTIONABLE', 'IMAGE_TEXT_CONTENT'],
+            'Document Properties': ['MISSING_TITLE', 'MISSING_LANGUAGE', 'MULTIPLE_LANGUAGES'],
         }
 
         # Map each issue type to its report section header
@@ -96,11 +96,11 @@ def upload_file():
             'LAYOUT_TABLE': 'ACCESSIBILITY: LAYOUT vs. DATA TABLES',
             'TABLE_NO_HEADER': 'ACCESSIBILITY: TABLE HEADERS',
             'TABLE_MISSING_SCOPE': 'ACCESSIBILITY: TABLE SCOPE DECLARATIONS',
-            'TABLE_MISSING_CAPTION': 'ACCESSIBILITY: TABLE CAPTIONS',
-            'MERGED_CELLS': 'ACCESSIBILITY: MERGED/SPLIT CELLS',
+            'TABLE_MISSING_CAPTION': 'ACCESSIBILITY: TABLE CAPTIONS/DESCRIPTIONS',
+            'MERGED_CELLS': 'ACCESSIBILITY: TABLE MERGED CELLS',
             'NUMERIC_ALIGNMENT': 'ACCESSIBILITY: TABLE NUMERIC ALIGNMENT',
             'TABLE_READING_ORDER': 'ACCESSIBILITY: TABLE READING ORDER',
-            'EMBEDDED_TABLE_IMAGE': 'ACCESSIBILITY: EMBEDDED IMAGES IN TABLES',
+            'EMBEDDED_TABLE_IMAGE': 'ACCESSIBILITY: TABLE EMBEDDED IMAGES',
             'LOW_CONTRAST': 'ACCESSIBILITY: COLOR CONTRAST',
             'COLOR_ONLY_MEANING': 'ACCESSIBILITY: COLOR AS SOLE INDICATOR',
             'TEXT_OVER_BACKGROUND': 'ACCESSIBILITY: TEXT OVER COLORED BACKGROUNDS',
@@ -110,11 +110,11 @@ def upload_file():
             'LONG_URL': 'ACCESSIBILITY: LONG URLs',
             'PDF_LINK': 'ACCESSIBILITY: LINKS TO PDFs',
             'MISSING_TOC': 'ACCESSIBILITY: TABLE OF CONTENTS',
-            'MISSING_BOOKMARKS': 'ACCESSIBILITY: BOOKMARKS/NAVIGATION',
+            'MISSING_BOOKMARKS': 'ACCESSIBILITY: INTERNAL NAVIGATION/BOOKMARKS',
             'INCONSISTENT_LIST_HIERARCHY': 'ACCESSIBILITY: NESTED LIST HIERARCHY',
             'LAYOUT_LIST': 'ACCESSIBILITY: LISTS USED FOR LAYOUT',
             'PSEUDO_TABLE': 'ACCESSIBILITY: MANUAL ALIGNMENT (PSEUDO-TABLES)',
-            'UNDERLINE_NON_LINK': 'ACCESSIBILITY: UNDERLINED NON-LINK TEXT',
+            'UNDERLINE_NON_LINK': 'ACCESSIBILITY: UNDERLINED TEXT',
             'INSUFFICIENT_LINE_SPACING': 'ACCESSIBILITY: LINE SPACING',
             'FULL_JUSTIFICATION': 'ACCESSIBILITY: TEXT JUSTIFICATION',
             'ALL_CAPS_BLOCK': 'ACCESSIBILITY: ALL CAPS TEXT BLOCKS',
@@ -122,12 +122,14 @@ def upload_file():
             'EXCESSIVE_ITALIC': 'ACCESSIBILITY: EXCESSIVE/INCONSISTENT FORMATTING',
             'EXCESSIVE_UNDERLINE': 'ACCESSIBILITY: EXCESSIVE/INCONSISTENT FORMATTING',
             'INCONSISTENT_FORMATTING': 'ACCESSIBILITY: EXCESSIVE/INCONSISTENT FORMATTING',
-            'LONG_SENTENCE': 'ACCESSIBILITY: LONG SENTENCES',
-            'MISSING_ALT_TEXT': 'ACCESSIBILITY: IMAGE ALT TEXT',
-            'QUESTIONABLE_DECORATIVE': 'ACCESSIBILITY: DECORATIVE IMAGE MARKING',
+            'LONG_SENTENCE': 'ACCESSIBILITY: SENTENCE LENGTH',
+            'IMAGE_MISSING_ALT': 'ACCESSIBILITY: IMAGE ALT TEXT',
+            'DECORATIVE_IMAGE_QUESTIONABLE': 'ACCESSIBILITY: DECORATIVE IMAGE MARKING',
+            'IMAGE_TEXT_CONTENT': 'ACCESSIBILITY: IMAGES CONTAINING TEXT/SCHEDULES',
+            'NUMERIC_DATE_FORMAT': 'ACCESSIBILITY: DATE FORMATS',
             'MISSING_TITLE': 'ACCESSIBILITY: DOCUMENT METADATA',
-            'MISSING_LANGUAGE': 'ACCESSIBILITY: DOCUMENT LANGUAGE',
-            'MULTILINGUAL_CONTENT': 'ACCESSIBILITY: MULTILINGUAL CONTENT',
+            'MISSING_LANGUAGE': 'ACCESSIBILITY: DOCUMENT LANGUAGE SETTING',
+            'MULTIPLE_LANGUAGES': 'ACCESSIBILITY: MULTILINGUAL CONTENT',
         }
 
         # Count issues by category
@@ -212,16 +214,30 @@ def upload_file():
         # print(f"Category counts: {category_counts}")
         # print("================================\n")
 
+        # Prepare summary
+        summary_message = ""
+        if len(checker.issues) == 0 and len(missing_sections) == 0:
+            summary_message = "Excellent! This syllabus meets all standards."
+            summary_status = "success"
+        elif len(checker.issues) + len(missing_sections) < 5:
+            summary_message = f"This syllabus has {len(checker.issues) + len(missing_sections)} issue(s) that should be addressed."
+            summary_status = "warning"
+        else:
+            summary_message = f"This syllabus has {len(checker.issues) + len(missing_sections)} issue(s) that need attention."
+            summary_status = "danger"
+
         # Prepare results
         results = {
             'filename': filename,
-            'total_issues': len(checker.issues),
+            'total_issues': len(checker.issues) + len(missing_sections),  # Include missing sections in total
             'missing_sections': missing_sections,
             'category_counts': category_counts,
             'category_details': category_details,
             'report_text': report_text,
             'marked_file': marked_filename,
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'summary_message': summary_message,
+            'summary_status': summary_status
         }
 
         return render_template('results.html', results=results)

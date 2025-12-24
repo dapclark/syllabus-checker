@@ -2,11 +2,11 @@
 
 A web application that analyzes course syllabi for accessibility issues based on WCAG guidelines and educational best practices.
 
-🌐 **Live Demo**: https://syllabus-check.clarkenstein.com
+🌐 **Live Demo**: https://syllabus-checker.clarkenstein.com
 
 ## Features
 
-### 40+ Automated Accessibility Checks
+### 42+ Automated Accessibility Checks
 
 Issues are organized into 8 categories:
 
@@ -16,8 +16,8 @@ Issues are organized into 8 categories:
 - **Links & Navigation** - descriptive text, table of contents, bookmarks
 - **Lists** - proper formatting, hierarchy
 - **Text Formatting** - alignment, spacing, caps, emphasis
-- **Readability** - sentence length
-- **Images** - alt text, decorative marking
+- **Readability** - sentence length, date format clarity
+- **Images** - alt text, decorative marking, text content detection
 - **Document Properties** - metadata, language
 
 ### User-Friendly Interface
@@ -70,7 +70,7 @@ Quick summary:
 ## How It Works
 
 1. **Upload** a `.docx` syllabus file via web interface
-2. **Analysis** runs 40+ checks across 8 categories
+2. **Analysis** runs 42+ checks across 8 categories
 3. **View Results** organized by category with expandable details
 4. **Download** marked document with issues highlighted in yellow
 

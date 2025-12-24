@@ -126,6 +126,20 @@
     </nav>
 
     <div class="container">
+        <!-- Summary Message -->
+        <div class="alert alert-{{ results.summary_status }} mb-4" role="alert">
+            <h4 class="alert-heading">
+                {% if results.summary_status == 'success' %}
+                    <i class="bi bi-check-circle-fill"></i> All Clear!
+                {% elif results.summary_status == 'warning' %}
+                    <i class="bi bi-exclamation-triangle-fill"></i> Minor Issues Found
+                {% else %}
+                    <i class="bi bi-x-circle-fill"></i> Issues Need Attention
+                {% endif %}
+            </h4>
+            <p class="mb-0">{{ results.summary_message }}</p>
+        </div>
+
         <!-- Summary Card -->
         <div class="card summary-card">
             <div class="card-body p-4">

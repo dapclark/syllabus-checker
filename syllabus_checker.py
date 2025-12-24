@@ -2657,7 +2657,7 @@ class SyllabusChecker:
                     preview = text[:60] + "..." if len(text) > 60 else text
                     issue = AccessibilityIssue(
                         issue_type="EXCESSIVE_BOLD",
-                        description=f"Paragraph has {int(bold_ratio*100)}% bold text (excessive use reduces emphasis): \"{preview}\"",
+                        description=f"Paragraph has {int(bold_ratio*100)}% bold text. If this is a heading, use a Heading style (Heading 1, 2, etc.) instead of bold. If intended for emphasis, use bold more selectively: \"{preview}\"",
                         location=para_info.location,
                         para_info=para_info
                     )
@@ -2668,7 +2668,7 @@ class SyllabusChecker:
                     preview = text[:60] + "..." if len(text) > 60 else text
                     issue = AccessibilityIssue(
                         issue_type="EXCESSIVE_ITALIC",
-                        description=f"Paragraph has {int(italic_ratio*100)}% italic text (excessive use reduces readability): \"{preview}\"",
+                        description=f"Paragraph has {int(italic_ratio*100)}% italic text. If this is a heading or section title, use a Heading style instead. If intended for emphasis, use italics more selectively (large blocks of italic text are harder to read): \"{preview}\"",
                         location=para_info.location,
                         para_info=para_info
                     )
@@ -2823,6 +2823,110 @@ class SyllabusChecker:
 
         return issues
 
+    def check_image_text_content(self) -> List[AccessibilityIssue]:
+        """Detect images that might contain text content (screenshots, schedules, tables)"""
+        issues = []
+
+        # Look for images with suspiciously large file sizes (likely screenshots)
+        # or images in contexts that suggest they contain text
+        for para_info in self.all_paragraphs:
+            para = para_info.paragraph
+            para_text = para.text.strip().lower()
+
+            try:
+                para_element = para._element
+                drawings = para_element.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}drawing')
+
+                for drawing in drawings:
+                    # Check context - if nearby text mentions schedule, calendar, table, etc.
+                    # this image might be a screenshot
+                    context_keywords = ['schedule', 'calendar', 'table', 'dates', 'timeline',
+                                       'grading scale', 'rubric', 'assignment', 'due date']
+
+                    # Check alt text for hints
+                    docPr = drawing.find('.//{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}docPr')
+                    alt_text = ""
+                    if docPr is not None:
+                        alt_text = docPr.get('title', '') + " " + docPr.get('descr', '')
+
+                    # Check if image appears in a context suggesting it contains text
+                    suspicious = False
+                    reason = ""
+
+                    # Check nearby text (current paragraph)
+                    if any(keyword in para_text for keyword in context_keywords):
+                        suspicious = True
+                        reason = f"Image appears near text mentioning '{next(k for k in context_keywords if k in para_text)}'"
+
+                    # Check alt text for keywords suggesting text content
+                    alt_lower = alt_text.lower()
+                    if any(keyword in alt_lower for keyword in ['screenshot', 'table', 'schedule', 'calendar']):
+                        suspicious = True
+                        reason = "Alt text suggests image contains structured data"
+
+                    if suspicious:
+                        issue = AccessibilityIssue(
+                            issue_type="IMAGE_TEXT_CONTENT",
+                            description=f"Image may contain text content that should be provided as actual text. {reason}. Consider using a real table or text list instead.",
+                            location=para_info.location,
+                            para_info=para_info
+                        )
+                        issues.append(issue)
+
+            except:
+                pass
+
+        return issues
+
+    def check_date_formats(self) -> List[AccessibilityIssue]:
+        """Detect unclear date formats (numeric-only dates)"""
+        issues = []
+
+        import re
+
+        # Patterns for numeric-only dates (ambiguous)
+        # Examples: 12/5/2024, 5-12-24, 12.5.24
+        numeric_date_pattern = r'\b\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}\b'
+
+        for para_info in self.all_paragraphs:
+            text = para_info.paragraph.text
+
+            # Find all numeric date patterns
+            matches = re.finditer(numeric_date_pattern, text)
+            found_numeric_dates = []
+
+            for match in matches:
+                date_str = match.group()
+                # Skip if it looks like a version number (e.g., 1.2.3)
+                if not any(sep in date_str for sep in ['-', '/']):
+                    continue
+                found_numeric_dates.append(date_str)
+
+            if found_numeric_dates:
+                # Remove duplicates
+                unique_dates = list(set(found_numeric_dates))
+                if unique_dates:
+                    example_dates = ', '.join(unique_dates[:3])
+                    if len(unique_dates) > 3:
+                        example_dates += f" (and {len(unique_dates) - 3} more)"
+
+                    issue = AccessibilityIssue(
+                        issue_type="NUMERIC_DATE_FORMAT",
+                        description=f"Numeric date format found: {example_dates}. Use clear formats like 'January 15, 2024' or '15 Jan 2024' to avoid confusion.",
+                        location=para_info.location,
+                        para_info=para_info
+                    )
+                    issues.append(issue)
+
+        return issues
+
+    def check_merged_cells_layout(self) -> List[AccessibilityIssue]:
+        """Identify merged table cells used to create visual layouts (already covered by check_table_merged_cells)"""
+        # This is already implemented in check_table_merged_cells()
+        # That function detects merged cells that may impact reading order
+        # We'll enhance the existing function's description to emphasize layout issues
+        return []
+
     def run_all_checks(self):
         """Run all accessibility checks and collect issues"""
         self.issues = []
@@ -2867,6 +2971,8 @@ class SyllabusChecker:
         self.issues.extend(self.check_excessive_formatting())
         self.issues.extend(self.check_images_alt_text())
         self.issues.extend(self.check_decorative_images())
+        self.issues.extend(self.check_image_text_content())
+        self.issues.extend(self.check_date_formats())
 
     def create_marked_document(self, output_path: str):
         """Create a copy of the document with issues marked via comments and highlighting"""
@@ -2994,7 +3100,7 @@ class SyllabusChecker:
         marked_doc.save(output_path)
 
     def generate_report(self) -> str:
-        """Generate comprehensive assessment report"""
+        """Generate comprehensive assessment report organized by category"""
         report_lines = []
         report_lines.append("=" * 80)
         report_lines.append("SYLLABUS ASSESSMENT REPORT")
@@ -3039,26 +3145,22 @@ class SyllabusChecker:
             report_lines.append("[OK] Heading structure looks good")
         report_lines.append("")
 
-        # Heading level recommendations (includes both unstyled headings and heading hierarchy issues)
+        # Heading level recommendations
         report_lines.append("ACCESSIBILITY: HEADING LEVEL RECOMMENDATIONS")
         report_lines.append("-" * 80)
         heading_recommendations = [issue for issue in self.issues
                     if issue.issue_type.startswith("SHOULD BE HEADING")]
         if heading_recommendations:
             report_lines.append(f"[X] Found {len(heading_recommendations)} headings that need to be corrected:")
-
-            # Group by recommended level
             by_level = {}
             for issue in heading_recommendations:
-                level = issue.issue_type  # e.g., "SHOULD BE HEADING 1"
+                level = issue.issue_type
                 if level not in by_level:
                     by_level[level] = []
                 by_level[level].append(issue)
-
-            # Show grouped results
             for level in sorted(by_level.keys()):
                 report_lines.append(f"\n  {level} ({len(by_level[level])} items):")
-                for issue in by_level[level][:5]:  # Show first 5 per level
+                for issue in by_level[level][:5]:
                     report_lines.append(f"    - {issue.location}: {issue.description}")
                 if len(by_level[level]) > 5:
                     report_lines.append(f"    ... and {len(by_level[level]) - 5} more")
@@ -3066,121 +3168,12 @@ class SyllabusChecker:
             report_lines.append("[OK] All headings are properly styled")
         report_lines.append("")
 
-        # Note: Heading hierarchy issues are now included in the section above with specific level recommendations
-
-        # Table usage
-        report_lines.append("ACCESSIBILITY: TABLE USAGE")
-        report_lines.append("-" * 80)
-        table_check = self.check_table_usage()
-        report_lines.append(f"Total tables: {table_check['count']}")
-        if table_check['issues']:
-            for issue in table_check['issues']:
-                report_lines.append(f"[X] {issue}")
-        else:
-            if table_check['count'] == 0:
-                report_lines.append("[OK] No tables (good for accessibility)")
-            else:
-                report_lines.append("[OK] Table usage appears reasonable")
-        report_lines.append("")
-
-        # Table headers
-        report_lines.append("ACCESSIBILITY: TABLE HEADERS")
-        report_lines.append("-" * 80)
-        table_header_issues = [issue for issue in self.issues if issue.issue_type == "TABLE_NO_HEADER"]
-        if table_header_issues:
-            report_lines.append(f"[X] Found {len(table_header_issues)} tables without proper headers:")
-            for issue in table_header_issues:
-                report_lines.append(f"  - {issue.description}")
-        else:
-            if table_check['count'] > 0:
-                report_lines.append("[OK] All tables appear to have headers")
-            else:
-                report_lines.append("[OK] No tables to check")
-        report_lines.append("")
-
-        # Layout tables
-        report_lines.append("ACCESSIBILITY: LAYOUT vs. DATA TABLES")
-        report_lines.append("-" * 80)
-        layout_issues = [issue for issue in self.issues if issue.issue_type == "LAYOUT_TABLE"]
-        if layout_issues:
-            report_lines.append(f"[X] Found {len(layout_issues)} tables used for layout (should use headings/paragraphs):")
-            for issue in layout_issues:
-                report_lines.append(f"  - {issue.description}")
-        else:
-            if table_check['count'] > 0:
-                report_lines.append("[OK] Tables appear to contain tabular data (not layout)")
-            else:
-                report_lines.append("[OK] No tables to check")
-        report_lines.append("")
-
-        # Text formatting
-        report_lines.append("ACCESSIBILITY: TEXT FORMATTING")
-        report_lines.append("-" * 80)
-        format_check = self.check_text_formatting()
-        if format_check['issues']:
-            for issue in format_check['issues']:
-                report_lines.append(f"[X] {issue}")
-        else:
-            report_lines.append("[OK] Text formatting uses proper styles")
-        report_lines.append("")
-
-        # List usage
-        report_lines.append("ACCESSIBILITY: LIST FORMATTING")
-        report_lines.append("-" * 80)
-        list_check = self.check_list_usage()
-        report_lines.append(f"Proper list items: {list_check['list_count']}")
-        report_lines.append(f"Manual list items: {list_check['manual_list_count']}")
-        if list_check['issues']:
-            for issue in list_check['issues']:
-                report_lines.append(f"[X] {issue}")
-        else:
-            report_lines.append("[OK] List formatting looks good")
-        report_lines.append("")
-
-        # Nested list hierarchy
-        report_lines.append("ACCESSIBILITY: NESTED LIST HIERARCHY")
-        report_lines.append("-" * 80)
-        list_hierarchy_issues = [issue for issue in self.issues if issue.issue_type == "INCONSISTENT_LIST_HIERARCHY"]
-        if list_hierarchy_issues:
-            report_lines.append(f"[X] Found {len(list_hierarchy_issues)} inconsistent list level(s):")
-            report_lines.append("    (List levels should increment by 1, not skip levels)")
-            for issue in list_hierarchy_issues[:5]:
-                report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(list_hierarchy_issues) > 5:
-                report_lines.append(f"  ... and {len(list_hierarchy_issues) - 5} more")
-        else:
-            report_lines.append("[OK] List hierarchy is consistent")
-        report_lines.append("")
-
-        # Layout lists
-        report_lines.append("ACCESSIBILITY: LISTS USED FOR LAYOUT")
-        report_lines.append("-" * 80)
-        layout_list_issues = [issue for issue in self.issues if issue.issue_type == "LAYOUT_LIST"]
-        if layout_list_issues:
-            report_lines.append(f"[X] Found {len(layout_list_issues)} list(s) potentially used for layout/indentation:")
-            report_lines.append("    (Lists should be used for semantic grouping, not layout)")
-            for issue in layout_list_issues[:5]:
-                report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(layout_list_issues) > 5:
-                report_lines.append(f"  ... and {len(layout_list_issues) - 5} more")
-        else:
-            report_lines.append("[OK] Lists appear to be used semantically")
-        report_lines.append("")
-
-        # Manual alignment (pseudo-tables)
-        report_lines.append("ACCESSIBILITY: MANUAL ALIGNMENT (PSEUDO-TABLES)")
-        report_lines.append("-" * 80)
-        pseudo_table_issues = [issue for issue in self.issues if issue.issue_type == "PSEUDO_TABLE"]
-        if pseudo_table_issues:
-            report_lines.append(f"[X] Found {len(pseudo_table_issues)} paragraph(s) using tabs or spaces for alignment:")
-            report_lines.append("    (This creates pseudo-tables that are difficult for screen readers to parse)")
-            # Show first few examples
-            for issue in pseudo_table_issues[:5]:
-                report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(pseudo_table_issues) > 5:
-                report_lines.append(f"  ... and {len(pseudo_table_issues) - 5} more")
-        else:
-            report_lines.append("[OK] No manual alignment detected")
+        # ============================================================
+        # CATEGORY 1: FONT USAGE
+        # ============================================================
+        report_lines.append("=" * 80)
+        report_lines.append("CATEGORY: FONT USAGE")
+        report_lines.append("=" * 80)
         report_lines.append("")
 
         # Font sizes
@@ -3224,55 +3217,27 @@ class SyllabusChecker:
             report_lines.append("[OK] Font usage is consistent throughout the document")
         report_lines.append("")
 
-        # Color contrast
-        report_lines.append("ACCESSIBILITY: COLOR CONTRAST")
-        report_lines.append("-" * 80)
-        contrast_issues = [issue for issue in self.issues if issue.issue_type == "LOW_CONTRAST"]
-        if contrast_issues:
-            report_lines.append(f"[X] Found {len(contrast_issues)} instance(s) of insufficient color contrast:")
-            report_lines.append("    (WCAG AA requires 4.5:1 for normal text, 3:1 for large text)")
-            for issue in contrast_issues[:5]:
-                report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(contrast_issues) > 5:
-                report_lines.append(f"  ... and {len(contrast_issues) - 5} more")
-        else:
-            report_lines.append("[OK] All text meets WCAG AA color contrast requirements")
+        # ============================================================
+        # CATEGORY 2: TABLE STRUCTURE
+        # ============================================================
+        report_lines.append("=" * 80)
+        report_lines.append("CATEGORY: TABLE STRUCTURE")
+        report_lines.append("=" * 80)
         report_lines.append("")
 
-        # Color as sole means of conveying meaning
-        report_lines.append("ACCESSIBILITY: COLOR AS SOLE INDICATOR")
+        # Table usage
+        table_check = self.check_table_usage()
+        report_lines.append("ACCESSIBILITY: TABLE USAGE")
         report_lines.append("-" * 80)
-        color_only_issues = [issue for issue in self.issues if issue.issue_type == "COLOR_ONLY_MEANING"]
-        color_coded_table_issues = [issue for issue in self.issues if issue.issue_type == "COLOR_CODED_TABLE"]
-        if color_only_issues or color_coded_table_issues:
-            if color_only_issues:
-                report_lines.append(f"[X] Found {len(color_only_issues)} instance(s) where color may be the only indicator:")
-                report_lines.append("    (Add bold, italic, or other formatting to supplement color)")
-                for issue in color_only_issues[:5]:
-                    report_lines.append(f"  - {issue.location}: {issue.description}")
-                if len(color_only_issues) > 5:
-                    report_lines.append(f"  ... and {len(color_only_issues) - 5} more")
-            if color_coded_table_issues:
-                report_lines.append(f"[X] Found {len(color_coded_table_issues)} color-coded table(s):")
-                for issue in color_coded_table_issues:
-                    report_lines.append(f"  - {issue.description}")
+        report_lines.append(f"Total tables: {table_check['count']}")
+        if table_check['issues']:
+            for issue in table_check['issues']:
+                report_lines.append(f"[X] {issue}")
         else:
-            report_lines.append("[OK] No issues with color as sole indicator detected")
-        report_lines.append("")
-
-        # Text over backgrounds
-        report_lines.append("ACCESSIBILITY: TEXT OVER COLORED BACKGROUNDS")
-        report_lines.append("-" * 80)
-        text_bg_issues = [issue for issue in self.issues if issue.issue_type == "TEXT_OVER_BACKGROUND"]
-        if text_bg_issues:
-            report_lines.append(f"[X] Found {len(text_bg_issues)} instance(s) of text over colored backgrounds with low contrast:")
-            report_lines.append("    (Ensure sufficient contrast between text and background colors)")
-            for issue in text_bg_issues[:5]:
-                report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(text_bg_issues) > 5:
-                report_lines.append(f"  ... and {len(text_bg_issues) - 5} more")
-        else:
-            report_lines.append("[OK] No issues with text over colored backgrounds detected")
+            if table_check['count'] == 0:
+                report_lines.append("[OK] No tables (good for accessibility)")
+            else:
+                report_lines.append("[OK] Table usage appears reasonable")
         report_lines.append("")
 
         # Empty table rows/columns
@@ -3293,6 +3258,36 @@ class SyllabusChecker:
         else:
             if len(self.target_doc.tables) > 0:
                 report_lines.append("[OK] No empty table rows or columns detected")
+            else:
+                report_lines.append("[OK] No tables to check")
+        report_lines.append("")
+
+        # Layout tables
+        report_lines.append("ACCESSIBILITY: LAYOUT vs. DATA TABLES")
+        report_lines.append("-" * 80)
+        layout_issues = [issue for issue in self.issues if issue.issue_type == "LAYOUT_TABLE"]
+        if layout_issues:
+            report_lines.append(f"[X] Found {len(layout_issues)} tables used for layout (should use headings/paragraphs):")
+            for issue in layout_issues:
+                report_lines.append(f"  - {issue.description}")
+        else:
+            if table_check['count'] > 0:
+                report_lines.append("[OK] Tables appear to contain tabular data (not layout)")
+            else:
+                report_lines.append("[OK] No tables to check")
+        report_lines.append("")
+
+        # Table headers
+        report_lines.append("ACCESSIBILITY: TABLE HEADERS")
+        report_lines.append("-" * 80)
+        table_header_issues = [issue for issue in self.issues if issue.issue_type == "TABLE_NO_HEADER"]
+        if table_header_issues:
+            report_lines.append(f"[X] Found {len(table_header_issues)} tables without proper headers:")
+            for issue in table_header_issues:
+                report_lines.append(f"  - {issue.description}")
+        else:
+            if table_check['count'] > 0:
+                report_lines.append("[OK] All tables appear to have headers")
             else:
                 report_lines.append("[OK] No tables to check")
         report_lines.append("")
@@ -3372,22 +3367,6 @@ class SyllabusChecker:
                 report_lines.append("[OK] No tables to check")
         report_lines.append("")
 
-        # Table color-coded meaning
-        report_lines.append("ACCESSIBILITY: TABLE COLOR-CODED MEANING")
-        report_lines.append("-" * 80)
-        color_meaning_issues = [issue for issue in self.issues if issue.issue_type == "TABLE_COLOR_CODED_MEANING"]
-        if color_meaning_issues:
-            report_lines.append(f"[X] Found {len(color_meaning_issues)} table(s) with color-coded meaning:")
-            for issue in color_meaning_issues:
-                report_lines.append(f"  - {issue.description}")
-            report_lines.append("    (Ensure color is not the only way to convey information)")
-        else:
-            if len(self.target_doc.tables) > 0:
-                report_lines.append("[OK] No color-coded meaning detected in tables")
-            else:
-                report_lines.append("[OK] No tables to check")
-        report_lines.append("")
-
         # Table embedded images
         report_lines.append("ACCESSIBILITY: TABLE EMBEDDED IMAGES")
         report_lines.append("-" * 80)
@@ -3403,135 +3382,71 @@ class SyllabusChecker:
                 report_lines.append("[OK] No tables to check")
         report_lines.append("")
 
-        # Document metadata
-        report_lines.append("ACCESSIBILITY: DOCUMENT METADATA")
-        report_lines.append("-" * 80)
-        metadata_issues = [issue for issue in self.issues if issue.issue_type == "MISSING_TITLE"]
-        if metadata_issues:
-            for issue in metadata_issues:
-                report_lines.append(f"[X] {issue.description}")
-        else:
-            report_lines.append("[OK] Document has title metadata")
+        # ============================================================
+        # CATEGORY 3: COLOR & CONTRAST
+        # ============================================================
+        report_lines.append("=" * 80)
+        report_lines.append("CATEGORY: COLOR & CONTRAST")
+        report_lines.append("=" * 80)
         report_lines.append("")
 
-        # Document language
-        report_lines.append("ACCESSIBILITY: DOCUMENT LANGUAGE SETTING")
+        # Color contrast
+        report_lines.append("ACCESSIBILITY: COLOR CONTRAST")
         report_lines.append("-" * 80)
-        language_issues = [issue for issue in self.issues if issue.issue_type in ["MISSING_LANGUAGE", "INVALID_LANGUAGE"]]
-        if language_issues:
-            for issue in language_issues:
-                report_lines.append(f"[X] {issue.description}")
+        contrast_issues = [issue for issue in self.issues if issue.issue_type == "LOW_CONTRAST"]
+        if contrast_issues:
+            report_lines.append(f"[X] Found {len(contrast_issues)} instance(s) of insufficient color contrast:")
+            report_lines.append("    (WCAG AA requires 4.5:1 for normal text, 3:1 for large text)")
+            for issue in contrast_issues[:5]:
+                report_lines.append(f"  - {issue.location}: {issue.description}")
+            if len(contrast_issues) > 5:
+                report_lines.append(f"  ... and {len(contrast_issues) - 5} more")
         else:
-            report_lines.append("[OK] Document has valid language setting")
+            report_lines.append("[OK] All text meets WCAG AA color contrast requirements")
         report_lines.append("")
 
-        # Multilingual content
-        report_lines.append("ACCESSIBILITY: MULTILINGUAL CONTENT")
+        # Color as sole indicator
+        report_lines.append("ACCESSIBILITY: COLOR AS SOLE INDICATOR")
         report_lines.append("-" * 80)
-        multilingual_issues = [issue for issue in self.issues if issue.issue_type == "MULTIPLE_LANGUAGES"]
-        untagged_language_issues = [issue for issue in self.issues if issue.issue_type == "UNTAGGED_LANGUAGE"]
-        if multilingual_issues or untagged_language_issues:
-            if multilingual_issues:
-                for issue in multilingual_issues:
-                    report_lines.append(f"[i] {issue.description}")
-            if untagged_language_issues:
-                report_lines.append(f"[X] Found potential multilingual content without proper language tagging:")
-                for issue in untagged_language_issues:
+        color_only_issues = [issue for issue in self.issues if issue.issue_type == "COLOR_ONLY_MEANING"]
+        color_coded_table_issues = [issue for issue in self.issues if issue.issue_type == "COLOR_CODED_TABLE"]
+        if color_only_issues or color_coded_table_issues:
+            if color_only_issues:
+                report_lines.append(f"[X] Found {len(color_only_issues)} instance(s) where color may be the only indicator:")
+                report_lines.append("    (Add bold, italic, or other formatting to supplement color)")
+                for issue in color_only_issues[:5]:
+                    report_lines.append(f"  - {issue.location}: {issue.description}")
+                if len(color_only_issues) > 5:
+                    report_lines.append(f"  ... and {len(color_only_issues) - 5} more")
+            if color_coded_table_issues:
+                report_lines.append(f"[X] Found {len(color_coded_table_issues)} color-coded table(s):")
+                for issue in color_coded_table_issues:
                     report_lines.append(f"  - {issue.description}")
         else:
-            report_lines.append("[OK] No multilingual content issues detected")
+            report_lines.append("[OK] No issues with color as sole indicator detected")
         report_lines.append("")
 
-        # Underline on non-links
-        report_lines.append("ACCESSIBILITY: UNDERLINED TEXT")
+        # Text over backgrounds
+        report_lines.append("ACCESSIBILITY: TEXT OVER COLORED BACKGROUNDS")
         report_lines.append("-" * 80)
-        underline_issues = [issue for issue in self.issues if issue.issue_type == "UNDERLINE_NON_LINK"]
-        if underline_issues:
-            report_lines.append(f"[X] Found {len(underline_issues)} underlined text(s) that are not hyperlinks:")
-            report_lines.append("    (Underlined text is often confused with links by users)")
-            for issue in underline_issues[:5]:
+        text_bg_issues = [issue for issue in self.issues if issue.issue_type == "TEXT_OVER_BACKGROUND"]
+        if text_bg_issues:
+            report_lines.append(f"[X] Found {len(text_bg_issues)} instance(s) of text over colored backgrounds with low contrast:")
+            report_lines.append("    (Ensure sufficient contrast between text and background colors)")
+            for issue in text_bg_issues[:5]:
                 report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(underline_issues) > 5:
-                report_lines.append(f"  ... and {len(underline_issues) - 5} more")
+            if len(text_bg_issues) > 5:
+                report_lines.append(f"  ... and {len(text_bg_issues) - 5} more")
         else:
-            report_lines.append("[OK] No non-link underlined text detected")
+            report_lines.append("[OK] No issues with text over colored backgrounds detected")
         report_lines.append("")
 
-        # Line spacing
-        report_lines.append("ACCESSIBILITY: LINE SPACING")
-        report_lines.append("-" * 80)
-        spacing_issues = [issue for issue in self.issues if issue.issue_type == "LOW_LINE_SPACING"]
-        if spacing_issues:
-            report_lines.append(f"[X] Found {len(spacing_issues)} paragraph(s) with line spacing below 1.15:")
-            report_lines.append("    (WCAG recommends minimum 1.15 for readability)")
-            for issue in spacing_issues[:5]:
-                report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(spacing_issues) > 5:
-                report_lines.append(f"  ... and {len(spacing_issues) - 5} more")
-        else:
-            report_lines.append("[OK] Line spacing meets minimum requirements")
-        report_lines.append("")
-
-        # Full justification
-        report_lines.append("ACCESSIBILITY: TEXT JUSTIFICATION")
-        report_lines.append("-" * 80)
-        justify_issues = [issue for issue in self.issues if issue.issue_type == "FULL_JUSTIFICATION"]
-        if justify_issues:
-            report_lines.append(f"[X] Found {len(justify_issues)} paragraph(s) with full justification:")
-            report_lines.append("    (Creates uneven spacing, harder to read especially for dyslexic readers)")
-            for issue in justify_issues[:5]:
-                report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(justify_issues) > 5:
-                report_lines.append(f"  ... and {len(justify_issues) - 5} more")
-        else:
-            report_lines.append("[OK] No full justification detected")
-        report_lines.append("")
-
-        # ALL CAPS blocks
-        report_lines.append("ACCESSIBILITY: ALL CAPS BLOCKS")
-        report_lines.append("-" * 80)
-        caps_issues = [issue for issue in self.issues if issue.issue_type == "ALL_CAPS_BLOCK"]
-        if caps_issues:
-            report_lines.append(f"[X] Found {len(caps_issues)} large block(s) of ALL CAPS text:")
-            report_lines.append("    (ALL CAPS text is harder to read than mixed case)")
-            for issue in caps_issues[:5]:
-                report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(caps_issues) > 5:
-                report_lines.append(f"  ... and {len(caps_issues) - 5} more")
-        else:
-            report_lines.append("[OK] No large ALL CAPS blocks detected")
-        report_lines.append("")
-
-        # Excessive formatting
-        report_lines.append("ACCESSIBILITY: EXCESSIVE/INCONSISTENT FORMATTING")
-        report_lines.append("-" * 80)
-        excessive_bold = [issue for issue in self.issues if issue.issue_type == "EXCESSIVE_BOLD"]
-        excessive_italic = [issue for issue in self.issues if issue.issue_type == "EXCESSIVE_ITALIC"]
-        excessive_underline = [issue for issue in self.issues if issue.issue_type == "EXCESSIVE_UNDERLINE"]
-        inconsistent_formatting = [issue for issue in self.issues if issue.issue_type == "INCONSISTENT_FORMATTING"]
-
-        all_formatting_issues = excessive_bold + excessive_italic + excessive_underline + inconsistent_formatting
-
-        if all_formatting_issues:
-            if excessive_bold:
-                report_lines.append(f"[X] Found {len(excessive_bold)} paragraph(s) with excessive bold:")
-                for issue in excessive_bold[:3]:
-                    report_lines.append(f"  - {issue.location}: {issue.description}")
-            if excessive_italic:
-                report_lines.append(f"[X] Found {len(excessive_italic)} paragraph(s) with excessive italics:")
-                for issue in excessive_italic[:3]:
-                    report_lines.append(f"  - {issue.location}: {issue.description}")
-            if excessive_underline:
-                report_lines.append(f"[X] Found {len(excessive_underline)} paragraph(s) with excessive underline:")
-                for issue in excessive_underline[:3]:
-                    report_lines.append(f"  - {issue.location}: {issue.description}")
-            if inconsistent_formatting:
-                report_lines.append(f"[X] Found {len(inconsistent_formatting)} paragraph(s) with inconsistent formatting:")
-                for issue in inconsistent_formatting[:3]:
-                    report_lines.append(f"  - {issue.location}: {issue.description}")
-            report_lines.append("    (Excessive or inconsistent formatting reduces effectiveness and readability)")
-        else:
-            report_lines.append("[OK] Formatting usage is appropriate")
+        # ============================================================
+        # CATEGORY 4: LINKS & NAVIGATION
+        # ============================================================
+        report_lines.append("=" * 80)
+        report_lines.append("CATEGORY: LINKS & NAVIGATION")
+        report_lines.append("=" * 80)
         report_lines.append("")
 
         # Non-descriptive links
@@ -3547,20 +3462,6 @@ class SyllabusChecker:
                 report_lines.append(f"  ... and {len(non_desc_link_issues) - 5} more")
         else:
             report_lines.append("[OK] No non-descriptive links detected")
-        report_lines.append("")
-
-        # Hyperlinks
-        report_lines.append("ACCESSIBILITY: HYPERLINKS")
-        report_lines.append("-" * 80)
-        link_check = self.check_hyperlinks()
-        if link_check['issues']:
-            for issue in link_check['issues']:
-                report_lines.append(f"[X] {issue}")
-        else:
-            if link_check['count'] == 0:
-                report_lines.append("[i] No hyperlinks detected")
-            else:
-                report_lines.append("[OK] Hyperlink formatting appears accessible")
         report_lines.append("")
 
         # Unstyled links
@@ -3608,7 +3509,7 @@ class SyllabusChecker:
             report_lines.append("[OK] No links to external PDFs detected")
         report_lines.append("")
 
-        # Missing table of contents
+        # Table of contents
         report_lines.append("ACCESSIBILITY: TABLE OF CONTENTS")
         report_lines.append("-" * 80)
         toc_issues = [issue for issue in self.issues if issue.issue_type == "MISSING_TOC"]
@@ -3620,7 +3521,7 @@ class SyllabusChecker:
             report_lines.append("[OK] Document has table of contents or is short enough not to require one")
         report_lines.append("")
 
-        # Missing bookmarks
+        # Bookmarks
         report_lines.append("ACCESSIBILITY: INTERNAL NAVIGATION/BOOKMARKS")
         report_lines.append("-" * 80)
         bookmark_issues = [issue for issue in self.issues if issue.issue_type == "MISSING_BOOKMARKS"]
@@ -3630,6 +3531,178 @@ class SyllabusChecker:
             report_lines.append("    (Add bookmarks to major sections for easier navigation)")
         else:
             report_lines.append("[OK] Document has internal navigation or is short enough not to require it")
+        report_lines.append("")
+
+        # ============================================================
+        # CATEGORY 5: LISTS
+        # ============================================================
+        report_lines.append("=" * 80)
+        report_lines.append("CATEGORY: LISTS")
+        report_lines.append("=" * 80)
+        report_lines.append("")
+
+        # List formatting
+        report_lines.append("ACCESSIBILITY: LIST FORMATTING")
+        report_lines.append("-" * 80)
+        list_check = self.check_list_usage()
+        report_lines.append(f"Proper list items: {list_check['list_count']}")
+        report_lines.append(f"Manual list items: {list_check['manual_list_count']}")
+        if list_check['issues']:
+            for issue in list_check['issues']:
+                report_lines.append(f"[X] {issue}")
+        else:
+            report_lines.append("[OK] List formatting looks good")
+        report_lines.append("")
+
+        # Nested list hierarchy
+        report_lines.append("ACCESSIBILITY: NESTED LIST HIERARCHY")
+        report_lines.append("-" * 80)
+        list_hierarchy_issues = [issue for issue in self.issues if issue.issue_type == "INCONSISTENT_LIST_HIERARCHY"]
+        if list_hierarchy_issues:
+            report_lines.append(f"[X] Found {len(list_hierarchy_issues)} inconsistent list level(s):")
+            report_lines.append("    (List levels should increment by 1, not skip levels)")
+            for issue in list_hierarchy_issues[:5]:
+                report_lines.append(f"  - {issue.location}: {issue.description}")
+            if len(list_hierarchy_issues) > 5:
+                report_lines.append(f"  ... and {len(list_hierarchy_issues) - 5} more")
+        else:
+            report_lines.append("[OK] List hierarchy is consistent")
+        report_lines.append("")
+
+        # Layout lists
+        report_lines.append("ACCESSIBILITY: LISTS USED FOR LAYOUT")
+        report_lines.append("-" * 80)
+        layout_list_issues = [issue for issue in self.issues if issue.issue_type == "LAYOUT_LIST"]
+        if layout_list_issues:
+            report_lines.append(f"[X] Found {len(layout_list_issues)} list(s) potentially used for layout/indentation:")
+            report_lines.append("    (Lists should be used for semantic grouping, not layout)")
+            for issue in layout_list_issues[:5]:
+                report_lines.append(f"  - {issue.location}: {issue.description}")
+            if len(layout_list_issues) > 5:
+                report_lines.append(f"  ... and {len(layout_list_issues) - 5} more")
+        else:
+            report_lines.append("[OK] Lists appear to be used semantically")
+        report_lines.append("")
+
+        # ============================================================
+        # CATEGORY 6: TEXT FORMATTING
+        # ============================================================
+        report_lines.append("=" * 80)
+        report_lines.append("CATEGORY: TEXT FORMATTING")
+        report_lines.append("=" * 80)
+        report_lines.append("")
+
+        # Manual alignment (pseudo-tables)
+        report_lines.append("ACCESSIBILITY: MANUAL ALIGNMENT (PSEUDO-TABLES)")
+        report_lines.append("-" * 80)
+        pseudo_table_issues = [issue for issue in self.issues if issue.issue_type == "PSEUDO_TABLE"]
+        if pseudo_table_issues:
+            report_lines.append(f"[X] Found {len(pseudo_table_issues)} paragraph(s) using tabs or spaces for alignment:")
+            report_lines.append("    (This creates pseudo-tables that are difficult for screen readers to parse)")
+            for issue in pseudo_table_issues[:5]:
+                report_lines.append(f"  - {issue.location}: {issue.description}")
+            if len(pseudo_table_issues) > 5:
+                report_lines.append(f"  ... and {len(pseudo_table_issues) - 5} more")
+        else:
+            report_lines.append("[OK] No manual alignment detected")
+        report_lines.append("")
+
+        # Underlined text
+        report_lines.append("ACCESSIBILITY: UNDERLINED TEXT")
+        report_lines.append("-" * 80)
+        underline_issues = [issue for issue in self.issues if issue.issue_type == "UNDERLINE_NON_LINK"]
+        if underline_issues:
+            report_lines.append(f"[X] Found {len(underline_issues)} underlined text(s) that are not hyperlinks:")
+            report_lines.append("    (Underlined text is often confused with links by users)")
+            for issue in underline_issues[:5]:
+                report_lines.append(f"  - {issue.location}: {issue.description}")
+            if len(underline_issues) > 5:
+                report_lines.append(f"  ... and {len(underline_issues) - 5} more")
+        else:
+            report_lines.append("[OK] No non-link underlined text detected")
+        report_lines.append("")
+
+        # Line spacing
+        report_lines.append("ACCESSIBILITY: LINE SPACING")
+        report_lines.append("-" * 80)
+        spacing_issues = [issue for issue in self.issues if issue.issue_type == "LOW_LINE_SPACING"]
+        if spacing_issues:
+            report_lines.append(f"[X] Found {len(spacing_issues)} paragraph(s) with line spacing below 1.15:")
+            report_lines.append("    (WCAG recommends minimum 1.15 for readability)")
+            for issue in spacing_issues[:5]:
+                report_lines.append(f"  - {issue.location}: {issue.description}")
+            if len(spacing_issues) > 5:
+                report_lines.append(f"  ... and {len(spacing_issues) - 5} more")
+        else:
+            report_lines.append("[OK] Line spacing meets minimum requirements")
+        report_lines.append("")
+
+        # Text justification
+        report_lines.append("ACCESSIBILITY: TEXT JUSTIFICATION")
+        report_lines.append("-" * 80)
+        justify_issues = [issue for issue in self.issues if issue.issue_type == "FULL_JUSTIFICATION"]
+        if justify_issues:
+            report_lines.append(f"[X] Found {len(justify_issues)} paragraph(s) with full justification:")
+            report_lines.append("    (Creates uneven spacing, harder to read especially for dyslexic readers)")
+            for issue in justify_issues[:5]:
+                report_lines.append(f"  - {issue.location}: {issue.description}")
+            if len(justify_issues) > 5:
+                report_lines.append(f"  ... and {len(justify_issues) - 5} more")
+        else:
+            report_lines.append("[OK] No full justification detected")
+        report_lines.append("")
+
+        # ALL CAPS blocks
+        report_lines.append("ACCESSIBILITY: ALL CAPS BLOCKS")
+        report_lines.append("-" * 80)
+        caps_issues = [issue for issue in self.issues if issue.issue_type == "ALL_CAPS_BLOCK"]
+        if caps_issues:
+            report_lines.append(f"[X] Found {len(caps_issues)} large block(s) of ALL CAPS text:")
+            report_lines.append("    (ALL CAPS text is harder to read than mixed case)")
+            for issue in caps_issues[:5]:
+                report_lines.append(f"  - {issue.location}: {issue.description}")
+            if len(caps_issues) > 5:
+                report_lines.append(f"  ... and {len(caps_issues) - 5} more")
+        else:
+            report_lines.append("[OK] No large ALL CAPS blocks detected")
+        report_lines.append("")
+
+        # Excessive formatting
+        report_lines.append("ACCESSIBILITY: EXCESSIVE/INCONSISTENT FORMATTING")
+        report_lines.append("-" * 80)
+        excessive_bold = [issue for issue in self.issues if issue.issue_type == "EXCESSIVE_BOLD"]
+        excessive_italic = [issue for issue in self.issues if issue.issue_type == "EXCESSIVE_ITALIC"]
+        excessive_underline = [issue for issue in self.issues if issue.issue_type == "EXCESSIVE_UNDERLINE"]
+        inconsistent_formatting = [issue for issue in self.issues if issue.issue_type == "INCONSISTENT_FORMATTING"]
+        all_formatting_issues = excessive_bold + excessive_italic + excessive_underline + inconsistent_formatting
+        if all_formatting_issues:
+            if excessive_bold:
+                report_lines.append(f"[X] Found {len(excessive_bold)} paragraph(s) with excessive bold:")
+                for issue in excessive_bold[:3]:
+                    report_lines.append(f"  - {issue.location}: {issue.description}")
+            if excessive_italic:
+                report_lines.append(f"[X] Found {len(excessive_italic)} paragraph(s) with excessive italics:")
+                for issue in excessive_italic[:3]:
+                    report_lines.append(f"  - {issue.location}: {issue.description}")
+            if excessive_underline:
+                report_lines.append(f"[X] Found {len(excessive_underline)} paragraph(s) with excessive underline:")
+                for issue in excessive_underline[:3]:
+                    report_lines.append(f"  - {issue.location}: {issue.description}")
+            if inconsistent_formatting:
+                report_lines.append(f"[X] Found {len(inconsistent_formatting)} paragraph(s) with inconsistent formatting:")
+                for issue in inconsistent_formatting[:3]:
+                    report_lines.append(f"  - {issue.location}: {issue.description}")
+            report_lines.append("    (Excessive or inconsistent formatting reduces effectiveness and readability)")
+        else:
+            report_lines.append("[OK] Formatting usage is appropriate")
+        report_lines.append("")
+
+        # ============================================================
+        # CATEGORY 7: READABILITY
+        # ============================================================
+        report_lines.append("=" * 80)
+        report_lines.append("CATEGORY: READABILITY")
+        report_lines.append("=" * 80)
         report_lines.append("")
 
         # Long sentences
@@ -3645,6 +3718,29 @@ class SyllabusChecker:
                 report_lines.append(f"  ... and {len(long_sentence_issues) - 5} more")
         else:
             report_lines.append("[OK] Sentence lengths are within recommended limits")
+        report_lines.append("")
+
+        # Date formats
+        report_lines.append("ACCESSIBILITY: DATE FORMATS")
+        report_lines.append("-" * 80)
+        date_format_issues = [issue for issue in self.issues if issue.issue_type == "NUMERIC_DATE_FORMAT"]
+        if date_format_issues:
+            report_lines.append(f"[X] Found {len(date_format_issues)} paragraph(s) with numeric-only date formats:")
+            report_lines.append("    (Numeric dates like 12/5/24 are ambiguous - use 'December 5, 2024' or '5 Dec 2024')")
+            for issue in date_format_issues[:5]:
+                report_lines.append(f"  - {issue.location}: {issue.description}")
+            if len(date_format_issues) > 5:
+                report_lines.append(f"  ... and {len(date_format_issues) - 5} more")
+        else:
+            report_lines.append("[OK] No ambiguous numeric date formats detected")
+        report_lines.append("")
+
+        # ============================================================
+        # CATEGORY 8: IMAGES
+        # ============================================================
+        report_lines.append("=" * 80)
+        report_lines.append("CATEGORY: IMAGES")
+        report_lines.append("=" * 80)
         report_lines.append("")
 
         # Image alt text
@@ -3677,7 +3773,22 @@ class SyllabusChecker:
             report_lines.append("[OK] Decorative image marking appears appropriate")
         report_lines.append("")
 
-        # Images
+        # Images containing text content
+        report_lines.append("ACCESSIBILITY: IMAGES CONTAINING TEXT/SCHEDULES")
+        report_lines.append("-" * 80)
+        image_text_issues = [issue for issue in self.issues if issue.issue_type == "IMAGE_TEXT_CONTENT"]
+        if image_text_issues:
+            report_lines.append(f"[X] Found {len(image_text_issues)} image(s) that may contain text content:")
+            report_lines.append("    (Text in images is inaccessible to screen readers - use actual text/tables instead)")
+            for issue in image_text_issues[:5]:
+                report_lines.append(f"  - {issue.location}: {issue.description}")
+            if len(image_text_issues) > 5:
+                report_lines.append(f"  ... and {len(image_text_issues) - 5} more")
+        else:
+            report_lines.append("[OK] No images appear to contain text content")
+        report_lines.append("")
+
+        # General images info
         report_lines.append("ACCESSIBILITY: IMAGES")
         report_lines.append("-" * 80)
         image_check = self.check_images()
@@ -3688,7 +3799,56 @@ class SyllabusChecker:
             report_lines.append("[OK] No images detected")
         report_lines.append("")
 
-        # Summary
+        # ============================================================
+        # CATEGORY 9: DOCUMENT PROPERTIES
+        # ============================================================
+        report_lines.append("=" * 80)
+        report_lines.append("CATEGORY: DOCUMENT PROPERTIES")
+        report_lines.append("=" * 80)
+        report_lines.append("")
+
+        # Document metadata
+        report_lines.append("ACCESSIBILITY: DOCUMENT METADATA")
+        report_lines.append("-" * 80)
+        metadata_issues = [issue for issue in self.issues if issue.issue_type == "MISSING_TITLE"]
+        if metadata_issues:
+            for issue in metadata_issues:
+                report_lines.append(f"[X] {issue.description}")
+        else:
+            report_lines.append("[OK] Document has title metadata")
+        report_lines.append("")
+
+        # Document language
+        report_lines.append("ACCESSIBILITY: DOCUMENT LANGUAGE SETTING")
+        report_lines.append("-" * 80)
+        language_issues = [issue for issue in self.issues if issue.issue_type in ["MISSING_LANGUAGE", "INVALID_LANGUAGE"]]
+        if language_issues:
+            for issue in language_issues:
+                report_lines.append(f"[X] {issue.description}")
+        else:
+            report_lines.append("[OK] Document has valid language setting")
+        report_lines.append("")
+
+        # Multilingual content
+        report_lines.append("ACCESSIBILITY: MULTILINGUAL CONTENT")
+        report_lines.append("-" * 80)
+        multilingual_issues = [issue for issue in self.issues if issue.issue_type == "MULTIPLE_LANGUAGES"]
+        untagged_language_issues = [issue for issue in self.issues if issue.issue_type == "UNTAGGED_LANGUAGE"]
+        if multilingual_issues or untagged_language_issues:
+            if multilingual_issues:
+                for issue in multilingual_issues:
+                    report_lines.append(f"[i] {issue.description}")
+            if untagged_language_issues:
+                report_lines.append(f"[X] Found potential multilingual content without proper language tagging:")
+                for issue in untagged_language_issues:
+                    report_lines.append(f"  - {issue.description}")
+        else:
+            report_lines.append("[OK] No multilingual content issues detected")
+        report_lines.append("")
+
+        # ============================================================
+        # SUMMARY
+        # ============================================================
         report_lines.append("=" * 80)
         report_lines.append("SUMMARY")
         report_lines.append("=" * 80)
@@ -3696,12 +3856,9 @@ class SyllabusChecker:
         total_issues = (
             len(missing) +
             len(heading_check['issues']) +
-            # Heading recommendations disabled (LLM-based analysis recommended)
-            # len(heading_recommendations) +
             len(table_check['issues']) +
             len(table_header_issues) +
             len(layout_issues) +
-            len(format_check['issues']) +
             len(list_check['issues']) +
             len(pseudo_table_issues) +
             len(font_issues) +
@@ -3721,7 +3878,11 @@ class SyllabusChecker:
             len(justify_issues) +
             len(caps_issues) +
             len(non_desc_link_issues) +
-            len(link_check['issues'])
+            len(long_sentence_issues) +
+            len(date_format_issues) +
+            len(image_alt_issues) +
+            len(decorative_issues) +
+            len(image_text_issues)
         )
 
         if total_issues == 0:

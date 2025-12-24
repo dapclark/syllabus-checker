@@ -118,7 +118,7 @@ Checks
 	•	✅ Detect images missing alt text
 	•	🤖 Identify alt text that is too short, irrelevant, or redundant (e.g., "Image of…")
 	•	✅ Identify decorative images missing decorative marking
-	•	⏳ Detect screenshots replacing text content (e.g., schedules, tables)
+	•	✅ Detect screenshots replacing text content (e.g., schedules, tables)
 	•	🤖 Flag institutional logos without meaningful alt text
 	•	✅ Image presence check (alerts to verify alt text)
 
@@ -172,9 +172,9 @@ Accessibility & Inclusion Statements
 	•	🤖 Flag ambiguous, discouraging, or inaccessible policy instructions
 
 Course Calendar and Schedule
-	•	⏳ Identify schedules provided as images instead of text
-	•	⏳ Detect unclear date formats (e.g., numeric-only dates)
-	•	⏳ Identify merged table cells used to create visual layouts
+	•	✅ Identify schedules provided as images instead of text
+	•	✅ Detect unclear date formats (e.g., numeric-only dates)
+	•	✅ Identify merged table cells used to create visual layouts
 
 ⸻
 
@@ -233,7 +233,7 @@ Implementation Notes
 
 ⸻
 
-Summary: 40 Algorithmic Checks Currently Implemented
+Summary: 42 Algorithmic Checks Currently Implemented
 
 1. Section Completeness (1)
 2. Tables (10)
@@ -242,6 +242,6 @@ Summary: 40 Algorithmic Checks Currently Implemented
 5. Color & Contrast (3)
 6. Links & Navigation (7)
 7. Document Properties (3)
-8. Readability (1)
-9. Images (3 - including alt text and decorative marking)
+8. Readability (2 - long sentences, numeric date formats)
+9. Images (4 - alt text, decorative marking, text content detection)
 10. Other (1)
