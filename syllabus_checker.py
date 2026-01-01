@@ -389,7 +389,20 @@ class SyllabusChecker:
         first_row = table.rows[0]
         num_cells = len(first_row.cells)
 
-        # Check multiple indicators of header rows
+        # FIRST: Check if the first row has the official "Repeat Header Row" property
+        # This is the most reliable indicator that Word recognizes this as a header
+        try:
+            tr = first_row._element
+            trPr = tr.find(qn('w:trPr'))
+            if trPr is not None:
+                tblHeader = trPr.find(qn('w:tblHeader'))
+                if tblHeader is not None:
+                    # Official header row designation found!
+                    return True
+        except:
+            pass
+
+        # FALLBACK: Check for visual indicators of header rows
         bold_count = 0
         shaded_count = 0
         large_font_count = 0
@@ -401,8 +414,27 @@ class SyllabusChecker:
 
             for para in cell.paragraphs:
                 for run in para.runs:
-                    if run.bold:
+                    # Check direct formatting
+                    if run.bold == True:
                         has_bold = True
+                    # Also check if bold is inherited from style
+                    elif run.bold is None and run.style and hasattr(run.style, 'font'):
+                        try:
+                            if run.style.font.bold == True:
+                                has_bold = True
+                        except:
+                            pass
+
+                    # Check the XML directly for bold
+                    try:
+                        rPr = run._element.find(qn('w:rPr'))
+                        if rPr is not None:
+                            b_elem = rPr.find(qn('w:b'))
+                            if b_elem is not None:
+                                has_bold = True
+                    except:
+                        pass
+
                     # Check for larger font (>11pt suggests header)
                     if run.font.size and run.font.size.pt > 11:
                         has_large_font = True
@@ -436,6 +468,25 @@ class SyllabusChecker:
             return True
         if large_font_count >= num_cells * 0.5:
             return True
+
+        # FALLBACK: Content-based heuristic for tables where formatting isn't detected
+        # (common issue with Mac Word where styles don't save to XML)
+        # If the first row has concise text in all/most cells AND the table has multiple rows,
+        # it's very likely a header row
+        if len(table.rows) > 2:  # Only for multi-row tables (not layout tables)
+            filled_cells = 0
+            concise_cells = 0
+            for cell in first_row.cells:
+                text = cell.text.strip()
+                if text:
+                    filled_cells += 1
+                    # Headers are typically concise (< 50 chars)
+                    if len(text) < 50:
+                        concise_cells += 1
+
+            # If most cells are filled with concise text, likely a header row
+            if filled_cells >= num_cells * 0.75 and concise_cells >= num_cells * 0.75:
+                return True
 
         return False
 
@@ -678,17 +729,9 @@ class SyllabusChecker:
                 "Excessive table usage can harm accessibility. Consider using headings and lists."
             )
 
-        # Check for large tables, but only warn if they don't have headers
-        # (tables with headers are likely legitimate data tables)
-        for i, table in enumerate(tables):
-            if len(table.rows) > 10 or len(table.columns) > 5:
-                # Check if it has a header row (data tables with headers are OK)
-                has_header = self._table_has_header_row(table)
-                if not has_header:
-                    issues.append(
-                        f"WARNING: Table {i+1} is large ({len(table.rows)} rows, {len(table.columns)} cols) "
-                        "and lacks proper header row. This may indicate using tables for layout."
-                    )
+        # NOTE: Large table check removed - most syllabi have large assignment tables,
+        # and table size alone doesn't indicate layout misuse. Will add LLM-based
+        # semantic check for layout tables in the future.
 
         return {
             'count': len(tables),
@@ -1450,35 +1493,32 @@ class SyllabusChecker:
             if not self._table_has_header_row(table):
                 continue  # Skip tables without headers
 
-            # Check first row for scope attributes
+            # Check if the first row is marked as a "repeat header row"
+            # This is Word's way of indicating header rows for accessibility
             first_row = table.rows[0]
-            missing_scope_count = 0
+            has_repeat_header = False
 
-            for cell_idx, cell in enumerate(first_row.cells):
-                # Check if cell has proper scope declaration in XML
-                try:
-                    tc = cell._element
-                    # Look for scope in table cell properties
-                    # In Word XML, header cells should be marked with specific properties
-                    # Check if this is a proper table header cell (th) or just regular cell (td)
+            try:
+                # Check the trPr (table row properties) for the tblHeader element
+                tr = first_row._element
+                trPr = tr.find(qn('w:trPr'))
+                if trPr is not None:
+                    tblHeader = trPr.find(qn('w:tblHeader'))
+                    if tblHeader is not None:
+                        # The presence of w:tblHeader means "repeat as header row" is enabled
+                        has_repeat_header = True
+            except:
+                pass
 
-                    # Word doesn't use HTML-style scope attributes, but we can check
-                    # if the cell is properly marked as a header cell semantically
-                    # For now, we'll flag tables that appear to have headers but may lack
-                    # proper semantic markup for screen readers
-
-                    # Since Word's accessibility is different from HTML, we'll check
-                    # if the table has its first row marked as a "repeat as header row"
-                    # which is Word's way of indicating header rows
-                    missing_scope_count += 1
-                except:
-                    missing_scope_count += 1
-
-            # If table has a header row but cells don't have proper scope info
-            if missing_scope_count > 0:
+            # If table has a header row but "repeat header row" is not enabled
+            if not has_repeat_header:
                 issue = AccessibilityIssue(
                     issue_type="TABLE_MISSING_SCOPE",
-                    description=f"Table {table_idx + 1} has header row but may lack proper scope declarations for screen readers (consider using Table Tools > Layout > Repeat Header Rows)",
+                    description=f"Table {table_idx + 1} has header row but may lack proper scope declarations for screen readers. "
+                               f"HOW TO FIX: 1) Click anywhere in the table's first row (the header row). "
+                               f"2) On Windows: Go to Table Tools > Layout tab > click 'Repeat Header Rows'. On Mac: Go to Table > Header Rows > select 'Repeat Header Row'. "
+                               f"3) This tells screen readers which row contains column labels, allowing users to understand the table structure as they navigate through cells. "
+                               f"WHY IT MATTERS: Without proper header row designation, screen reader users cannot tell what data each column represents.",
                     location=f"Table {table_idx + 1}",
                     table_index=table_idx
                 )
@@ -1527,7 +1567,13 @@ class SyllabusChecker:
 
                 issue = AccessibilityIssue(
                     issue_type="TABLE_MISSING_CAPTION",
-                    description=f"Table {table_idx + 1} is missing a caption or description (Right-click table > Table Properties > Alt Text). Preview: \"{preview}...\"",
+                    description=f"Table {table_idx + 1} is missing a caption or description. Preview: \"{preview}...\" "
+                               f"HOW TO FIX: 1) Right-click anywhere in the table. "
+                               f"2) On Windows: Select 'Table Properties' > go to 'Alt Text' tab. On Mac: Select 'Table Properties...' > click 'Alternative Text'. "
+                               f"3) In the 'Title' field, enter a brief table name (e.g., 'Assignment Schedule'). "
+                               f"4) In the 'Description' field, write what the table shows (e.g., 'Lists all assignments with due dates and submission locations for the semester'). "
+                               f"WHY IT MATTERS: Screen readers announce the caption before reading table contents, giving users context about what data they're about to hear. "
+                               f"Without a caption, users must listen to multiple rows before understanding the table's purpose.",
                     location=f"Table {table_idx + 1}",
                     table_index=table_idx
                 )
@@ -1820,27 +1866,34 @@ class SyllabusChecker:
         return issues
 
     def check_document_language(self) -> List[AccessibilityIssue]:
-        """Check for missing or incorrect document language setting"""
+        """Check for missing or incorrect document language setting - only flags if multilingual content detected"""
         issues = []
 
-        # Check if document has a default language set
+        # Note: We no longer flag missing language settings for monolingual documents
+        # because many properly-formatted Word documents (especially from Mac) don't have
+        # explicit language tags, and screen readers will use their default language correctly.
+        # We only care about language tagging when there's actual multilingual content,
+        # which is handled by check_multilingual_content()
+
+        # Still check for explicitly invalid language codes if they exist
         has_language = False
         document_language = None
 
         try:
             # Check the document's default paragraph style for language
-            # Language is typically set in the default style or document settings
             for style in self.target_doc.styles:
-                if style.name == 'Normal' or style.name == 'Default Paragraph Font':
+                if style.name in ['Normal', 'Default Paragraph Font', 'No Spacing', 'Body Text']:
                     try:
-                        # Try to access the style's element to check for language
                         style_element = style.element
-                        # Look for language setting in the style
                         rPr = style_element.find(qn('w:rPr'))
                         if rPr is not None:
                             lang = rPr.find(qn('w:lang'))
                             if lang is not None:
                                 val = lang.get(qn('w:val'))
+                                if not val:
+                                    val = lang.get(qn('w:eastAsia'))
+                                if not val:
+                                    val = lang.get(qn('w:bidi'))
                                 if val:
                                     has_language = True
                                     document_language = val
@@ -1850,39 +1903,34 @@ class SyllabusChecker:
         except:
             pass
 
-        # Also check if any paragraphs have explicit language settings
+        # Check first few paragraphs for explicit language settings
         if not has_language:
-            # Sample first few paragraphs to check for language
             for para_info in self.all_paragraphs[:10]:
                 para = para_info.paragraph
                 if para.runs:
                     for run in para.runs:
                         try:
-                            # Check run's language
-                            rPr = run._element.get_or_add_rPr()
-                            lang = rPr.find(qn('w:lang'))
-                            if lang is not None:
-                                val = lang.get(qn('w:val'))
-                                if val:
-                                    has_language = True
-                                    document_language = val
-                                    break
+                            rPr = run._element.find(qn('w:rPr'))
+                            if rPr is not None:
+                                lang = rPr.find(qn('w:lang'))
+                                if lang is not None:
+                                    val = lang.get(qn('w:val'))
+                                    if not val:
+                                        val = lang.get(qn('w:eastAsia'))
+                                    if not val:
+                                        val = lang.get(qn('w:bidi'))
+                                    if val:
+                                        has_language = True
+                                        document_language = val
+                                        break
                         except:
                             pass
                 if has_language:
                     break
 
-        if not has_language:
-            issue = AccessibilityIssue(
-                issue_type="MISSING_LANGUAGE",
-                description="Document is missing language setting. Set document language in Word (Review > Language > Set Proofing Language) for screen reader accessibility.",
-                location="Document metadata"
-            )
-            issues.append(issue)
-        else:
-            # Validate that the language code is reasonable
-            # Common language codes: en-US, en-GB, es-ES, fr-FR, etc.
-            if document_language and len(document_language) < 2:
+        # Only flag invalid language codes if they exist
+        if has_language and document_language:
+            if len(document_language) < 2:
                 issue = AccessibilityIssue(
                     issue_type="INVALID_LANGUAGE",
                     description=f"Document language setting '{document_language}' appears invalid. Use standard language codes (e.g., en-US, es-ES).",
@@ -2243,11 +2291,20 @@ class SyllabusChecker:
 
                     has_underline = False
                     has_distinctive_color = False
+                    has_hyperlink_style = False
 
                     for run_elem in runs_in_link:
-                        # Check for underline
                         rPr = run_elem.find(qn('w:rPr'))
                         if rPr is not None:
+                            # Check for "Hyperlink" character style (default Word hyperlink styling)
+                            rStyle = rPr.find(qn('w:rStyle'))
+                            if rStyle is not None:
+                                style_val = rStyle.get(qn('w:val'))
+                                # Common hyperlink style names
+                                if style_val and 'hyperlink' in style_val.lower():
+                                    has_hyperlink_style = True
+
+                            # Check for explicit underline
                             u = rPr.find(qn('w:u'))
                             if u is not None:
                                 has_underline = True
@@ -2260,8 +2317,8 @@ class SyllabusChecker:
                                 if color_val and color_val.upper() not in ['000000', '000', 'AUTO', 'FFFFFF']:
                                     has_distinctive_color = True
 
-                    # If link has neither underline nor distinctive color, flag it
-                    if not has_underline and not has_distinctive_color:
+                    # Only flag if link has NO styling indicators (no hyperlink style, no underline, no distinctive color)
+                    if not has_hyperlink_style and not has_underline and not has_distinctive_color:
                         preview = link_text[:40] + "..." if len(link_text) > 40 else link_text
 
                         issue = AccessibilityIssue(
@@ -2295,19 +2352,31 @@ class SyllabusChecker:
                         try:
                             # Get the relationship to find the actual URL
                             url = para.part.rels[r_id].target_ref
+                            link_text = ''.join(hyperlink.itertext()).strip()
 
-                            # Check if URL is excessively long (>100 characters)
+                            # Only flag if URL is excessively long AND the link text IS the URL
+                            # (Good accessibility practice is to hide long URLs behind descriptive text)
                             if len(url) > 100:
-                                link_text = ''.join(hyperlink.itertext())
-                                preview = link_text[:40] + "..." if len(link_text) > 40 else link_text
-
-                                issue = AccessibilityIssue(
-                                    issue_type="LONG_URL",
-                                    description=f"Excessively long URL ({len(url)} chars): \"{preview}\" -> {url[:50]}...",
-                                    location=para_info.location,
-                                    para_info=para_info
+                                # Check if the link text is the URL itself (or looks like a URL)
+                                link_text_is_url = (
+                                    link_text.startswith(('http://', 'https://', 'ftp://', 'file://', 'www.')) or
+                                    url.endswith(link_text) or  # Link text is end of URL
+                                    link_text in url  # Link text is part of URL
                                 )
-                                issues.append(issue)
+
+                                # Only flag if the visible text IS the URL (bad practice)
+                                # Don't flag if it's descriptive text (good practice!)
+                                if link_text_is_url:
+                                    preview = link_text[:40] + "..." if len(link_text) > 40 else link_text
+
+                                    issue = AccessibilityIssue(
+                                        issue_type="LONG_URL",
+                                        description=f"Excessively long URL displayed as link text ({len(url)} chars): \"{preview}\". "
+                                                   f"Replace the URL with descriptive link text (e.g., 'Course Resources' instead of showing the full URL).",
+                                        location=para_info.location,
+                                        para_info=para_info
+                                    )
+                                    issues.append(issue)
                         except:
                             pass
             except:
@@ -2560,7 +2629,7 @@ class SyllabusChecker:
         return issues
 
     def check_long_sentences(self) -> List[AccessibilityIssue]:
-        """Detect overly long sentences (>35 words)"""
+        """Detect overly long sentences (>50 words)"""
         issues = []
 
         for para_info in self.all_paragraphs:
@@ -2585,13 +2654,13 @@ class SyllabusChecker:
                 words = sentence.split()
                 word_count = len(words)
 
-                # Flag if more than 35 words
-                if word_count > 35:
+                # Flag if more than 50 words
+                if word_count > 50:
                     preview = sentence[:60] + "..." if len(sentence) > 60 else sentence
 
                     issue = AccessibilityIssue(
                         issue_type="LONG_SENTENCE",
-                        description=f"Sentence has {word_count} words (>35 recommended): \"{preview}\"",
+                        description=f"Sentence has {word_count} words (>50 recommended): \"{preview}\"",
                         location=para_info.location,
                         para_info=para_info
                     )
@@ -2927,6 +2996,212 @@ class SyllabusChecker:
         # We'll enhance the existing function's description to emphasize layout issues
         return []
 
+    def check_copied_content_broken_styles(self) -> List[AccessibilityIssue]:
+        """Identify copied content with broken or inconsistent style application"""
+        issues = []
+
+        for para_info in self.all_paragraphs:
+            para = para_info.paragraph
+            text = para.text.strip()
+
+            if not text:
+                continue
+
+            # Check for runs with different fonts within a single paragraph
+            # that might indicate copied content with broken styles
+            runs = para.runs
+            if len(runs) > 1:
+                fonts_in_para = []
+                sizes_in_para = []
+
+                for run in runs:
+                    if run.text.strip():  # Only consider non-empty runs
+                        font_name = run.font.name if run.font.name else 'Default'
+                        font_size = run.font.size.pt if run.font.size else 0
+                        fonts_in_para.append(font_name)
+                        sizes_in_para.append(font_size)
+
+                # Check if there are multiple different fonts/sizes in the paragraph
+                unique_fonts = set(fonts_in_para)
+                unique_sizes = set(sizes_in_para)
+
+                # Flag if there are 3+ different fonts or unusual font mixing
+                if len(unique_fonts) >= 3:
+                    issue = AccessibilityIssue(
+                        issue_type="BROKEN_STYLE_COPIED_CONTENT",
+                        description=f"Paragraph contains {len(unique_fonts)} different fonts ({', '.join(list(unique_fonts)[:3])}), suggesting copied content with inconsistent formatting.",
+                        location=para_info.location,
+                        para_info=para_info
+                    )
+                    issues.append(issue)
+                # Also flag if there's significant font size variation (3+ sizes)
+                elif len(unique_sizes) >= 3:
+                    size_list = [str(int(s)) + 'pt' for s in unique_sizes if s > 0]
+                    if len(size_list) >= 3:
+                        issue = AccessibilityIssue(
+                            issue_type="BROKEN_STYLE_COPIED_CONTENT",
+                            description=f"Paragraph contains {len(size_list)} different font sizes ({', '.join(size_list[:3])}), suggesting copied content with inconsistent formatting.",
+                            location=para_info.location,
+                            para_info=para_info
+                        )
+                        issues.append(issue)
+
+        return issues
+
+    def check_footnotes(self) -> List[AccessibilityIssue]:
+        """Flag footnotes used instead of inline explanations"""
+        issues = []
+
+        import re
+
+        for para_info in self.all_paragraphs:
+            para = para_info.paragraph
+            text = para.text.strip()
+
+            if not text:
+                continue
+
+            has_footnote_marker = False
+
+            # Check for actual footnote markers (asterisks, daggers, etc.)
+            # These are rarely used except for footnotes
+            if re.search(r'[\*†‡§¶#](?!\w)', text):
+                has_footnote_marker = True
+
+            # Check for bracketed/parenthesized numbers at the END of sentences or paragraphs
+            # (typical footnote position), NOT in the middle of comma-separated lists
+            # Pattern: [1] or (1) appearing after period/exclamation/question mark, or at end of text
+            # Do NOT match after commas or semicolons (used in lists)
+            if re.search(r'[.!?]\s*[\[\(]\d+[\]\)]|[\[\(]\d+[\]\)]\s*$', text):
+                has_footnote_marker = True
+
+            # Check for superscript numbers that look like footnote references
+            # (superscript single digit or double digit at end of text)
+            for run in para.runs:
+                if run.font.superscript and run.text.strip():
+                    superscript_text = run.text.strip()
+                    # Only flag if it's a standalone number (likely footnote reference)
+                    if superscript_text.isdigit() and len(superscript_text) <= 2:
+                        has_footnote_marker = True
+                        break
+
+            if has_footnote_marker:
+                preview = text[:80] + "..." if len(text) > 80 else text
+                issue = AccessibilityIssue(
+                    issue_type="FOOTNOTE_USAGE",
+                    description=f"Footnote marker detected: \"{preview}\". Consider using inline explanations or endnotes for better accessibility.",
+                    location=para_info.location,
+                    para_info=para_info
+                )
+                issues.append(issue)
+
+        return issues
+
+    def check_visual_indicators(self) -> List[AccessibilityIssue]:
+        """Detect visual indicators of due dates or significance without text equivalents"""
+        issues = []
+
+        import re
+
+        for para_info in self.all_paragraphs:
+            para = para_info.paragraph
+            text = para.text.strip()
+
+            if not text:
+                continue
+
+            # Check for symbols that might indicate importance/due dates without text
+            # Common patterns: ★, ☆, •, ►, ►, ⚠, ⚡, ✓, ✗, etc.
+            symbol_pattern = r'[★☆•►▸⚠⚡✓✗✘✔✖❗❢❣⭐🔴🟡🟢⬤●○◆◇■□▪▫]+'
+
+            if re.search(symbol_pattern, text):
+                # Check if there's explanatory text nearby
+                words_after_symbol = re.split(symbol_pattern, text)
+
+                for segment in words_after_symbol:
+                    segment = segment.strip()
+                    # If the segment is very short or just a date/number, it's likely missing explanation
+                    if segment and len(segment.split()) < 3:
+                        preview = text[:80] + "..." if len(text) > 80 else text
+                        issue = AccessibilityIssue(
+                            issue_type="VISUAL_INDICATOR_NO_TEXT",
+                            description=f"Visual symbol used without clear text explanation: \"{preview}\". Add descriptive text (e.g., 'Important:', 'Due date:', 'Required:').",
+                            location=para_info.location,
+                            para_info=para_info
+                        )
+                        issues.append(issue)
+                        break
+
+        return issues
+
+    def check_math_expressions(self) -> List[AccessibilityIssue]:
+        """Identify math expressions not using accessible markup (MathML or equivalent)"""
+        issues = []
+
+        import re
+
+        for para_info in self.all_paragraphs:
+            para = para_info.paragraph
+            text = para.text.strip()
+
+            if not text:
+                continue
+
+            # Skip common false positives
+            # Skip if it looks like a grade (e.g., "86/100", "90/100")
+            if re.search(r'\b\d{1,3}/\d{2,3}\b', text):
+                # But only skip if it's in a grading context
+                if re.search(r'\b(grade|score|point|percent|%)\b', text, re.IGNORECASE):
+                    continue
+
+            # Skip chapter/page ranges (e.g., "chapters 1-28", "pages 10-20")
+            if re.search(r'\b(chapter|page|pp?\.?)\s*\d+\s*[-–]\s*\d+\b', text, re.IGNORECASE):
+                continue
+
+            is_math = False
+
+            # Check for variable equations: x = 2 + 3
+            if re.search(r'\b[a-z]\s*=\s*[0-9a-z\+\-\*/\(\)]+', text, re.IGNORECASE):
+                is_math = True
+
+            # Check for math functions/symbols (high confidence)
+            if re.search(r'\b(sin|cos|tan|log|ln|sqrt|sum|integral|∫|∑|π|α|β|γ|θ|μ|σ|Δ)\b', text, re.IGNORECASE):
+                is_math = True
+
+            # Check for subscripts/superscripts (Unicode)
+            if re.search(r'[₀₁₂₃₄₅₆₇₈₉]{2,}|[⁰¹²³⁴⁵⁶⁷⁸⁹]{2,}', text):
+                is_math = True
+
+            # Check for ASCII superscript/subscript notation (e.g., x^2, H_2O with multiple uses)
+            if re.search(r'(\^[0-9]+|_[0-9]+).*(\^[0-9]+|_[0-9]+)', text):
+                is_math = True
+
+            # Check for math relation symbols
+            if re.search(r'[≤≥≠≈∞∝∈∉⊂⊃∪∩]', text):
+                is_math = True
+
+            # Check for complex arithmetic operations (more than simple division)
+            # Must have multiple operations or parentheses to be flagged
+            arithmetic_match = re.search(r'[0-9]+\s*[\+\-\*÷×]\s*[0-9]+\s*[\+\-\*÷×]\s*[0-9]+', text)
+            if arithmetic_match:
+                is_math = True
+
+            # Check for expressions with parentheses (e.g., "(2 + 3) * 4")
+            if re.search(r'\([0-9\s\+\-\*/]+\)\s*[\+\-\*÷×]', text):
+                is_math = True
+
+            if is_math:
+                preview = text[:80] + "..." if len(text) > 80 else text
+                issue = AccessibilityIssue(
+                    issue_type="MATH_NO_ACCESSIBLE_MARKUP",
+                    description=f"Mathematical expression detected without accessible markup: \"{preview}\". Use equation editors or MathML for complex math.",
+                    location=para_info.location,
+                    para_info=para_info
+                )
+                issues.append(issue)
+
+        return issues
+
     def run_all_checks(self):
         """Run all accessibility checks and collect issues"""
         self.issues = []
@@ -2973,6 +3248,10 @@ class SyllabusChecker:
         self.issues.extend(self.check_decorative_images())
         self.issues.extend(self.check_image_text_content())
         self.issues.extend(self.check_date_formats())
+        self.issues.extend(self.check_copied_content_broken_styles())
+        self.issues.extend(self.check_footnotes())
+        self.issues.extend(self.check_visual_indicators())
+        self.issues.extend(self.check_math_expressions())
 
     def create_marked_document(self, output_path: str):
         """Create a copy of the document with issues marked via comments and highlighting"""
@@ -3710,7 +3989,7 @@ class SyllabusChecker:
         report_lines.append("-" * 80)
         long_sentence_issues = [issue for issue in self.issues if issue.issue_type == "LONG_SENTENCE"]
         if long_sentence_issues:
-            report_lines.append(f"[X] Found {len(long_sentence_issues)} overly long sentence(s) (>35 words):")
+            report_lines.append(f"[X] Found {len(long_sentence_issues)} overly long sentence(s) (>50 words):")
             report_lines.append("    (Shorter sentences improve readability and comprehension)")
             for issue in long_sentence_issues[:5]:
                 report_lines.append(f"  - {issue.location}: {issue.description}")
@@ -3847,42 +4126,88 @@ class SyllabusChecker:
         report_lines.append("")
 
         # ============================================================
+        # CATEGORY 10: CONTENT QUALITY & FORMATTING
+        # ============================================================
+        report_lines.append("=" * 80)
+        report_lines.append("CATEGORY: CONTENT QUALITY & FORMATTING")
+        report_lines.append("=" * 80)
+        report_lines.append("")
+
+        # Copied content with broken styles
+        report_lines.append("ACCESSIBILITY: COPIED CONTENT WITH INCONSISTENT STYLES")
+        report_lines.append("-" * 80)
+        broken_style_issues = [issue for issue in self.issues if issue.issue_type == "BROKEN_STYLE_COPIED_CONTENT"]
+        if broken_style_issues:
+            report_lines.append(f"[X] Found {len(broken_style_issues)} paragraph(s) with inconsistent formatting (possible copied content):")
+            report_lines.append("    (Mixed fonts/sizes within paragraphs suggest pasted content with broken styles)")
+            for issue in broken_style_issues[:5]:
+                report_lines.append(f"  - {issue.location}: {issue.description}")
+            if len(broken_style_issues) > 5:
+                report_lines.append(f"  ... and {len(broken_style_issues) - 5} more")
+        else:
+            report_lines.append("[OK] No inconsistent formatting detected")
+        report_lines.append("")
+
+        # Footnotes
+        report_lines.append("ACCESSIBILITY: FOOTNOTE USAGE")
+        report_lines.append("-" * 80)
+        footnote_issues = [issue for issue in self.issues if issue.issue_type == "FOOTNOTE_USAGE"]
+        if footnote_issues:
+            report_lines.append(f"[X] Found {len(footnote_issues)} footnote marker(s):")
+            report_lines.append("    (Footnotes can be difficult for screen readers; consider inline explanations or endnotes)")
+            for issue in footnote_issues[:5]:
+                report_lines.append(f"  - {issue.location}: {issue.description}")
+            if len(footnote_issues) > 5:
+                report_lines.append(f"  ... and {len(footnote_issues) - 5} more")
+        else:
+            report_lines.append("[OK] No footnotes detected")
+        report_lines.append("")
+
+        # Visual indicators
+        report_lines.append("ACCESSIBILITY: VISUAL INDICATORS WITHOUT TEXT")
+        report_lines.append("-" * 80)
+        visual_indicator_issues = [issue for issue in self.issues if issue.issue_type == "VISUAL_INDICATOR_NO_TEXT"]
+        if visual_indicator_issues:
+            report_lines.append(f"[X] Found {len(visual_indicator_issues)} visual symbol(s) without clear text explanation:")
+            report_lines.append("    (Symbols like ★, •, ⚠ may not be understood by screen readers)")
+            for issue in visual_indicator_issues[:5]:
+                report_lines.append(f"  - {issue.location}: {issue.description}")
+            if len(visual_indicator_issues) > 5:
+                report_lines.append(f"  ... and {len(visual_indicator_issues) - 5} more")
+        else:
+            report_lines.append("[OK] No unexplained visual indicators detected")
+        report_lines.append("")
+
+        # Math expressions
+        report_lines.append("ACCESSIBILITY: MATHEMATICAL EXPRESSIONS")
+        report_lines.append("-" * 80)
+        math_issues = [issue for issue in self.issues if issue.issue_type == "MATH_NO_ACCESSIBLE_MARKUP"]
+        if math_issues:
+            report_lines.append(f"[X] Found {len(math_issues)} mathematical expression(s) without accessible markup:")
+            report_lines.append("    (Use equation editors or MathML for complex math to ensure screen reader compatibility)")
+            for issue in math_issues[:5]:
+                report_lines.append(f"  - {issue.location}: {issue.description}")
+            if len(math_issues) > 5:
+                report_lines.append(f"  ... and {len(math_issues) - 5} more")
+        else:
+            report_lines.append("[OK] No inaccessible math expressions detected")
+        report_lines.append("")
+
+        # ============================================================
         # SUMMARY
         # ============================================================
         report_lines.append("=" * 80)
         report_lines.append("SUMMARY")
         report_lines.append("=" * 80)
 
+        # Count total issues - use self.issues which contains all algorithmic checks
+        # Plus add heading_check, table_check, and list_check issues which are returned separately
         total_issues = (
             len(missing) +
             len(heading_check['issues']) +
             len(table_check['issues']) +
-            len(table_header_issues) +
-            len(layout_issues) +
             len(list_check['issues']) +
-            len(pseudo_table_issues) +
-            len(font_issues) +
-            len(decorative_font_issues) +
-            len(inconsistent_font_issues) +
-            len(contrast_issues) +
-            len(color_only_issues) +
-            len(color_coded_table_issues) +
-            len(text_bg_issues) +
-            len(empty_row_issues) +
-            len(empty_col_issues) +
-            len(metadata_issues) +
-            len(language_issues) +
-            len(untagged_language_issues) +
-            len(underline_issues) +
-            len(spacing_issues) +
-            len(justify_issues) +
-            len(caps_issues) +
-            len(non_desc_link_issues) +
-            len(long_sentence_issues) +
-            len(date_format_issues) +
-            len(image_alt_issues) +
-            len(decorative_issues) +
-            len(image_text_issues)
+            len(self.issues)  # This contains all issues from run_all_checks()
         )
 
         if total_issues == 0:

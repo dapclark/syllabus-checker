@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syllabus Accessibility Checker</title>
+    <title>Syllabus Checker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
@@ -85,7 +85,146 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center">📄 Syllabus Accessibility Checker</h1>
+        <h1 class="text-center">📄 Syllabus Checker</h1>
+
+        <!-- Comprehensive Checks List -->
+        <div class="card mt-4" style="border: 2px solid #ffbd00;">
+            <div class="card-body">
+                <h5 class="card-title text-center mb-3">
+                    <i class="bi bi-list-check"></i> What We Check For (46+ Accessibility Checks)
+                </h5>
+                <p class="text-center text-muted mb-3">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#fullChecksList" aria-expanded="false" aria-controls="fullChecksList">
+                        <i class="bi bi-chevron-down"></i> Show/Hide Complete List
+                    </button>
+                </p>
+
+                <div class="collapse" id="fullChecksList">
+                    <!-- Introduction and Standards -->
+                    <div class="alert alert-light border mb-4">
+                        <h6 class="fw-bold mb-2"><i class="bi bi-mortarboard"></i> Why Syllabus Accessibility Matters</h6>
+                        <p class="small mb-2">
+                            A syllabus is often the first document students encounter and serves as a contract, roadmap, and accessibility gateway.
+                            Inaccessible syllabi disproportionately affect students with disabilities, international students, first-generation students, and neurodivergent learners.
+                        </p>
+                        <p class="small mb-3">
+                            Our checks are based on established standards from leading organizations:
+                        </p>
+                        <div class="row small">
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-file-earmark-text"></i> Document Accessibility Standards:</strong>
+                                <ul class="mb-2">
+                                    <li><strong>WCAG 2.1/2.2</strong> - International accessibility guidelines (W3C/WAI)</li>
+                                    <li><strong>Section 508</strong> - U.S. federal accessibility requirements</li>
+                                    <li><strong>ADA</strong> - Americans with Disabilities Act compliance</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-book"></i> Educational Best Practices:</strong>
+                                <ul class="mb-0">
+                                    <li><strong>UDL</strong> - Universal Design for Learning (CAST)</li>
+                                    <li><strong>Quality Matters</strong> - Course design standards</li>
+                                    <li><strong>AEM Center</strong> - Accessible Educational Materials</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mt-3"><i class="bi bi-fonts"></i> Font Usage</h6>
+                            <ul class="small">
+                                <li>Small font sizes (below 11pt)</li>
+                                <li>Decorative or inaccessible fonts</li>
+                                <li>Inconsistent font families</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-table"></i> Table Structure</h6>
+                            <ul class="small">
+                                <li>Empty table rows or columns</li>
+                                <li>Tables used for layout instead of data</li>
+                                <li>Missing table headers</li>
+                                <li>Missing scope declarations</li>
+                                <li>Missing table captions</li>
+                                <li>Merged cells affecting reading order</li>
+                                <li>Incorrect numeric alignment</li>
+                                <li>Confusing table reading order</li>
+                                <li>Embedded images in tables</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-palette"></i> Color & Contrast</h6>
+                            <ul class="small">
+                                <li>Low color contrast</li>
+                                <li>Color used as sole indicator of meaning</li>
+                                <li>Text over colored backgrounds</li>
+                                <li>Color-coded tables without text labels</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-link-45deg"></i> Links & Navigation</h6>
+                            <ul class="small">
+                                <li>Non-descriptive link text ("click here")</li>
+                                <li>Unstyled links (missing underline)</li>
+                                <li>Long URLs in text</li>
+                                <li>Links to PDFs</li>
+                                <li>Missing table of contents</li>
+                                <li>Missing bookmarks/internal navigation</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-list-ul"></i> Lists</h6>
+                            <ul class="small">
+                                <li>Inconsistent list hierarchy</li>
+                                <li>Lists used for layout</li>
+                            </ul>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mt-3"><i class="bi bi-text-paragraph"></i> Text Formatting</h6>
+                            <ul class="small">
+                                <li>Pseudo-tables (manual alignment with tabs/spaces)</li>
+                                <li>Underlined non-link text</li>
+                                <li>Insufficient line spacing</li>
+                                <li>Full text justification</li>
+                                <li>Large blocks of ALL CAPS text</li>
+                                <li>Excessive bold, italic, or underline</li>
+                                <li>Inconsistent formatting</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-book"></i> Readability</h6>
+                            <ul class="small">
+                                <li>Overly long sentences (>50 words)</li>
+                                <li>Numeric date formats (ambiguous dates)</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-image"></i> Images</h6>
+                            <ul class="small">
+                                <li>Missing alt text</li>
+                                <li>Questionable decorative image marking</li>
+                                <li>Images containing text or schedules</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-file-earmark-text"></i> Document Properties</h6>
+                            <ul class="small">
+                                <li>Missing document title</li>
+                                <li>Missing language setting</li>
+                                <li>Multiple languages without proper tagging</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-stars"></i> Content Quality</h6>
+                            <ul class="small">
+                                <li>Copied content with broken formatting</li>
+                                <li>Footnotes instead of inline explanations</li>
+                                <li>Visual indicators without text equivalents</li>
+                                <li>Math expressions without accessible markup</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning mt-3 mb-0" role="alert">
+                        <i class="bi bi-shield-check"></i> <strong>Legal Compliance:</strong> These checks help institutions comply with federal accessibility laws (ADA, Section 504, Section 508). <strong>Plus:</strong> We check for missing required syllabus sections like instructor information, course outcomes, grading policies, and accessibility statements.
+                    </div>
+                </div>
+            </div>
+        </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -100,7 +239,7 @@
 
         <div class="card">
             <div class="card-body p-4">
-                <h5 class="card-title mb-4">Upload Your Syllabus</h5>
+                <h5 class="card-title mb-4">Upload Your Syllabus for Review</h5>
 
                 <form id="uploadForm" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
                     <div class="drop-zone" id="dropZone">
@@ -128,7 +267,7 @@
 
                 <div class="mt-4 text-center">
                     <small class="text-muted">
-                        This tool checks your syllabus for 42+ accessibility issues including:
+                        This tool checks your syllabus for required sections and 46+ accessibility issues including:
                         tables, headings, fonts, color contrast, images, date formats, and more.
                     </small>
                 </div>
@@ -139,7 +278,7 @@
             <div class="row text-center">
                 <div class="col-md-4">
                     <i class="bi bi-shield-check" style="font-size: 2rem;"></i>
-                    <p class="mt-2"><strong>40+ Checks</strong><br>Comprehensive accessibility testing</p>
+                    <p class="mt-2"><strong>46+ Checks</strong><br>Comprehensive accessibility testing</p>
                 </div>
                 <div class="col-md-4">
                     <i class="bi bi-file-earmark-arrow-down" style="font-size: 2rem;"></i>

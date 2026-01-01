@@ -60,6 +60,11 @@ def upload_file():
         # Run all checks
         checker.run_all_checks()
 
+        # Get additional checks that return dictionaries (not added to self.issues)
+        heading_check = checker.check_heading_structure()
+        table_check = checker.check_table_usage()
+        list_check = checker.check_list_usage()
+
         # Generate report (generate_report already returns a joined string)
         report_text = checker.generate_report()
 
@@ -84,6 +89,7 @@ def upload_file():
             'Readability': ['LONG_SENTENCE', 'NUMERIC_DATE_FORMAT'],
             'Images': ['IMAGE_MISSING_ALT', 'DECORATIVE_IMAGE_QUESTIONABLE', 'IMAGE_TEXT_CONTENT'],
             'Document Properties': ['MISSING_TITLE', 'MISSING_LANGUAGE', 'MULTIPLE_LANGUAGES'],
+            'Content Quality': ['BROKEN_STYLE_COPIED_CONTENT', 'FOOTNOTE_USAGE', 'VISUAL_INDICATOR_NO_TEXT', 'MATH_NO_ACCESSIBLE_MARKUP'],
         }
 
         # Map each issue type to its report section header
@@ -130,6 +136,10 @@ def upload_file():
             'MISSING_TITLE': 'ACCESSIBILITY: DOCUMENT METADATA',
             'MISSING_LANGUAGE': 'ACCESSIBILITY: DOCUMENT LANGUAGE SETTING',
             'MULTIPLE_LANGUAGES': 'ACCESSIBILITY: MULTILINGUAL CONTENT',
+            'BROKEN_STYLE_COPIED_CONTENT': 'ACCESSIBILITY: COPIED CONTENT WITH INCONSISTENT STYLES',
+            'FOOTNOTE_USAGE': 'ACCESSIBILITY: FOOTNOTE USAGE',
+            'VISUAL_INDICATOR_NO_TEXT': 'ACCESSIBILITY: VISUAL INDICATORS WITHOUT TEXT',
+            'MATH_NO_ACCESSIBLE_MARKUP': 'ACCESSIBILITY: MATHEMATICAL EXPRESSIONS',
         }
 
         # Count issues by category
@@ -207,33 +217,141 @@ def upload_file():
             if combined_content:
                 category_details[category] = '\n'.join(combined_content)
 
+        # Extract the SUMMARY section from the report
+        summary_section = ""
+        report_lines = report_text.split('\n')
+        in_summary = False
+        summary_lines = []
+
+        for i, line in enumerate(report_lines):
+            # Look for the SUMMARY header (it's between two lines of equals signs)
+            if line.strip() == "SUMMARY":
+                # Skip the next line (which should be another line of equals signs)
+                in_summary = True
+                continue
+            elif in_summary:
+                # Skip the line of equals signs right after SUMMARY
+                if line.strip().startswith("=" * 40) and len(summary_lines) == 0:
+                    continue
+                # Stop at the next major section (another line of equals signs after we've started collecting)
+                if line.strip().startswith("=" * 40) and len(summary_lines) > 0:
+                    break
+                summary_lines.append(line)
+
+        summary_section = '\n'.join(summary_lines).strip()
+
+        # Calculate total issues (must match text report calculation)
+        # Total includes: missing sections + heading/table/list check issues + all other issues from run_all_checks()
+        total_web_issues = (
+            len(missing_sections) +
+            len(heading_check.get('issues', [])) +
+            len(table_check.get('issues', [])) +
+            len(list_check.get('issues', [])) +
+            len(checker.issues)
+        )
+
         # Debug output (comment out for production)
-        # print(f"\n=== DEBUG: Issue Types Found ===")
-        # print(f"All issue types: {sorted(all_issue_types)}")
-        # print(f"Categories with issues: {sorted(category_counts.keys())}")
-        # print(f"Category counts: {category_counts}")
-        # print("================================\n")
+        # print(f"\n=== ISSUE COUNT DEBUG ===")
+        # print(f"Missing sections: {len(missing_sections)}")
+        # print(f"Heading check issues: {len(heading_check.get('issues', []))}")
+        # print(f"Table check issues: {len(table_check.get('issues', []))}")
+        # print(f"List check issues: {len(list_check.get('issues', []))}")
+        # print(f"Checker.issues (algorithmic): {len(checker.issues)}")
+        # print(f"Total for web: {total_web_issues}")
+        # print(f"\nCategory counts sum: {sum(category_counts.values())}")
+        # print(f"Categories: {category_counts}")
+        # print(f"All issue types found: {sorted(all_issue_types)}")
+        # print("========================\n")
 
         # Prepare summary
         summary_message = ""
-        if len(checker.issues) == 0 and len(missing_sections) == 0:
+        if total_web_issues == 0:
             summary_message = "Excellent! This syllabus meets all standards."
             summary_status = "success"
-        elif len(checker.issues) + len(missing_sections) < 5:
-            summary_message = f"This syllabus has {len(checker.issues) + len(missing_sections)} issue(s) that should be addressed."
+        elif total_web_issues < 5:
+            summary_message = f"This syllabus has {total_web_issues} issue(s) that should be addressed."
             summary_status = "warning"
         else:
-            summary_message = f"This syllabus has {len(checker.issues) + len(missing_sections)} issue(s) that need attention."
+            summary_message = f"This syllabus has {total_web_issues} issue(s) that need attention."
             summary_status = "danger"
 
-        # Prepare results
+        # Add structural issues to appropriate categories
+        # These come from heading_check, table_check, and list_check which return plain strings
+        if table_check.get('issues'):
+            # Add table structure issues to the Table Structure category
+            if 'Table Structure' not in category_counts:
+                category_counts['Table Structure'] = 0
+            category_counts['Table Structure'] += len(table_check.get('issues', []))
+
+            # Extract table usage section from report for category details
+            if 'Table Structure' not in category_details:
+                category_details['Table Structure'] = ''
+
+            # Add table usage issues to the details
+            table_usage_section = []
+            report_lines = report_text.split('\n')
+            in_table_usage = False
+            for line in report_lines:
+                if 'ACCESSIBILITY: TABLE USAGE' in line:
+                    in_table_usage = True
+                    table_usage_section.append('── TABLE USAGE ──')
+                    continue
+                elif in_table_usage:
+                    if line.startswith('ACCESSIBILITY:') or line.startswith('=' * 40):
+                        break
+                    if line.startswith('-' * 40):
+                        continue
+                    if line.strip():
+                        table_usage_section.append(line)
+
+            if table_usage_section:
+                # Prepend to existing Table Structure details
+                existing = category_details.get('Table Structure', '')
+                category_details['Table Structure'] = '\n'.join(table_usage_section) + '\n\n' + existing
+
+        if heading_check.get('issues'):
+            # Add heading structure issues - create a new category for document structure
+            if 'Document Structure' not in category_counts:
+                category_counts['Document Structure'] = 0
+            category_counts['Document Structure'] += len(heading_check.get('issues', []))
+
+            # Extract heading sections from report
+            heading_sections = []
+            report_lines = report_text.split('\n')
+            for section_name in ['ACCESSIBILITY: HEADING STRUCTURE', 'ACCESSIBILITY: HEADING LEVEL RECOMMENDATIONS']:
+                in_section = False
+                for line in report_lines:
+                    if section_name in line:
+                        in_section = True
+                        heading_sections.append(f"── {section_name.replace('ACCESSIBILITY: ', '')} ──")
+                        continue
+                    elif in_section:
+                        if line.startswith('ACCESSIBILITY:') or line.startswith('=' * 40):
+                            break
+                        if line.startswith('-' * 40):
+                            continue
+                        if line.strip():
+                            heading_sections.append(line)
+                if in_section:
+                    heading_sections.append('')  # Add spacing
+
+            if heading_sections:
+                category_details['Document Structure'] = '\n'.join(heading_sections)
+
+        if list_check.get('issues'):
+            # Add list issues to the Lists category
+            if 'Lists' not in category_counts:
+                category_counts['Lists'] = 0
+            category_counts['Lists'] += len(list_check.get('issues', []))
+
         results = {
             'filename': filename,
-            'total_issues': len(checker.issues) + len(missing_sections),  # Include missing sections in total
+            'total_issues': total_web_issues,  # Match the text report calculation
             'missing_sections': missing_sections,
             'category_counts': category_counts,
             'category_details': category_details,
             'report_text': report_text,
+            'summary_section': summary_section,
             'marked_file': marked_filename,
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'summary_message': summary_message,

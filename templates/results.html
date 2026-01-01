@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accessibility Report - {{ results.filename }}</title>
+    <title>Syllabus Report - {{ results.filename }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
@@ -117,7 +117,7 @@
     <nav class="navbar navbar-dark mb-4">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">
-                <i class="bi bi-file-earmark-check"></i> Syllabus Accessibility Checker
+                <i class="bi bi-file-earmark-check"></i> Syllabus Checker
             </span>
             <a href="{{ url_for('index') }}" class="btn btn-light btn-sm">
                 <i class="bi bi-arrow-left"></i> Check Another
@@ -126,20 +126,6 @@
     </nav>
 
     <div class="container">
-        <!-- Summary Message -->
-        <div class="alert alert-{{ results.summary_status }} mb-4" role="alert">
-            <h4 class="alert-heading">
-                {% if results.summary_status == 'success' %}
-                    <i class="bi bi-check-circle-fill"></i> All Clear!
-                {% elif results.summary_status == 'warning' %}
-                    <i class="bi bi-exclamation-triangle-fill"></i> Minor Issues Found
-                {% else %}
-                    <i class="bi bi-x-circle-fill"></i> Issues Need Attention
-                {% endif %}
-            </h4>
-            <p class="mb-0">{{ results.summary_message }}</p>
-        </div>
-
         <!-- Summary Card -->
         <div class="card summary-card">
             <div class="card-body p-4">
@@ -192,30 +178,147 @@
             <p class="text-muted mt-2 small">The marked document has comments and highlights showing all issues</p>
         </div>
 
-        <!-- Missing Sections -->
-        {% if results.missing_sections %}
-        <div class="report-section">
-            <h4 class="mb-3"><i class="bi bi-exclamation-triangle text-warning"></i> Missing Required Sections</h4>
-            <div class="alert alert-warning">
-                The following {{ results.missing_sections|length }} required section(s) are missing from your syllabus:
-            </div>
-            <ul class="list-group">
-                {% for section in results.missing_sections %}
-                <li class="list-group-item">
-                    <i class="bi bi-x-circle text-danger"></i> {{ section }}
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-
-        <!-- Combined Issues by Category with Expandable Details -->
+        <!-- Accessibility Issues with Expandable Details -->
         {% if results.category_counts %}
         <div class="report-section">
-            <h4 class="mb-3"><i class="bi bi-list-check"></i> Issues by Category</h4>
+            <h4 class="mb-3"><i class="bi bi-universal-access"></i> Accessibility Issues</h4>
             <p class="text-muted mb-3">
-                Click on each category to expand and see detailed information about the issues.
+                Click on each category to expand and see detailed information about the accessibility issues found.
             </p>
+
+            <!-- What We Check For - Expandable Reference -->
+            <div class="alert alert-light border mb-4">
+                <p class="text-center mb-2">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#accessibilityReference" aria-expanded="false" aria-controls="accessibilityReference">
+                        <i class="bi bi-info-circle"></i> What We Check For (46+ Accessibility Checks)
+                    </button>
+                </p>
+
+                <div class="collapse" id="accessibilityReference">
+                    <!-- Introduction and Standards -->
+                    <div class="alert alert-light border mb-3">
+                        <h6 class="fw-bold mb-2"><i class="bi bi-mortarboard"></i> Why Syllabus Accessibility Matters</h6>
+                        <p class="small mb-2">
+                            A syllabus is often the first document students encounter and serves as a contract, roadmap, and accessibility gateway.
+                            Inaccessible syllabi disproportionately affect students with disabilities, international students, first-generation students, and neurodivergent learners.
+                        </p>
+                        <p class="small mb-3">
+                            Our accessibility checks are based on established standards from leading organizations:
+                        </p>
+                        <div class="row small">
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-file-earmark-text"></i> Document Accessibility Standards:</strong>
+                                <ul class="mb-2">
+                                    <li><strong>WCAG 2.1/2.2</strong> - International accessibility guidelines (W3C/WAI)</li>
+                                    <li><strong>Section 508</strong> - U.S. federal accessibility requirements</li>
+                                    <li><strong>ADA</strong> - Americans with Disabilities Act compliance</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-book"></i> Educational Best Practices:</strong>
+                                <ul class="mb-0">
+                                    <li><strong>UDL</strong> - Universal Design for Learning (CAST)</li>
+                                    <li><strong>Quality Matters</strong> - Course design standards</li>
+                                    <li><strong>AEM Center</strong> - Accessible Educational Materials</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mt-2"><i class="bi bi-fonts"></i> Font Usage</h6>
+                            <ul class="small">
+                                <li>Small font sizes (below 11pt)</li>
+                                <li>Decorative or inaccessible fonts</li>
+                                <li>Inconsistent font families</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-table"></i> Table Structure</h6>
+                            <ul class="small">
+                                <li>Empty table rows or columns</li>
+                                <li>Tables used for layout instead of data</li>
+                                <li>Missing table headers</li>
+                                <li>Missing scope declarations</li>
+                                <li>Missing table captions</li>
+                                <li>Merged cells affecting reading order</li>
+                                <li>Incorrect numeric alignment</li>
+                                <li>Confusing table reading order</li>
+                                <li>Embedded images in tables</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-palette"></i> Color & Contrast</h6>
+                            <ul class="small">
+                                <li>Low color contrast</li>
+                                <li>Color used as sole indicator of meaning</li>
+                                <li>Text over colored backgrounds</li>
+                                <li>Color-coded tables without text labels</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-link-45deg"></i> Links & Navigation</h6>
+                            <ul class="small">
+                                <li>Non-descriptive link text ("click here")</li>
+                                <li>Unstyled links (missing underline)</li>
+                                <li>Long URLs in text</li>
+                                <li>Links to PDFs</li>
+                                <li>Missing table of contents</li>
+                                <li>Missing bookmarks/internal navigation</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-list-ul"></i> Lists</h6>
+                            <ul class="small">
+                                <li>Inconsistent list hierarchy</li>
+                                <li>Lists used for layout</li>
+                            </ul>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mt-2"><i class="bi bi-text-paragraph"></i> Text Formatting</h6>
+                            <ul class="small">
+                                <li>Pseudo-tables (manual alignment with tabs/spaces)</li>
+                                <li>Underlined non-link text</li>
+                                <li>Insufficient line spacing</li>
+                                <li>Full text justification</li>
+                                <li>Large blocks of ALL CAPS text</li>
+                                <li>Excessive bold, italic, or underline</li>
+                                <li>Inconsistent formatting</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-book"></i> Readability</h6>
+                            <ul class="small">
+                                <li>Overly long sentences (>50 words)</li>
+                                <li>Numeric date formats (ambiguous dates)</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-image"></i> Images</h6>
+                            <ul class="small">
+                                <li>Missing alt text</li>
+                                <li>Questionable decorative image marking</li>
+                                <li>Images containing text or schedules</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-file-earmark-text"></i> Document Properties</h6>
+                            <ul class="small">
+                                <li>Missing document title</li>
+                                <li>Missing language setting</li>
+                                <li>Multiple languages without proper tagging</li>
+                            </ul>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-stars"></i> Content Quality</h6>
+                            <ul class="small">
+                                <li>Copied content with broken formatting</li>
+                                <li>Footnotes instead of inline explanations</li>
+                                <li>Visual indicators without text equivalents</li>
+                                <li>Math expressions without accessible markup</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3 mb-0" role="alert">
+                        <i class="bi bi-shield-check"></i> <strong>Legal Compliance:</strong> These checks help institutions comply with federal accessibility laws (ADA, Section 504, Section 508).
+                    </div>
+                </div>
+            </div>
 
             <div class="accordion" id="issuesAccordion">
                 {% for category, count in results.category_counts.items() %}
@@ -246,19 +349,22 @@
         </div>
         {% endif %}
 
-        <!-- Full Text Report (Collapsible) -->
+        <!-- Missing Sections -->
+        {% if results.missing_sections %}
         <div class="report-section">
-            <h4 class="mb-3"><i class="bi bi-file-text"></i> Complete Text Report</h4>
-            <p class="text-muted mb-3">
-                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#fullReport" aria-expanded="false" aria-controls="fullReport">
-                    <i class="bi bi-chevron-down"></i> Show/Hide Full Report
-                </button>
-            </p>
-            <div class="collapse" id="fullReport">
-                <div class="report-text">{{ results.report_text }}</div>
+            <h4 class="mb-3"><i class="bi bi-exclamation-triangle text-warning"></i> Missing Required Sections</h4>
+            <div class="alert alert-warning">
+                The following {{ results.missing_sections|length }} required section(s) are missing from your syllabus:
             </div>
+            <ul class="list-group">
+                {% for section in results.missing_sections %}
+                <li class="list-group-item">
+                    <i class="bi bi-x-circle text-danger"></i> {{ section }}
+                </li>
+                {% endfor %}
+            </ul>
         </div>
+        {% endif %}
 
         <!-- Actions -->
         <div class="text-center mb-5">
@@ -272,7 +378,7 @@
     </div>
 
     <footer class="text-center text-muted py-4">
-        <p>&copy; 2025 Syllabus Accessibility Checker | Helping create inclusive course materials</p>
+        <p>&copy; 2025 Syllabus Checker | Helping create quality, accessible course materials</p>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

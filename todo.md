@@ -8,6 +8,7 @@ Legend
 	•	✅ = Currently Implemented (algorithmic check)
 	•	🤖 = Better Suited for LLM Analysis (semantic/content-based)
 	•	⏳ = Not Yet Implemented (but feasible algorithmically)
+	•	N/A = Out of scope for this tool
 
 ⸻
 
@@ -195,8 +196,7 @@ Checks
 	•	✅ Detect missing document title/metadata tags
 	•	✅ Detect missing or incorrect document language setting
 	•	✅ Identify multiple languages without proper tagging
-	•	⏳ Flag exported PDFs with missing tags, bookmarks, OCR, or correct reading order
-	•	⏳ Identify untagged mathematical expressions
+	•	✅ Identify untagged mathematical expressions
 
 ⸻
 
@@ -218,10 +218,10 @@ Checks
 	•	🤖 Flagging tone and inclusivity issues in policy language
 	•	🤖 Highlighting policies that may violate accessibility guidance or confuse students
 	•	🤖 Detect inconsistent formatting across repeated syllabus elements
-	•	⏳ Identify copied content with broken or inconsistent style application
-	•	⏳ Flag footnotes used instead of inline explanations
-	•	⏳ Detect visual indicators of due dates or significance without text equivalents
-	•	⏳ Identify math expressions not using accessible markup (MathML or equivalent)
+	•	✅ Identify copied content with broken or inconsistent style application
+	•	✅ Flag footnotes used instead of inline explanations
+	•	✅ Detect visual indicators of due dates or significance without text equivalents
+	•	✅ Identify math expressions not using accessible markup (MathML or equivalent)
 
 ⸻
 
@@ -233,7 +233,7 @@ Implementation Notes
 
 ⸻
 
-Summary: 42 Algorithmic Checks Currently Implemented
+Summary: 46 Algorithmic Checks Currently Implemented
 
 1. Section Completeness (1)
 2. Tables (10)
@@ -244,4 +244,5 @@ Summary: 42 Algorithmic Checks Currently Implemented
 7. Document Properties (3)
 8. Readability (2 - long sentences, numeric date formats)
 9. Images (4 - alt text, decorative marking, text content detection)
-10. Other (1)
+10. Content Quality (4 - copied content, footnotes, visual indicators, math expressions)
+11. Other (1)
