@@ -2592,23 +2592,9 @@ class SyllabusChecker:
 
         # Check each list group for potential layout misuse
         for list_group in consecutive_lists:
-            # Check if list has only 1 item (likely used for indentation)
-            if len(list_group) == 1:
-                para_info = list_group[0]
-                text = para_info.paragraph.text.strip()
-
-                # If single list item is very long, it's likely layout abuse
-                if len(text) > 200:
-                    issue = AccessibilityIssue(
-                        issue_type="LAYOUT_LIST",
-                        description=f"Single-item list with long text (likely used for indentation): \"{text[:60]}...\"",
-                        location=para_info.location,
-                        para_info=para_info
-                    )
-                    issues.append(issue)
-
-            # Check if all items are very dissimilar in length (indicates layout use)
-            elif len(list_group) >= 3:
+            # Check if items are very dissimilar in length (indicates layout use)
+            # Only check lists with 3+ items where we can detect patterns
+            if len(list_group) >= 3:
                 lengths = [len(p.paragraph.text.strip()) for p in list_group]
                 avg_length = sum(lengths) / len(lengths)
 
@@ -3237,7 +3223,8 @@ class SyllabusChecker:
         self.issues.extend(self.check_non_descriptive_links())
         self.issues.extend(self.check_unstyled_links())
         self.issues.extend(self.check_long_urls())
-        self.issues.extend(self.check_pdf_links())
+        # PDF link check removed - users typically can't control accessibility of institutional PDFs
+        # self.issues.extend(self.check_pdf_links())
         self.issues.extend(self.check_missing_toc())
         self.issues.extend(self.check_missing_bookmarks())
         self.issues.extend(self.check_nested_list_hierarchy())
@@ -3773,20 +3760,7 @@ class SyllabusChecker:
             report_lines.append("[OK] No excessively long URLs detected")
         report_lines.append("")
 
-        # PDF links
-        report_lines.append("ACCESSIBILITY: LINKS TO PDFs")
-        report_lines.append("-" * 80)
-        pdf_link_issues = [issue for issue in self.issues if issue.issue_type == "PDF_LINK"]
-        if pdf_link_issues:
-            report_lines.append(f"[X] Found {len(pdf_link_issues)} link(s) to external PDF files:")
-            report_lines.append("    (Verify that linked PDFs are accessible and properly tagged)")
-            for issue in pdf_link_issues[:5]:
-                report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(pdf_link_issues) > 5:
-                report_lines.append(f"  ... and {len(pdf_link_issues) - 5} more")
-        else:
-            report_lines.append("[OK] No links to external PDFs detected")
-        report_lines.append("")
+        # PDF link check removed - users typically can't control accessibility of institutional PDFs
 
         # Table of contents
         report_lines.append("ACCESSIBILITY: TABLE OF CONTENTS")

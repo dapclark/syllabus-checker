@@ -139,11 +139,10 @@ https://www.w3.org/WAI/WCAG21/Understanding/multiple-ways.html
 https://www.usability.gov/
 
 Checks
-	•	✅ Flag hyperlinks with non-descriptive text (e.g., “click here”)
+	•	✅ Flag hyperlinks with non-descriptive text (e.g., "click here")
 	•	✅ Identify links styled as normal text (missing underline/color)
 	•	✅ Identify underlined non-link text
 	•	✅ Detect excessively long URLs
-	•	✅ Identify links to inaccessible external PDFs
 	•	✅ Detect missing table of contents in longer documents
 	•	✅ Detect missing internal navigation/bookmarks
 
@@ -233,14 +232,14 @@ Implementation Notes
 
 ⸻
 
-Summary: 46 Algorithmic Checks Currently Implemented
+Summary: 44 Algorithmic Checks Currently Implemented
 
 1. Section Completeness (1)
 2. Tables (10)
-3. Lists (3)
+3. Lists (2 - inconsistent hierarchy, layout detection based on variance)
 4. Typography & Text (8 - including excessive/inconsistent formatting)
 5. Color & Contrast (3)
-6. Links & Navigation (7)
+6. Links & Navigation (6 - non-descriptive links, unstyled links, long URLs, missing TOC, missing bookmarks)
 7. Document Properties (3)
 8. Readability (2 - long sentences, numeric date formats)
 9. Images (4 - alt text, decorative marking, text content detection)

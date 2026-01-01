@@ -151,14 +151,14 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="stat-box mb-3">
-                                    <h3>{{ results.missing_sections|length }}</h3>
-                                    <p>Missing Sections</p>
+                                    <h3>{{ results.total_issues - results.missing_sections|length }}</h3>
+                                    <p>Accessibility Issues</p>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="stat-box mb-3">
-                                    <h3>{{ results.category_counts|length }}</h3>
-                                    <p>Issue Categories</p>
+                                    <h3>{{ results.missing_sections|length }}</h3>
+                                    <p>Missing Required Sections</p>
                                 </div>
                             </div>
                         </div>
@@ -181,17 +181,25 @@
         <!-- Accessibility Issues with Expandable Details -->
         {% if results.category_counts %}
         <div class="report-section">
-            <h4 class="mb-3"><i class="bi bi-universal-access"></i> Accessibility Issues</h4>
-            <p class="text-muted mb-3">
-                Click on each category to expand and see detailed information about the accessibility issues found.
-            </p>
+            <h4 class="mb-3">
+                <i class="bi bi-universal-access"></i> Accessibility Issues
+                <button class="btn btn-sm btn-outline-secondary float-end" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#accessibilityIssuesContent" aria-expanded="false" aria-controls="accessibilityIssuesContent">
+                    <i class="bi bi-chevron-down"></i> Show/Hide
+                </button>
+            </h4>
 
-            <!-- What We Check For - Expandable Reference -->
+            <div class="collapse" id="accessibilityIssuesContent">
+                <p class="text-muted mb-3">
+                    Click on each category to expand and see detailed information about the accessibility issues found.
+                </p>
+
+                <!-- What We Check For - Expandable Reference -->
             <div class="alert alert-light border mb-4">
                 <p class="text-center mb-2">
                     <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
                             data-bs-target="#accessibilityReference" aria-expanded="false" aria-controls="accessibilityReference">
-                        <i class="bi bi-info-circle"></i> What We Check For (46+ Accessibility Checks)
+                        <i class="bi bi-info-circle"></i> What We Check For (44+ Accessibility Checks)
                     </button>
                 </p>
 
@@ -260,7 +268,6 @@
                                 <li>Non-descriptive link text ("click here")</li>
                                 <li>Unstyled links (missing underline)</li>
                                 <li>Long URLs in text</li>
-                                <li>Links to PDFs</li>
                                 <li>Missing table of contents</li>
                                 <li>Missing bookmarks/internal navigation</li>
                             </ul>
@@ -346,23 +353,33 @@
                 </div>
                 {% endfor %}
             </div>
+            </div>
         </div>
         {% endif %}
 
         <!-- Missing Sections -->
         {% if results.missing_sections %}
         <div class="report-section">
-            <h4 class="mb-3"><i class="bi bi-exclamation-triangle text-warning"></i> Missing Required Sections</h4>
-            <div class="alert alert-warning">
-                The following {{ results.missing_sections|length }} required section(s) are missing from your syllabus:
+            <h4 class="mb-3">
+                <i class="bi bi-exclamation-triangle text-warning"></i> Missing Required Sections
+                <button class="btn btn-sm btn-outline-secondary float-end" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#missingSectionsContent" aria-expanded="false" aria-controls="missingSectionsContent">
+                    <i class="bi bi-chevron-down"></i> Show/Hide
+                </button>
+            </h4>
+
+            <div class="collapse" id="missingSectionsContent">
+                <div class="alert alert-warning">
+                    The following {{ results.missing_sections|length }} required section(s) are missing from your syllabus:
+                </div>
+                <ul class="list-group">
+                    {% for section in results.missing_sections %}
+                    <li class="list-group-item">
+                        <i class="bi bi-x-circle text-danger"></i> {{ section }}
+                    </li>
+                    {% endfor %}
+                </ul>
             </div>
-            <ul class="list-group">
-                {% for section in results.missing_sections %}
-                <li class="list-group-item">
-                    <i class="bi bi-x-circle text-danger"></i> {{ section }}
-                </li>
-                {% endfor %}
-            </ul>
         </div>
         {% endif %}
 

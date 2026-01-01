@@ -49,6 +49,19 @@ Proper list items: 56
 Manual list items: 0
 [OK] List formatting looks good
 
+ACCESSIBILITY: NESTED LIST HIERARCHY
+--------------------------------------------------------------------------------
+[OK] List hierarchy is consistent
+
+ACCESSIBILITY: LISTS USED FOR LAYOUT
+--------------------------------------------------------------------------------
+[X] Found 4 list(s) potentially used for layout/indentation:
+    (Lists should be used for semantic grouping, not layout)
+  - Paragraph 10: Single-item list with long text (likely used for indentation): "Make relevant connections clear. When the syllabus clearly e..."
+  - Paragraph 12: Single-item list with long text (likely used for indentation): "Transparency builds trust and engagement, not just in course..."
+  - Paragraph 33: Single-item list with long text (likely used for indentation): "Connect students to resources. We provide a newly developed ..."
+  - Paragraph 126: Single-item list with long text (likely used for indentation): "UWM Syllabus link: Include a link to the Syllabus Links page..."
+
 ACCESSIBILITY: MANUAL ALIGNMENT (PSEUDO-TABLES)
 --------------------------------------------------------------------------------
 [OK] No manual alignment detected
@@ -81,6 +94,42 @@ ACCESSIBILITY: EMPTY TABLE ROWS/COLUMNS
 --------------------------------------------------------------------------------
 [OK] No empty table rows or columns detected
 
+ACCESSIBILITY: TABLE SCOPE DECLARATIONS
+--------------------------------------------------------------------------------
+[X] Found 4 table(s) missing proper scope declarations:
+  - Table 1 has header row but may lack proper scope declarations for screen readers (consider using Table Tools > Layout > Repeat Header Rows)
+  - Table 2 has header row but may lack proper scope declarations for screen readers (consider using Table Tools > Layout > Repeat Header Rows)
+  - Table 3 has header row but may lack proper scope declarations for screen readers (consider using Table Tools > Layout > Repeat Header Rows)
+  - Table 4 has header row but may lack proper scope declarations for screen readers (consider using Table Tools > Layout > Repeat Header Rows)
+
+ACCESSIBILITY: TABLE CAPTIONS/DESCRIPTIONS
+--------------------------------------------------------------------------------
+[X] Found 4 table(s) missing captions or descriptions:
+  - Table 1 is missing a caption or description (Right-click table > Table Properties > Alt Text). Preview: "Assignment/Quan | Where Submitted | Date(s) Due..."
+  - Table 2 is missing a caption or description (Right-click table > Table Properties > Alt Text). Preview: "Grade | Scale..."
+  - Table 3 is missing a caption or description (Right-click table > Table Properties > Alt Text). Preview: "Event | Date..."
+  - Table 4 is missing a caption or description (Right-click table > Table Properties > Alt Text). Preview: "Date | Preparation | Assignments Due..."
+
+ACCESSIBILITY: TABLE MERGED CELLS
+--------------------------------------------------------------------------------
+[OK] No merged cells detected
+
+ACCESSIBILITY: TABLE NUMERIC ALIGNMENT
+--------------------------------------------------------------------------------
+[OK] Numeric data alignment is consistent
+
+ACCESSIBILITY: TABLE READING ORDER
+--------------------------------------------------------------------------------
+[OK] Table reading order appears logical
+
+ACCESSIBILITY: TABLE COLOR-CODED MEANING
+--------------------------------------------------------------------------------
+[OK] No color-coded meaning detected in tables
+
+ACCESSIBILITY: TABLE EMBEDDED IMAGES
+--------------------------------------------------------------------------------
+[OK] No embedded images in table cells
+
 ACCESSIBILITY: DOCUMENT METADATA
 --------------------------------------------------------------------------------
 [X] Document is missing a title in metadata (File > Info > Properties)
@@ -109,6 +158,18 @@ ACCESSIBILITY: ALL CAPS BLOCKS
 --------------------------------------------------------------------------------
 [OK] No large ALL CAPS blocks detected
 
+ACCESSIBILITY: EXCESSIVE/INCONSISTENT FORMATTING
+--------------------------------------------------------------------------------
+[X] Found 6 paragraph(s) with excessive bold:
+  - Table 1, Row 1, Cell 1: Paragraph has 100% bold text (excessive use reduces emphasis): "Assignment/Quantity"
+  - Table 1, Row 1, Cell 2: Paragraph has 100% bold text (excessive use reduces emphasis): "Where Submitted?"
+  - Table 1, Row 1, Cell 3: Paragraph has 100% bold text (excessive use reduces emphasis): "Date(s) Due"
+[X] Found 53 paragraph(s) with excessive italics:
+  - Paragraph 37: Paragraph has 60% italic text (excessive use reduces readability): "Credits: < - - XX - - >"
+  - Paragraph 38: Paragraph has 75% italic text (excessive use reduces readability): "Meeting Times: < - - MWF 10:00-11:30 (or “Asynchronous”) - -..."
+  - Paragraph 39: Paragraph has 86% italic text (excessive use reduces readability): "Location: < - - Building, Room number (or “Canvas” and/or “H..."
+    (Excessive or inconsistent formatting reduces effectiveness and readability)
+
 ACCESSIBILITY: NON-DESCRIPTIVE LINKS
 --------------------------------------------------------------------------------
 [OK] No non-descriptive links detected
@@ -116,6 +177,72 @@ ACCESSIBILITY: NON-DESCRIPTIVE LINKS
 ACCESSIBILITY: HYPERLINKS
 --------------------------------------------------------------------------------
 [i] No hyperlinks detected
+
+ACCESSIBILITY: UNSTYLED LINKS
+--------------------------------------------------------------------------------
+[X] Found 66 link(s) styled as normal text:
+    (Links should be underlined and/or colored to be distinguishable)
+  - Paragraph 6: Link styled as normal text (no underline or color): "statement of welcome in the syllabusstat..."
+  - Paragraph 6: Link styled as normal text (no underline or color): "welcome messagewelcome messagewelcome me..."
+  - Paragraph 6: Link styled as normal text (no underline or color): "assistance for writing a welcome message..."
+  - Paragraph 8: Link styled as normal text (no underline or color): "informed of any required readings or tex..."
+  - Paragraph 8: Link styled as normal text (no underline or color): "AI Syllabus statementAI Syllabus stateme..."
+  ... and 61 more
+
+ACCESSIBILITY: LONG URLs
+--------------------------------------------------------------------------------
+[X] Found 9 excessively long URL(s):
+    (Consider using descriptive link text instead of displaying long URLs)
+  - Paragraph 22: Excessively long URL (143 chars): "Accessibility CheckerAccessibility Check..." -> https://support.microsoft.com/en-us/office/make-yo...
+  - Paragraph 22: Excessively long URL (143 chars): "Make Your Word Documents Accessible to P..." -> https://support.microsoft.com/en-us/office/make-yo...
+  - Paragraph 31: Excessively long URL (165 chars): "Start with Your Syllabus: Applying Unive..." -> file:///C:\Users\candres\AppData\Local\Microsoft\W...
+  - Paragraph 58: Excessively long URL (122 chars): "Course Objectives & Learning OutcomesCou..." -> https://resources.depaul.edu/teaching-commons/teac...
+  - Paragraph 64: Excessively long URL (154 chars): "GER Criteria Syllabus TemplateGER Criter..." -> https://uwm.edu/secu/governance/faculty/standing-c...
+  ... and 4 more
+
+ACCESSIBILITY: LINKS TO PDFs
+--------------------------------------------------------------------------------
+[X] Found 4 link(s) to external PDF files:
+    (Verify that linked PDFs are accessible and properly tagged)
+  - Paragraph 20: Link to external PDF (verify PDF is accessible): "UWM Uniform Syllabus PolicyUWM Uniform S..." -> https://apps.uwm.edu/secu-policies/storage/faculty/1895R6%20...
+  - Paragraph 30: Link to external PDF (verify PDF is accessible): "Checklist for Designing an Inclusive Syl..." -> https://offices.mtholyoke.edu/sites/default/files/TLI-TEFD-C...
+  - Paragraph 90: Link to external PDF (verify PDF is accessible): " UWM Credit Hour Policy UWM Credit Hour ..." -> https://apps.uwm.edu/secu-policies/storage/faculty/2838%20Cr...
+  - Paragraph 99: Link to external PDF (verify PDF is accessible): "Faculty Document 3196R1Faculty Document ..." -> https://apps.uwm.edu/secu-policies/storage/faculty/3196R2%20...
+
+ACCESSIBILITY: TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+[X] Long document (~9 pages, 298 paragraphs) is missing a Table of Contents for navigation
+    (Long documents benefit from a table of contents for navigation)
+
+ACCESSIBILITY: INTERNAL NAVIGATION/BOOKMARKS
+--------------------------------------------------------------------------------
+[OK] Document has internal navigation or is short enough not to require it
+
+ACCESSIBILITY: SENTENCE LENGTH
+--------------------------------------------------------------------------------
+[X] Found 5 overly long sentence(s) (>35 words):
+    (Shorter sentences improve readability and comprehension)
+  - Paragraph 16: Sentence has 45 words (>35 recommended): "UWM students, in their top teaching tips, are most appreciat..."
+  - Paragraph 94: Sentence has 36 words (>35 recommended): "< - - Provide details on any technology requirements; this i..."
+  - Paragraph 126: Sentence has 48 words (>35 recommended): "UWM Syllabus link: Include a link to the Syllabus Links page..."
+  - Paragraph 178: Sentence has 56 words (>35 recommended): "< - - Instructors are encouraged to close the syllabus with ..."
+  - Paragraph 181: Sentence has 38 words (>35 recommended): "It is also critical to student success to provide students w..."
+
+ACCESSIBILITY: IMAGE ALT TEXT
+--------------------------------------------------------------------------------
+[OK] All images have alt text or no images detected
+
+ACCESSIBILITY: DECORATIVE IMAGE MARKING
+--------------------------------------------------------------------------------
+[OK] Decorative image marking appears appropriate
+
+ACCESSIBILITY: IMAGES CONTAINING TEXT/SCHEDULES
+--------------------------------------------------------------------------------
+[OK] No images appear to contain text content
+
+ACCESSIBILITY: DATE FORMATS
+--------------------------------------------------------------------------------
+[OK] No ambiguous numeric date formats detected
 
 ACCESSIBILITY: IMAGES
 --------------------------------------------------------------------------------
