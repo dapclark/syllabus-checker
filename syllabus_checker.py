@@ -9,12 +9,14 @@ Generates both a text report and a marked-up Word document with tracked issues
 
 import argparse
 import re
+import os
 from typing import List, Dict, Tuple, Optional
 from docx import Document
 from docx.shared import RGBColor, Pt
 from docx.enum.text import WD_COLOR_INDEX
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from openai import OpenAI
 
 
 def calculate_relative_luminance(rgb: Tuple[int, int, int]) -> float:
@@ -3364,6 +3366,152 @@ class SyllabusChecker:
                         run.font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
 
         marked_doc.save(output_path)
+
+    def analyze_growth_mindset_and_belonging(self) -> Dict[str, str]:
+        """
+        Use OpenAI GPT API to analyze syllabus for growth mindset and belonging cues.
+        Returns a dictionary with analysis for each of the 6 core questions.
+        """
+        # Extract full syllabus text
+        syllabus_text = []
+
+        # Get text from all paragraphs
+        for para_info in self.all_paragraphs:
+            text = para_info.paragraph.text.strip()
+            if text:
+                syllabus_text.append(text)
+
+        # Join all text
+        full_text = "\n\n".join(syllabus_text)
+
+        # Get API key from environment
+        api_key = os.environ.get('OPENAI_API_KEY')
+        if not api_key:
+            return {
+                'error': 'OPENAI_API_KEY environment variable not set. Please configure your API key in .env file to enable growth mindset analysis.',
+                'status': 'error'
+            }
+
+        try:
+            client = OpenAI(api_key=api_key)
+
+            # Create comprehensive prompt based on the provided guidance
+            prompt = f"""You are an expert in educational equity and student-centered course design. Your task is to review a course syllabus and evaluate how well it communicates growth mindset and promotes student belonging.
+
+SYLLABUS TEXT:
+{full_text}
+
+Please analyze this syllabus according to the following 6 core questions. For each question, provide:
+1. A brief assessment (Strong / Moderate / Weak / Not Addressed)
+2. Specific evidence from the syllabus (quote relevant passages)
+3. Concrete suggestions for improvement with example language
+
+**CORE QUESTION 1: Growth Mindset**
+Does this syllabus communicate that the instructor has a "growth mindset" rather than a "fixed mindset" about students' abilities?
+
+Growth mindset conveys that students can grow their abilities through effort, strategies, and help-seeking. Look for:
+- Language about developing skills and abilities over time
+- Assurances that students can succeed with effort and support
+- References to learning as a process vs. innate talent
+- Avoid fixed mindset language like "this course is only for quick learners"
+
+**CORE QUESTION 2: Normalizing Challenge**
+Do the messages communicate that it is normal to be challenged by course material, and that this is not a sign that a student is not capable or does not belong?
+
+Look for:
+- Acknowledgment that students may struggle or face setbacks
+- Framing challenges as part of learning, not indicators of inability
+- Instructor/TA stories about overcoming their own challenges
+- Guidance on what to do when struggling (e.g., seek help, use resources)
+
+**CORE QUESTION 3: Instructor Care**
+Does the syllabus communicate that the instructor and instructional team care about students' success?
+
+Look for:
+- Personal language about caring for student success
+- Accessible office hours (called "student drop-in hours")
+- Responsive email policies
+- Personal info about TAs to make them more approachable
+- Acknowledgment of large class sizes with assurances of care
+
+**CORE QUESTION 4: Valuing Diversity**
+Does the syllabus communicate that diversity is valued in the classroom?
+
+Look for:
+- Land acknowledgments
+- Inclusive course conduct policies
+- Recognition of diverse student backgrounds and experiences
+- Caregiver/family responsibility policies
+- Respectful disagreement and civil discourse expectations
+- Statements about creating welcoming environment for all
+
+**CORE QUESTION 5: Normalizing Student Challenges**
+Does the syllabus normalize challenges that students often face in college and connect students with resources?
+
+Look for:
+- Acknowledgment of financial strain (textbook affordability, food insecurity)
+- Mental health and counseling services presented without stigma
+- Disability/accessibility services normalized
+- Work-life balance and nontraditional student support
+- Resources presented as standard tools for success, not remedial
+
+**CORE QUESTION 6: Normalizing Academic Support Use**
+Does the syllabus communicate that utilizing academic resources is a standard part of succeeding?
+
+Look for:
+- Office hours framed as "student drop-in hours"
+- Tutoring/academic support presented as normal, not remedial
+- Multiple access points (in-person, virtual, flexible timing)
+- Course chat/discussion forums for questions
+- Language like "most students access these supports"
+
+IMPORTANT FORMATTING INSTRUCTIONS:
+- Structure your response with clear headings for each of the 6 core questions
+- Use this exact format for each section:
+
+## QUESTION [NUMBER]: [Brief Title]
+**Assessment:** [Strong/Moderate/Weak/Not Addressed]
+
+**Evidence:**
+[Quote specific passages or note absence]
+
+**Suggestions:**
+[Provide 2-3 concrete, actionable improvements with example language]
+
+---
+
+Please provide a thorough, evidence-based analysis that will help the instructor improve their syllabus to better support all students, especially those from historically marginalized groups."""
+
+            # Call OpenAI API
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert in educational equity and student-centered course design, specializing in analyzing syllabi for growth mindset and belonging cues based on research from the Student Experience Project."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                max_tokens=4000,
+                temperature=0.7
+            )
+
+            # Extract the response text
+            analysis_text = response.choices[0].message.content
+
+            return {
+                'analysis': analysis_text,
+                'status': 'success'
+            }
+
+        except Exception as e:
+            return {
+                'error': f'Error calling OpenAI API: {str(e)}',
+                'status': 'error'
+            }
 
     def generate_report(self) -> str:
         """Generate comprehensive assessment report organized by category"""

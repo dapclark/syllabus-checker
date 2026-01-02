@@ -10,11 +10,19 @@ from syllabus_checker import SyllabusChecker
 import tempfile
 import shutil
 from datetime import datetime
+from dotenv import load_dotenv
+import markdown
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'syllabus-checker-secret-key-change-in-production')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', tempfile.mkdtemp())
+
+# Ensure upload folder exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 ALLOWED_EXTENSIONS = {'docx'}
 
@@ -64,6 +72,9 @@ def upload_file():
         heading_check = checker.check_heading_structure()
         table_check = checker.check_table_usage()
         list_check = checker.check_list_usage()
+
+        # Run growth mindset and belonging analysis
+        growth_mindset_analysis = checker.analyze_growth_mindset_and_belonging()
 
         # Generate report (generate_report already returns a joined string)
         report_text = checker.generate_report()
@@ -343,6 +354,14 @@ def upload_file():
                 category_counts['Lists'] = 0
             category_counts['Lists'] += len(list_check.get('issues', []))
 
+        # Convert growth mindset analysis markdown to HTML
+        if growth_mindset_analysis.get('status') == 'success' and 'analysis' in growth_mindset_analysis:
+            # Convert markdown to HTML with extra extensions for better formatting
+            growth_mindset_analysis['analysis_html'] = markdown.markdown(
+                growth_mindset_analysis['analysis'],
+                extensions=['extra', 'nl2br', 'sane_lists']
+            )
+
         results = {
             'filename': filename,
             'total_issues': total_web_issues,  # Match the text report calculation
@@ -354,7 +373,8 @@ def upload_file():
             'marked_file': marked_filename,
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'summary_message': summary_message,
-            'summary_status': summary_status
+            'summary_status': summary_status,
+            'growth_mindset_analysis': growth_mindset_analysis
         }
 
         return render_template('results.html', results=results)
