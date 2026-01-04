@@ -19,7 +19,7 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'syllabus-checker-secret-key-change-in-production')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
-app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', tempfile.mkdtemp())
+app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', '/tmp/syllabus_checker_uploads')
 
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -53,6 +53,9 @@ def upload_file():
         return redirect(url_for('index'))
 
     try:
+        # Ensure upload folder exists
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
         # Save uploaded file
         filename = secure_filename(file.filename)
         upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -79,10 +82,10 @@ def upload_file():
         # Generate report (generate_report already returns a joined string)
         report_text = checker.generate_report()
 
-        # Create marked document
+        # Create marked document with missing sections and growth mindset recommendations
         marked_filename = f"{os.path.splitext(filename)[0]}_marked.docx"
         marked_path = os.path.join(app.config['UPLOAD_FOLDER'], marked_filename)
-        checker.create_marked_document(marked_path)
+        checker.create_marked_document(marked_path, missing_sections, growth_mindset_analysis)
 
         # Define categories that group related issue types
         category_mapping = {

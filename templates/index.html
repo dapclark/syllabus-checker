@@ -8,14 +8,14 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         body {
-            background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #ffbd00 100%);
+            background-color: #f5f7fa;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .container {
-            max-width: 800px;
+        .navbar {
+            background: linear-gradient(135deg, #000000 0%, #2a2a2a 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            border-bottom: 3px solid #ffbd00;
         }
         .card {
             border-radius: 15px;
@@ -25,7 +25,7 @@
         .drop-zone {
             border: 3px dashed #ffbd00;
             border-radius: 10px;
-            padding: 60px;
+            padding: 30px;
             text-align: center;
             background-color: #f8f9fa;
             transition: all 0.3s ease;
@@ -37,9 +37,13 @@
             transform: scale(1.02);
         }
         .drop-zone i {
-            font-size: 4rem;
+            font-size: 2.5rem;
             color: #ffbd00;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+        }
+        .drop-zone h4 {
+            font-size: 1.3rem;
+            margin-bottom: 5px;
         }
         .btn-primary {
             background: #ffbd00;
@@ -58,10 +62,9 @@
             box-shadow: 0 5px 15px rgba(255, 189, 0, 0.4);
         }
         h1 {
-            color: #ffbd00;
+            color: #000000;
             font-weight: 700;
-            margin-bottom: 30px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            margin-bottom: 20px;
         }
         .file-info {
             margin-top: 20px;
@@ -72,7 +75,7 @@
             display: none;
         }
         .feature-list {
-            color: #ffbd00;
+            color: #333;
             margin-top: 30px;
         }
         .feature-list li {
@@ -84,23 +87,85 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="text-center">📄 Syllabus Checker</h1>
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark mb-4">
+        <div class="container">
+            <span class="navbar-brand mb-0 h1" style="color: #ffbd00; font-weight: 700;">
+                📄 Syllabus Checker
+            </span>
+        </div>
+    </nav>
 
-        <!-- Comprehensive Checks List -->
-        <div class="card mt-4" style="border: 2px solid #ffbd00;">
+    <div class="container">
+        <h1 class="text-center mb-2">Upload Your Syllabus</h1>
+        <p class="text-center text-muted mb-4">
+            Comprehensive analysis for <strong>accessibility</strong>, <strong>required content</strong>, and <strong>student belonging</strong>
+        </p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Upload Form -->
+        <div class="card mb-3">
+            <div class="card-body p-3">
+                <form id="uploadForm" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+                    <div class="drop-zone" id="dropZone">
+                        <i class="bi bi-cloud-upload"></i>
+                        <h4>Drag & Drop Your Syllabus Here</h4>
+                        <p class="text-muted mb-1">or click to browse</p>
+                        <p class="text-muted small mb-0">Accepts: .docx files (max 16MB)</p>
+                        <input type="file" name="file" id="fileInput" accept=".docx" hidden>
+                    </div>
+
+                    <div class="file-info" id="fileInfo">
+                        <i class="bi bi-file-earmark-word text-primary"></i>
+                        <strong>Selected file:</strong> <span id="fileName"></span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary float-end" onclick="clearFile()">
+                            <i class="bi bi-x"></i> Clear
+                        </button>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                            <i class="bi bi-check-circle"></i> Analyze My Syllabus
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Three Types of Checks -->
+        <div class="card" style="border: 2px solid #ffbd00;">
             <div class="card-body">
                 <h5 class="card-title text-center mb-3">
-                    <i class="bi bi-list-check"></i> What We Check For (44+ Accessibility Checks)
+                    <i class="bi bi-list-check"></i> Three Types of Feedback
                 </h5>
-                <p class="text-center text-muted mb-3">
-                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#fullChecksList" aria-expanded="false" aria-controls="fullChecksList">
-                        <i class="bi bi-chevron-down"></i> Show/Hide Complete List
-                    </button>
-                </p>
 
-                <div class="collapse" id="fullChecksList">
+                <!-- 1. Accessibility Checks -->
+                <div class="mb-3">
+                    <h6 class="fw-bold mb-2">
+                        <i class="bi bi-universal-access text-primary"></i> 1. Accessibility Checks (44+)
+                    </h6>
+                    <p class="small text-muted mb-2">
+                        Ensures your syllabus is accessible to all students, including those using screen readers or assistive technologies.
+                    </p>
+                    <p class="text-center mb-2">
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#accessibilityChecksList" aria-expanded="false" aria-controls="accessibilityChecksList">
+                            <i class="bi bi-chevron-down"></i> Show/Hide Complete List
+                        </button>
+                    </p>
+                </div>
+
+                <div class="collapse" id="accessibilityChecksList">
                     <!-- Introduction and Standards -->
                     <div class="alert alert-light border mb-4">
                         <h6 class="fw-bold mb-2"><i class="bi bi-mortarboard"></i> Why Syllabus Accessibility Matters</h6>
@@ -219,73 +284,155 @@
                     </div>
 
                     <div class="alert alert-warning mt-3 mb-0" role="alert">
-                        <i class="bi bi-shield-check"></i> <strong>Legal Compliance:</strong> These checks help institutions comply with federal accessibility laws (ADA, Section 504, Section 508). <strong>Plus:</strong> We check for missing required syllabus sections like instructor information, course outcomes, grading policies, and accessibility statements.
+                        <i class="bi bi-shield-check"></i> <strong>Legal Compliance:</strong> These checks help institutions comply with federal accessibility laws (ADA, Section 504, Section 508).
                     </div>
                 </div>
+
+                <hr class="my-4">
+
+                <!-- 2. Missing Required Sections -->
+                <div class="mb-3">
+                    <h6 class="fw-bold mb-2">
+                        <i class="bi bi-exclamation-triangle text-warning"></i> 2. Missing Required Sections
+                    </h6>
+                    <p class="small text-muted mb-2">
+                        Verifies your syllabus includes essential information that students need and institutions require.
+                    </p>
+                    <p class="text-center mb-2">
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#requiredSectionsList" aria-expanded="false" aria-controls="requiredSectionsList">
+                            <i class="bi bi-chevron-down"></i> Show/Hide Required Sections
+                        </button>
+                    </p>
+                </div>
+
+                <div class="collapse" id="requiredSectionsList">
+                    <div class="alert alert-light border mb-3">
+                        <h6 class="fw-bold mb-2"><i class="bi bi-clipboard-check"></i> Required Syllabus Components</h6>
+                        <p class="small mb-3">
+                            Based on UWM syllabus guidelines and best practices from Quality Matters and the Association of American Colleges & Universities (AAC&U).
+                        </p>
+                        <div class="row small">
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-person"></i> Instructor & Course Information</strong>
+                                <ul class="mb-3">
+                                    <li>Instructor name and contact information</li>
+                                    <li>Office hours / student drop-in hours</li>
+                                    <li>Course title, number, and credits</li>
+                                    <li>Meeting times and location</li>
+                                </ul>
+
+                                <strong><i class="bi bi-bullseye"></i> Learning & Assessment</strong>
+                                <ul class="mb-3">
+                                    <li>Course description and objectives</li>
+                                    <li>Learning outcomes</li>
+                                    <li>Grading policy and scale</li>
+                                    <li>Assessment methods</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-calendar-check"></i> Course Structure</strong>
+                                <ul class="mb-3">
+                                    <li>Course schedule or calendar</li>
+                                    <li>Required textbooks and materials</li>
+                                    <li>Prerequisites (if applicable)</li>
+                                    <li>Attendance policy</li>
+                                </ul>
+
+                                <strong><i class="bi bi-shield-check"></i> Policies & Resources</strong>
+                                <ul class="mb-0">
+                                    <li>Academic integrity policy</li>
+                                    <li>Accessibility/disability services statement</li>
+                                    <li>Late work and makeup policy</li>
+                                    <li>Campus resources and support services</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- 3. Growth Mindset and Belonging -->
+                <div class="mb-3">
+                    <h6 class="fw-bold mb-2">
+                        <i class="bi bi-heart text-danger"></i> 3. Growth Mindset and Belonging Analysis
+                    </h6>
+                    <p class="small text-muted mb-2">
+                        AI-powered analysis of how well your syllabus promotes student belonging and communicates growth mindset.
+                    </p>
+                    <p class="text-center mb-2">
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#growthMindsetList" aria-expanded="false" aria-controls="growthMindsetList">
+                            <i class="bi bi-chevron-down"></i> Show/Hide Analysis Details
+                        </button>
+                    </p>
+                </div>
+
+                <div class="collapse" id="growthMindsetList">
+                    <div class="alert alert-light border mb-3">
+                        <h6 class="fw-bold mb-2"><i class="bi bi-lightbulb"></i> Research-Based Analysis</h6>
+                        <p class="small mb-3">
+                            Based on the <strong><a href="https://studentexperienceproject.org/" target="_blank">Student Experience Project</a></strong>,
+                            our AI analyzes your syllabus for messaging that impacts student success, especially for historically marginalized groups.
+                        </p>
+
+                        <strong class="small">The 6 Core Questions We Analyze:</strong>
+                        <ol class="small mt-2">
+                            <li class="mb-2">
+                                <strong>Growth Mindset:</strong> Does the syllabus communicate that students can grow their abilities through effort,
+                                strategies, and help-seeking? (vs. fixed ability beliefs)
+                            </li>
+                            <li class="mb-2">
+                                <strong>Normalizing Challenge:</strong> Does it acknowledge that being challenged is normal and not a sign
+                                of inability or not belonging?
+                            </li>
+                            <li class="mb-2">
+                                <strong>Instructor Care:</strong> Does the syllabus communicate that the instructor and teaching team
+                                genuinely care about students' success?
+                            </li>
+                            <li class="mb-2">
+                                <strong>Valuing Diversity:</strong> Does it signal that diverse perspectives, backgrounds, and identities
+                                are valued in the classroom?
+                            </li>
+                            <li class="mb-2">
+                                <strong>Normalizing Student Challenges:</strong> Does it acknowledge common challenges (financial strain,
+                                mental health, caregiving) and connect students with resources?
+                            </li>
+                            <li class="mb-2">
+                                <strong>Normalizing Academic Support:</strong> Does it present tutoring, office hours, and other resources
+                                as standard tools for success (not remedial)?
+                            </li>
+                        </ol>
+
+                        <p class="small mb-0 mt-3">
+                            <i class="bi bi-stars"></i> <strong>What You'll Get:</strong> For each question, you'll receive an assessment,
+                            evidence from your syllabus, suggestions for improvement, and <strong>ready-to-use text</strong> you can
+                            copy-paste directly into your syllabus.
+                        </p>
+                    </div>
+                </div>
+
             </div>
         </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <div class="card">
-            <div class="card-body p-4">
-                <h5 class="card-title mb-4">Upload Your Syllabus for Review</h5>
-
-                <form id="uploadForm" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
-                    <div class="drop-zone" id="dropZone">
-                        <i class="bi bi-cloud-upload"></i>
-                        <h4>Drag & Drop Your Syllabus Here</h4>
-                        <p class="text-muted">or click to browse</p>
-                        <p class="text-muted small">Accepts: .docx files (max 16MB)</p>
-                        <input type="file" name="file" id="fileInput" accept=".docx" hidden>
-                    </div>
-
-                    <div class="file-info" id="fileInfo">
-                        <i class="bi bi-file-earmark-word text-primary"></i>
-                        <strong>Selected file:</strong> <span id="fileName"></span>
-                        <button type="button" class="btn btn-sm btn-outline-secondary float-end" onclick="clearFile()">
-                            <i class="bi bi-x"></i> Clear
-                        </button>
-                    </div>
-
-                    <div class="text-center mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
-                            <i class="bi bi-check-circle"></i> Check Accessibility
-                        </button>
-                    </div>
-                </form>
-
-                <div class="mt-4 text-center">
-                    <small class="text-muted">
-                        This tool checks your syllabus for required sections and 44+ accessibility issues including:
-                        tables, headings, fonts, color contrast, images, date formats, and more.
-                    </small>
-                </div>
-            </div>
-        </div>
-
-        <div class="feature-list mt-4">
+        <div class="feature-list mt-3">
             <div class="row text-center">
-                <div class="col-md-4">
-                    <i class="bi bi-shield-check" style="font-size: 2rem;"></i>
-                    <p class="mt-2"><strong>44+ Checks</strong><br>Comprehensive accessibility testing</p>
+                <div class="col-md-3">
+                    <i class="bi bi-universal-access" style="font-size: 2rem;"></i>
+                    <p class="mt-2"><strong>Accessibility</strong><br>44+ automated checks</p>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
+                    <i class="bi bi-clipboard-check" style="font-size: 2rem;"></i>
+                    <p class="mt-2"><strong>Required Sections</strong><br>Essential content verification</p>
+                </div>
+                <div class="col-md-3">
+                    <i class="bi bi-heart" style="font-size: 2rem;"></i>
+                    <p class="mt-2"><strong>Growth Mindset</strong><br>AI-powered belonging analysis</p>
+                </div>
+                <div class="col-md-3">
                     <i class="bi bi-file-earmark-arrow-down" style="font-size: 2rem;"></i>
-                    <p class="mt-2"><strong>Marked Document</strong><br>Download with issues highlighted</p>
-                </div>
-                <div class="col-md-4">
-                    <i class="bi bi-lightning" style="font-size: 2rem;"></i>
-                    <p class="mt-2"><strong>Instant Results</strong><br>Get feedback in seconds</p>
+                    <p class="mt-2"><strong>Marked Document</strong><br>Issues highlighted</p>
                 </div>
             </div>
         </div>

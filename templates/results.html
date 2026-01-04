@@ -159,6 +159,23 @@
             border-radius: 3px;
             font-size: 0.9em;
         }
+        .growth-mindset-analysis pre {
+            background-color: #e7f5e7;
+            border: 2px solid #28a745;
+            border-left: 5px solid #28a745;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .growth-mindset-analysis pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #1e4620;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
         .growth-mindset-analysis blockquote {
             border-left: 4px solid #6c757d;
             padding-left: 1rem;
@@ -170,9 +187,9 @@
 </head>
 <body>
     <nav class="navbar navbar-dark mb-4">
-        <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1">
-                <i class="bi bi-file-earmark-check"></i> Syllabus Checker
+        <div class="container">
+            <span class="navbar-brand mb-0 h1" style="color: #ffbd00; font-weight: 700;">
+                📄 Syllabus Checker
             </span>
             <a href="{{ url_for('index') }}" class="btn btn-light btn-sm">
                 <i class="bi bi-arrow-left"></i> Check Another
@@ -230,7 +247,10 @@
             <a href="{{ url_for('download_file', filename=results.marked_file) }}" class="btn btn-download btn-lg">
                 <i class="bi bi-download"></i> Download Marked Document
             </a>
-            <p class="text-muted mt-2 small">The marked document has comments and highlights showing all issues</p>
+            <p class="text-muted mt-2 small">
+                The marked document includes comments and highlights showing all accessibility issues,
+                plus sections at the end with missing required content and ready-to-use growth mindset text
+            </p>
         </div>
 
         <!-- Accessibility Issues with Expandable Details -->
@@ -455,13 +475,9 @@
                         This section uses AI to evaluate how well your syllabus communicates growth mindset and promotes student belonging,
                         based on research-backed principles from educational equity experts. The analysis examines 6 core dimensions that
                         affect student success, particularly for historically marginalized groups.
-                    </div>
 
-                    <div class="growth-mindset-analysis">
-                        {{ results.growth_mindset_analysis.analysis_html | safe }}
-                    </div>
+                        <hr class="my-3">
 
-                    <div class="alert alert-light border mt-3">
                         <h6 class="fw-bold mb-2"><i class="bi bi-book"></i> Learn More</h6>
                         <p class="small mb-2">
                             This analysis is based on research from the <strong><a href="https://studentexperienceproject.org/" target="_blank" rel="noopener noreferrer">Student Experience Project</a></strong> and draws on studies showing that
@@ -470,10 +486,14 @@
                         </p>
                         <p class="small mb-0">
                             <i class="bi bi-link-45deg"></i> <strong>Resources:</strong>
-                            <a href="https://studentexperienceproject.org/change_idea/revising-syllabi-to-improve-student-experience/" target="_blank" rel="noopener noreferrer">
+                            <a href="https://studentexperienceproject.org/change_id/revising-syllabi-to-improve-student-experience/" target="_blank" rel="noopener noreferrer">
                                 Revising Syllabi to Improve Student Experience - Complete Guide
                             </a>
                         </p>
+                    </div>
+
+                    <div class="growth-mindset-analysis">
+                        {{ results.growth_mindset_analysis.analysis_html | safe }}
                     </div>
                 {% elif results.growth_mindset_analysis.error %}
                     <div class="alert alert-warning">
@@ -489,12 +509,9 @@
 
         <!-- Actions -->
         <div class="text-center mb-5">
-            <a href="{{ url_for('index') }}" class="btn btn-outline-primary me-2">
+            <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
                 <i class="bi bi-arrow-left"></i> Check Another Document
             </a>
-            <button onclick="window.print()" class="btn btn-outline-secondary">
-                <i class="bi bi-printer"></i> Print Report
-            </button>
         </div>
     </div>
 
