@@ -3698,6 +3698,137 @@ Please provide a thorough, evidence-based analysis that will help the instructor
                 'status': 'error'
             }
 
+    def analyze_syllabus_quality(self) -> Dict[str, str]:
+        """
+        Use OpenAI GPT API to analyze syllabus for quality issues:
+        - Undefined course terminology
+        - Tone and inclusivity issues in policy language
+        - Policies that may violate accessibility guidance or confuse students
+        - Inconsistent formatting across repeated elements
+        """
+        # Extract full syllabus text
+        syllabus_text = []
+        for para_info in self.all_paragraphs:
+            text = para_info.paragraph.text.strip()
+            if text:
+                syllabus_text.append(text)
+
+        full_text = "\n\n".join(syllabus_text)
+
+        # Get API key from environment
+        api_key = os.environ.get('OPENAI_API_KEY')
+        if not api_key:
+            return {
+                'error': 'OPENAI_API_KEY environment variable not set. Please configure your API key in .env file to enable quality analysis.',
+                'status': 'error'
+            }
+
+        try:
+            client = OpenAI(api_key=api_key)
+
+            prompt = f"""You are an expert in syllabus design, educational accessibility, and inclusive pedagogy. Analyze this course syllabus for quality and clarity issues across four key dimensions.
+
+SYLLABUS TEXT:
+{full_text}
+
+Please provide a comprehensive analysis covering these four areas:
+
+## 1. UNDEFINED COURSE TERMINOLOGY
+
+Identify any technical terms, jargon, or course-specific vocabulary that students (especially first-time students in this field) might not understand. Look for:
+- Field-specific terminology used without definition
+- Acronyms that aren't spelled out on first use
+- Assignment types or formats that may be unfamiliar (e.g., "response paper", "think-pair-share", "flipped classroom")
+- Institutional terminology that may not be universally understood
+
+For each undefined term found:
+- **Term**: [the term or phrase]
+- **Why it might be unclear**: [brief explanation]
+- **Suggested fix**: [how to define or clarify it]
+
+If no issues found, state: "✓ All course terminology appears to be clearly defined or would be familiar to students."
+
+## 2. TONE AND INCLUSIVITY IN POLICY LANGUAGE
+
+Examine the tone of policies, rules, and requirements. Look for:
+- Punitive or threatening language (focus on consequences rather than support)
+- Deficit-based framing (assuming students will fail, cheat, or not try)
+- Language that may alienate students from marginalized groups
+- Overly legalistic or bureaucratic tone that creates distance
+- Policies that assume all students have the same resources, circumstances, or prior knowledge
+
+For each issue found:
+- **Issue**: [quote the problematic language]
+- **Problem**: [why this language may be problematic]
+- **Better alternative**: [rewritten version with more inclusive, supportive tone]
+
+If no issues found, state: "✓ Policy language uses an inclusive, supportive tone throughout."
+
+## 3. POLICIES THAT MAY CONFUSE OR EXCLUDE
+
+Identify policies or statements that:
+- Contradict accessibility best practices or may create barriers for students with disabilities
+- Conflict with institutional policies (if identifiable)
+- Are vague or ambiguous in ways that could confuse students
+- Make assumptions about student circumstances (e.g., access to technology, transportation, childcare)
+- May inadvertently exclude certain student populations
+
+For each policy issue:
+- **Policy**: [quote the policy]
+- **Potential problem**: [what confusion or exclusion this might cause]
+- **Recommendation**: [how to revise or clarify]
+
+If no issues found, state: "✓ All policies appear clear and inclusive."
+
+## 4. INCONSISTENT FORMATTING
+
+Look for inconsistencies in how repeated elements are formatted:
+- Headings at the same level using different styles (bold, underline, size)
+- Dates formatted differently (e.g., "Jan 15" vs "1/15" vs "January 15th")
+- Assignment names using inconsistent capitalization or formatting
+- Learning objectives or outcomes presented with different structures
+- Contact information or office hours presented inconsistently
+- Bullets, numbering, or other list formatting used inconsistently
+
+For each formatting inconsistency:
+- **Element type**: [e.g., "dates", "headings", "assignment names"]
+- **Inconsistency**: [describe the variation found]
+- **Recommendation**: [suggest a consistent format to use throughout]
+
+If no issues found, state: "✓ Formatting appears consistent throughout the syllabus."
+
+---
+
+**IMPORTANT FORMATTING NOTE**:
+- Use clear markdown formatting with ## for main headings and **bold** for labels
+- Be specific and quote actual text from the syllabus
+- Prioritize the most significant issues in each category
+- If you find 5+ issues in a category, focus on the most important ones
+"""
+
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "You are an expert in syllabus design, educational accessibility, and inclusive pedagogy. Provide specific, actionable feedback."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=3000,
+                temperature=0.7
+            )
+
+            analysis_text = response.choices[0].message.content
+
+            return {
+                'analysis': analysis_text,
+                'status': 'success'
+            }
+
+        except Exception as e:
+            return {
+                'error': f'Error calling OpenAI API: {str(e)}',
+                'status': 'error'
+            }
+
     def generate_report(self) -> str:
         """Generate comprehensive assessment report organized by category"""
         report_lines = []

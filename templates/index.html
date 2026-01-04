@@ -99,7 +99,7 @@
     <div class="container">
         <h1 class="text-center mb-2">Upload Your Syllabus</h1>
         <p class="text-center text-muted mb-4">
-            Comprehensive analysis for <strong>accessibility</strong>, <strong>required content</strong>, and <strong>student belonging</strong>
+            Comprehensive analysis for <strong>accessibility</strong>, <strong>required content</strong>, <strong>student belonging</strong>, and <strong>quality</strong>
         </p>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -142,11 +142,11 @@
             </div>
         </div>
 
-        <!-- Three Types of Checks -->
+        <!-- Four Types of Checks -->
         <div class="card" style="border: 2px solid #ffbd00;">
             <div class="card-body">
                 <h5 class="card-title text-center mb-3">
-                    <i class="bi bi-list-check"></i> Three Types of Feedback
+                    <i class="bi bi-list-check"></i> Four Types of Feedback
                 </h5>
 
                 <!-- 1. Accessibility Checks -->
@@ -413,26 +413,74 @@
                     </div>
                 </div>
 
+                <hr class="my-4">
+
+                <!-- 4. Syllabus Quality Analysis -->
+                <div class="mb-3">
+                    <h6 class="fw-bold mb-2">
+                        <i class="bi bi-clipboard-check text-success"></i>
+                        4. Syllabus Quality Analysis
+                    </h6>
+                    <p class="small text-muted mb-2">
+                        AI-powered analysis identifies quality and clarity issues that may confuse or exclude students...
+                    </p>
+                    <button class="btn btn-sm btn-outline-secondary" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#qualityAnalysisList">
+                        <i class="bi bi-chevron-down"></i> Show/Hide Analysis Details
+                    </button>
+                </div>
+                <div class="collapse" id="qualityAnalysisList">
+                    <div class="alert alert-light border">
+                        <p class="small mb-3">
+                            This analysis uses AI to examine your syllabus across four key areas:
+                        </p>
+
+                        <ol class="small mb-0">
+                            <li class="mb-2">
+                                <strong>Undefined Course Terminology:</strong> Identifies technical terms, jargon, or acronyms
+                                that students (especially first-time students) may not understand.
+                            </li>
+                            <li class="mb-2">
+                                <strong>Tone and Inclusivity Issues:</strong> Flags punitive language, deficit-based framing,
+                                or policies that assume all students have the same resources or circumstances.
+                            </li>
+                            <li class="mb-2">
+                                <strong>Potentially Confusing Policies:</strong> Highlights policies that may create barriers for
+                                students with disabilities, conflict with accessibility guidance, or are vague/ambiguous.
+                            </li>
+                            <li class="mb-2">
+                                <strong>Inconsistent Formatting:</strong> Detects inconsistencies in dates, headings, assignment names,
+                                or other repeated elements that may confuse students.
+                            </li>
+                        </ol>
+
+                        <p class="small mb-0 mt-3">
+                            <i class="bi bi-lightbulb"></i> <strong>What You'll Get:</strong> For each area, you'll receive specific
+                            examples from your syllabus, explanations of potential issues, and concrete recommendations for improvement.
+                        </p>
+                    </div>
+                </div>
+
             </div>
         </div>
 
         <div class="feature-list mt-3">
-            <div class="row text-center">
-                <div class="col-md-3">
+            <div class="row text-center justify-content-center">
+                <div class="col-md-3 col-6">
                     <i class="bi bi-universal-access" style="font-size: 2rem;"></i>
-                    <p class="mt-2"><strong>Accessibility</strong><br>44+ automated checks</p>
+                    <p class="mt-2"><strong>Accessibility</strong><br><small>44+ automated checks</small></p>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 col-6">
                     <i class="bi bi-clipboard-check" style="font-size: 2rem;"></i>
-                    <p class="mt-2"><strong>Required Sections</strong><br>Essential content verification</p>
+                    <p class="mt-2"><strong>Required Sections</strong><br><small>Content verification</small></p>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 col-6">
                     <i class="bi bi-heart" style="font-size: 2rem;"></i>
-                    <p class="mt-2"><strong>Growth Mindset</strong><br>AI-powered belonging analysis</p>
+                    <p class="mt-2"><strong>Growth Mindset</strong><br><small>Belonging analysis</small></p>
                 </div>
-                <div class="col-md-3">
-                    <i class="bi bi-file-earmark-arrow-down" style="font-size: 2rem;"></i>
-                    <p class="mt-2"><strong>Marked Document</strong><br>Issues highlighted</p>
+                <div class="col-md-3 col-6">
+                    <i class="bi bi-lightbulb" style="font-size: 2rem;"></i>
+                    <p class="mt-2"><strong>Quality Analysis</strong><br><small>Clarity & inclusivity</small></p>
                 </div>
             </div>
         </div>
