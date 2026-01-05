@@ -106,6 +106,8 @@ def upload_file():
             'Readability': ['LONG_SENTENCE', 'NUMERIC_DATE_FORMAT'],
             'Images': ['IMAGE_MISSING_ALT', 'DECORATIVE_IMAGE_QUESTIONABLE', 'IMAGE_TEXT_CONTENT'],
             'Document Properties': ['MISSING_TITLE', 'MISSING_LANGUAGE', 'MULTIPLE_LANGUAGES'],
+            'Heading Structure': ['ALL_CAPS_HEADING', 'LONG_HEADING', 'H1_NOT_AT_TOP', 'MULTIPLE_H1',
+                                 'SHOULD BE HEADING 2', 'SHOULD BE HEADING 3', 'SHOULD BE HEADING 4'],
             'Content Quality': ['BROKEN_STYLE_COPIED_CONTENT', 'FOOTNOTE_USAGE', 'VISUAL_INDICATOR_NO_TEXT', 'MATH_NO_ACCESSIBLE_MARKUP'],
         }
 

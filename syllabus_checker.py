@@ -613,16 +613,39 @@ class SyllabusChecker:
         # Track heading sequence to detect hierarchy problems
         last_heading_level = 0
         h1_count = 0
+        first_h1_index = None
 
-        for para_info in self.all_paragraphs:
+        for idx, para_info in enumerate(self.all_paragraphs):
             para = para_info.paragraph
             if para.style.name.startswith('Heading'):
                 level = int(para.style.name.split()[-1])
                 text = para.text.strip()
 
-                # Count H1s
+                # Check for ALL CAPS headings
+                if text.isupper() and len(text) > 3:  # Ignore very short text like "FAQ"
+                    issue = AccessibilityIssue(
+                        issue_type="ALL_CAPS_HEADING",
+                        description=f"Heading '{text}' is in ALL CAPS. Use title case for better readability and accessibility.",
+                        location=para_info.location,
+                        para_info=para_info
+                    )
+                    hierarchy_issues.append(issue)
+
+                # Check for overly long headings
+                if len(text) > 100:
+                    issue = AccessibilityIssue(
+                        issue_type="LONG_HEADING",
+                        description=f"Heading '{text[:50]}...' is {len(text)} characters long. Keep headings concise (under 100 characters).",
+                        location=para_info.location,
+                        para_info=para_info
+                    )
+                    hierarchy_issues.append(issue)
+
+                # Count H1s and track first H1
                 if level == 1:
                     h1_count += 1
+                    if first_h1_index is None:
+                        first_h1_index = idx
 
                     # If we've seen an H1 before and now see another H1, check context
                     # In table cells, multiple H1s might indicate subsections that should be H2
@@ -650,6 +673,26 @@ class SyllabusChecker:
                     hierarchy_issues.append(issue)
 
                 last_heading_level = level
+
+        # Check if H1 appears near the top (within first 10 paragraphs)
+        if first_h1_index is not None and first_h1_index > 10:
+            issue = AccessibilityIssue(
+                issue_type="H1_NOT_AT_TOP",
+                description=f"First Heading 1 appears at paragraph {first_h1_index + 1}. The main title should appear near the top of the document.",
+                location="Document start",
+                para_info=None
+            )
+            hierarchy_issues.append(issue)
+
+        # Check for multiple H1s (should typically only have one main title)
+        if h1_count > 1:
+            issue = AccessibilityIssue(
+                issue_type="MULTIPLE_H1",
+                description=f"Document has {h1_count} Heading 1 elements. Best practice is to have a single H1 as the main title, with H2s for major sections.",
+                location="Throughout document",
+                para_info=None
+            )
+            hierarchy_issues.append(issue)
 
         return hierarchy_issues
 
@@ -3796,6 +3839,21 @@ For each formatting inconsistency:
 - **Recommendation**: [suggest a consistent format to use throughout]
 
 If no issues found, state: "✓ Formatting appears consistent throughout the syllabus."
+
+## 5. HEADING STRUCTURE ISSUES
+
+Examine how headings are used in the document. Look for:
+- **Fake headings**: Paragraphs that are styled to look like headings (bold, larger font, etc.) but not using semantic heading styles (Heading 1, Heading 2, etc.)
+- **Non-descriptive headings**: Headings that are vague or don't clearly indicate the content that follows (e.g., "Information", "Details", "Notes")
+- **Inconsistent heading styles**: Some sections use proper heading styles while others use manual formatting
+
+For each heading issue:
+- **Type**: [Fake heading / Non-descriptive / Inconsistent]
+- **Text**: [quote the problematic heading or styled text]
+- **Problem**: [explain why this is problematic for accessibility or clarity]
+- **Recommendation**: [suggest how to fix it - e.g., "Use Heading 2 style" or "Change to 'Assignment Submission Guidelines'"]
+
+If no issues found, state: "✓ All headings use proper semantic styles and are descriptive."
 
 ---
 
