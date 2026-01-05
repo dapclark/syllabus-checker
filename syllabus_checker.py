@@ -2143,8 +2143,8 @@ class SyllabusChecker:
                     if run.font.color.rgb:
                         # Common link colors are blue (0, 0, 255) or similar
                         rgb = run.font.color.rgb
-                        # Check if it's bluish
-                        if rgb.blue > 200 and rgb.red < 100 and rgb.green < 100:
+                        # Check if it's bluish (rgb[0]=red, rgb[1]=green, rgb[2]=blue)
+                        if rgb[2] > 200 and rgb[0] < 100 and rgb[1] < 100:
                             has_link_color = True
 
                     if not is_likely_link and not has_link_color:
