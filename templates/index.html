@@ -624,32 +624,48 @@
 
         // Show progress modal on submit
         const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+        const uploadForm = document.getElementById('uploadForm');
+        let formSubmitted = false;
 
-        document.getElementById('uploadForm').addEventListener('submit', function() {
-            progressModal.show();
+        uploadForm.addEventListener('submit', function(e) {
+            if (!formSubmitted) {
+                e.preventDefault();
 
-            // Simulate progress through stages (since we can't get real progress from server)
-            let stage = 0;
-            const stages = [
-                'Uploading document...',
-                'Running 44+ accessibility checks...',
-                'AI-powered quality analysis...',
-                'AI-powered growth mindset analysis...',
-                'AI-powered image alt text analysis...',
-                'Generating report...'
-            ];
+                // Show modal first
+                progressModal.show();
 
-            // Update progress stages every 3 seconds
-            const progressInterval = setInterval(function() {
-                if (stage < stages.length) {
-                    updateProgressStage(stage);
-                    document.getElementById('progressStatus').textContent = stages[stage];
-                    stage++;
-                }
-            }, 3000);
+                // Initialize progress stages
+                updateProgressStage(0);
 
-            // Store interval ID so we can clear it if needed
-            window.progressInterval = progressInterval;
+                // Simulate progress through stages (since we can't get real progress from server)
+                let stage = 0;
+                const stages = [
+                    'Uploading document...',
+                    'Running 44+ accessibility checks...',
+                    'AI-powered quality analysis...',
+                    'AI-powered growth mindset analysis...',
+                    'AI-powered image alt text analysis...',
+                    'Generating report...'
+                ];
+
+                // Update progress stages every 3 seconds
+                const progressInterval = setInterval(function() {
+                    if (stage < stages.length) {
+                        updateProgressStage(stage);
+                        document.getElementById('progressStatus').textContent = stages[stage];
+                        stage++;
+                    }
+                }, 3000);
+
+                // Store interval ID so we can clear it if needed
+                window.progressInterval = progressInterval;
+
+                // Wait a moment for modal to show, then submit the form
+                setTimeout(function() {
+                    formSubmitted = true;
+                    uploadForm.submit();
+                }, 500);
+            }
         });
 
         function updateProgressStage(currentStage) {
