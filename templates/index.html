@@ -534,6 +534,40 @@
         </div>
     </div>
 
+    <!-- Progress Modal -->
+    <div class="modal fade" id="progressModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="bi bi-hourglass-split text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="mb-3">Analyzing Your Syllabus</h5>
+                    <p class="text-muted mb-4" id="progressStatus">Running accessibility checks...</p>
+
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                             role="progressbar"
+                             style="width: 100%"
+                             id="progressBar">
+                        </div>
+                    </div>
+
+                    <div class="small text-muted mt-4">
+                        <div id="progressStage">
+                            <i class="bi bi-check-circle text-success"></i> Uploading document...<br>
+                            <i class="bi bi-arrow-right text-muted"></i> Running 44+ accessibility checks...<br>
+                            <i class="bi bi-arrow-right text-muted"></i> AI-powered quality analysis...<br>
+                            <i class="bi bi-arrow-right text-muted"></i> AI-powered growth mindset analysis...<br>
+                            <i class="bi bi-arrow-right text-muted"></i> AI-powered image alt text analysis...<br>
+                            <i class="bi bi-arrow-right text-muted"></i> Generating report...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const dropZone = document.getElementById('dropZone');
@@ -588,11 +622,60 @@
             submitBtn.disabled = true;
         }
 
-        // Show loading state on submit
+        // Show progress modal on submit
+        const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+
         document.getElementById('uploadForm').addEventListener('submit', function() {
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Checking...';
-            submitBtn.disabled = true;
+            progressModal.show();
+
+            // Simulate progress through stages (since we can't get real progress from server)
+            let stage = 0;
+            const stages = [
+                'Uploading document...',
+                'Running 44+ accessibility checks...',
+                'AI-powered quality analysis...',
+                'AI-powered growth mindset analysis...',
+                'AI-powered image alt text analysis...',
+                'Generating report...'
+            ];
+
+            // Update progress stages every 3 seconds
+            const progressInterval = setInterval(function() {
+                if (stage < stages.length) {
+                    updateProgressStage(stage);
+                    document.getElementById('progressStatus').textContent = stages[stage];
+                    stage++;
+                }
+            }, 3000);
+
+            // Store interval ID so we can clear it if needed
+            window.progressInterval = progressInterval;
         });
+
+        function updateProgressStage(currentStage) {
+            const stageDiv = document.getElementById('progressStage');
+            const stages = [
+                'Uploading document...',
+                'Running 44+ accessibility checks...',
+                'AI-powered quality analysis...',
+                'AI-powered growth mindset analysis...',
+                'AI-powered image alt text analysis...',
+                'Generating report...'
+            ];
+
+            let html = '';
+            stages.forEach((stage, index) => {
+                if (index < currentStage) {
+                    html += `<i class="bi bi-check-circle text-success"></i> ${stage}<br>`;
+                } else if (index === currentStage) {
+                    html += `<i class="bi bi-arrow-right text-primary"></i> <strong>${stage}</strong><br>`;
+                } else {
+                    html += `<i class="bi bi-arrow-right text-muted"></i> ${stage}<br>`;
+                }
+            });
+
+            stageDiv.innerHTML = html;
+        }
     </script>
 </body>
 </html>
