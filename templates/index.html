@@ -625,47 +625,58 @@
         // Show progress modal on submit
         const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
         const uploadForm = document.getElementById('uploadForm');
-        let formSubmitted = false;
 
         uploadForm.addEventListener('submit', function(e) {
-            if (!formSubmitted) {
-                e.preventDefault();
+            e.preventDefault();
 
-                // Show modal first
-                progressModal.show();
+            // Show modal
+            progressModal.show();
 
-                // Initialize progress stages
-                updateProgressStage(0);
+            // Initialize progress stages
+            let stage = 0;
+            const stages = [
+                'Uploading document...',
+                'Running 44+ accessibility checks...',
+                'AI-powered quality analysis...',
+                'AI-powered growth mindset analysis...',
+                'AI-powered image alt text analysis...',
+                'Generating report...'
+            ];
 
-                // Simulate progress through stages (since we can't get real progress from server)
-                let stage = 0;
-                const stages = [
-                    'Uploading document...',
-                    'Running 44+ accessibility checks...',
-                    'AI-powered quality analysis...',
-                    'AI-powered growth mindset analysis...',
-                    'AI-powered image alt text analysis...',
-                    'Generating report...'
-                ];
+            updateProgressStage(0);
+            document.getElementById('progressStatus').textContent = stages[0];
 
-                // Update progress stages every 3 seconds
-                const progressInterval = setInterval(function() {
-                    if (stage < stages.length) {
-                        updateProgressStage(stage);
-                        document.getElementById('progressStatus').textContent = stages[stage];
-                        stage++;
-                    }
-                }, 3000);
+            // Update progress stages every 2.5 seconds
+            const progressInterval = setInterval(function() {
+                stage++;
+                if (stage < stages.length) {
+                    updateProgressStage(stage);
+                    document.getElementById('progressStatus').textContent = stages[stage];
+                }
+            }, 2500);
 
-                // Store interval ID so we can clear it if needed
-                window.progressInterval = progressInterval;
+            // Submit form via AJAX to keep modal visible
+            const formData = new FormData(uploadForm);
 
-                // Wait a moment for modal to show, then submit the form
-                setTimeout(function() {
-                    formSubmitted = true;
-                    uploadForm.submit();
-                }, 500);
-            }
+            fetch(uploadForm.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(html => {
+                // Clear the progress interval
+                clearInterval(progressInterval);
+
+                // Navigate to results by replacing the entire document
+                document.open();
+                document.write(html);
+                document.close();
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                progressModal.hide();
+                alert('Error uploading file: ' + error.message);
+            });
         });
 
         function updateProgressStage(currentStage) {
