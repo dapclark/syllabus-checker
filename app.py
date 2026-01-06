@@ -82,6 +82,9 @@ def upload_file():
         # Run syllabus quality analysis
         quality_analysis = checker.analyze_syllabus_quality()
 
+        # Run image alt text analysis
+        image_alt_analysis = checker.analyze_image_alt_text()
+
         # Generate report (generate_report already returns a joined string)
         report_text = checker.generate_report()
 
@@ -377,6 +380,13 @@ def upload_file():
                 extensions=['extra', 'nl2br', 'sane_lists']
             )
 
+        # Convert image alt text analysis markdown to HTML
+        if image_alt_analysis.get('status') == 'success' and 'analysis' in image_alt_analysis:
+            image_alt_analysis['analysis_html'] = markdown.markdown(
+                image_alt_analysis['analysis'],
+                extensions=['extra', 'nl2br', 'sane_lists']
+            )
+
         results = {
             'filename': filename,
             'total_issues': total_web_issues,  # Match the text report calculation
@@ -390,7 +400,8 @@ def upload_file():
             'summary_message': summary_message,
             'summary_status': summary_status,
             'growth_mindset_analysis': growth_mindset_analysis,
-            'quality_analysis': quality_analysis
+            'quality_analysis': quality_analysis,
+            'image_alt_analysis': image_alt_analysis
         }
 
         return render_template('results.html', results=results)

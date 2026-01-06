@@ -552,6 +552,50 @@
             </div>
         </div>
 
+        <!-- Image Alt Text Analysis -->
+        <div class="report-section">
+            <h4 class="mb-3">
+                <i class="bi bi-image"></i> Image Alt Text Analysis
+                <button class="btn btn-sm btn-outline-secondary float-end" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#imageAltAnalysisContent">
+                    <i class="bi bi-chevron-down"></i> Show/Hide
+                </button>
+            </h4>
+
+            <div class="collapse" id="imageAltAnalysisContent">
+                {% if results.image_alt_analysis.status == 'success' %}
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle"></i> <strong>About This Analysis:</strong>
+                        This AI-powered analysis examines the quality of alt text for images in your syllabus.
+                        {% if results.image_alt_analysis.image_count %}
+                            Found {{ results.image_alt_analysis.image_count }} image(s) to analyze.
+                        {% endif %}
+
+                        <hr class="my-3">
+
+                        <h6 class="fw-bold mb-2"><i class="bi bi-lightbulb"></i> What This Checks</h6>
+                        <ul class="small mb-0">
+                            <li><strong>Institutional Logos:</strong> Flags logos without meaningful alt text (e.g., just "logo" instead of "University of Michigan logo")</li>
+                            <li><strong>Poor Quality Alt Text:</strong> Identifies alt text that is too short, redundant (e.g., "Image of..."), irrelevant (e.g., "JPEG file"), or non-descriptive</li>
+                        </ul>
+                    </div>
+
+                    <div class="growth-mindset-analysis">
+                        {{ results.image_alt_analysis.analysis_html | safe }}
+                    </div>
+                {% elif results.image_alt_analysis.error %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        {{ results.image_alt_analysis.error }}
+                    </div>
+                {% else %}
+                    <div class="alert alert-secondary">
+                        <i class="bi bi-info-circle"></i> Image alt text analysis is not available at this time.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
         <!-- Actions -->
         <div class="text-center mb-5">
             <a href="{{ url_for('index') }}" class="btn btn-outline-primary">

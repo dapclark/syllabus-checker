@@ -3887,6 +3887,161 @@ If no issues found, state: "✓ All headings use proper semantic styles and are 
                 'status': 'error'
             }
 
+    def analyze_image_alt_text(self) -> Dict[str, str]:
+        """
+        Use OpenAI GPT API to analyze image alt text quality:
+        - Flag institutional logos without meaningful alt text
+        - Identify alt text that is too short, irrelevant, or redundant (e.g., "Image of...")
+        """
+        # Extract all images with their alt text
+        images_data = []
+
+        for para_info in self.all_paragraphs:
+            para = para_info.paragraph
+
+            try:
+                para_element = para._element
+
+                # Look for modern drawing elements
+                drawings = para_element.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}drawing')
+
+                for drawing in drawings:
+                    docPr = drawing.find('.//{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}docPr')
+
+                    if docPr is not None:
+                        title = docPr.get('title', '')
+                        descr = docPr.get('descr', '')
+                        name = docPr.get('name', 'Unnamed image')
+
+                        # Include images even if they have alt text (we want to check quality)
+                        images_data.append({
+                            'name': name,
+                            'title': title,
+                            'description': descr,
+                            'location': para_info.location
+                        })
+
+                # Also check for older pict elements
+                picts = para_element.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pict')
+                for pict in picts:
+                    shape = pict.find('.//{urn:schemas-microsoft-com:vml}shape')
+                    if shape is not None:
+                        alt = shape.get('alt', '')
+                        title = shape.get('title', '')
+
+                        images_data.append({
+                            'name': 'Legacy image',
+                            'title': title,
+                            'description': alt,
+                            'location': para_info.location
+                        })
+
+            except:
+                pass  # Skip if we can't parse images
+
+        # If no images found, return early
+        if not images_data:
+            return {
+                'analysis': 'No images found in the document.',
+                'status': 'success'
+            }
+
+        # Get API key from environment
+        api_key = os.environ.get('OPENAI_API_KEY')
+        if not api_key:
+            return {
+                'error': 'OPENAI_API_KEY environment variable not set. Please configure your API key in .env file to enable image alt text analysis.',
+                'status': 'error'
+            }
+
+        try:
+            client = OpenAI(api_key=api_key)
+
+            # Format images data for the prompt
+            images_list = []
+            for idx, img in enumerate(images_data, 1):
+                alt_text = img['description'] or img['title'] or '(no alt text)'
+                images_list.append(f"{idx}. **{img['name']}** - Alt text: \"{alt_text}\" - Location: {img['location']}")
+
+            images_text = "\n".join(images_list)
+
+            prompt = f"""You are an expert in web accessibility and educational document design. Analyze the alt text quality for images in this syllabus.
+
+IMAGES AND THEIR ALT TEXT:
+{images_text}
+
+Please analyze these images for accessibility issues in two key areas:
+
+## 1. INSTITUTIONAL LOGOS WITHOUT MEANINGFUL ALT TEXT
+
+Look for images that appear to be institutional logos, university seals, or organizational branding. These often have alt text like:
+- Empty or missing alt text
+- Just the filename (e.g., "logo.png")
+- Generic text like "logo" or "image"
+- The institution name without context (e.g., just "Harvard" instead of "Harvard University logo")
+
+**Why this matters**: Screen reader users need to know what the logo represents and its purpose in the document. Simply stating the institution name without context can be confusing.
+
+For each logo with inadequate alt text:
+- **Image**: [image name/number]
+- **Current alt text**: [what it currently says]
+- **Problem**: [why this is insufficient]
+- **Recommended alt text**: [specific suggestion, e.g., "University of Michigan logo" or "Michigan State University seal"]
+
+If no logo issues found, state: "✓ All institutional logos have meaningful alt text."
+
+## 2. POOR QUALITY ALT TEXT
+
+Identify alt text that is:
+- **Too short**: Single words or very brief text that doesn't convey meaning (e.g., "chart", "graph", "picture")
+- **Redundant**: Starts with unnecessary phrases like "Image of...", "Picture of...", "Graphic showing..."
+- **Irrelevant**: Describes the image format rather than content (e.g., "JPEG image", "PNG file")
+- **Non-descriptive**: Vague text that doesn't convey the image's purpose (e.g., "illustration", "diagram")
+
+**Note**: Decorative images should have empty alt text, but this is rare in syllabi. Focus on informational images.
+
+For each poor quality alt text:
+- **Image**: [image name/number]
+- **Current alt text**: [what it currently says]
+- **Problem**: [specific issue - too short, redundant, irrelevant, or non-descriptive]
+- **Recommended alt text**: [improved version that clearly describes the image's content and purpose]
+
+If no issues found, state: "✓ All alt text is clear, concise, and descriptive."
+
+---
+
+**IMPORTANT FORMATTING NOTES**:
+- Use clear markdown formatting with ## for main headings and **bold** for labels
+- Be specific and reference actual alt text from the images
+- Prioritize the most significant issues
+- If you find more than 5 issues in a category, focus on the most problematic ones
+- Remember: Good alt text is concise but informative, typically 1-2 sentences maximum
+"""
+
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "You are an expert in web accessibility, WCAG guidelines, and alt text best practices. Provide specific, actionable feedback."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=2000,
+                temperature=0.7
+            )
+
+            analysis_text = response.choices[0].message.content
+
+            return {
+                'analysis': analysis_text,
+                'status': 'success',
+                'image_count': len(images_data)
+            }
+
+        except Exception as e:
+            return {
+                'error': f'Error calling OpenAI API: {str(e)}',
+                'status': 'error'
+            }
+
     def generate_report(self) -> str:
         """Generate comprehensive assessment report organized by category"""
         report_lines = []
