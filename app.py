@@ -12,6 +12,7 @@ import shutil
 from datetime import datetime
 from dotenv import load_dotenv
 import markdown
+import analytics_db
 
 # Load environment variables from .env file
 load_dotenv()
@@ -82,6 +83,9 @@ def upload_file():
         # Run syllabus quality analysis
         quality_analysis = checker.analyze_syllabus_quality()
 
+        # Extract course metadata using LLM
+        course_metadata = checker.extract_course_metadata()
+
         # Run image alt text analysis
         image_alt_analysis = checker.analyze_image_alt_text()
 
@@ -112,6 +116,90 @@ def upload_file():
             'Heading Structure': ['ALL_CAPS_HEADING', 'LONG_HEADING', 'H1_NOT_AT_TOP', 'MULTIPLE_H1',
                                  'SHOULD BE HEADING 2', 'SHOULD BE HEADING 3', 'SHOULD BE HEADING 4'],
             'Content Quality': ['BROKEN_STYLE_COPIED_CONTENT', 'FOOTNOTE_USAGE', 'VISUAL_INDICATOR_NO_TEXT', 'MATH_NO_ACCESSIBLE_MARKUP'],
+        }
+
+        # Faculty-friendly help information for each category
+        category_help = {
+            'Font Usage': {
+                'summary': 'Some text may be hard to read due to small or decorative fonts.',
+                'why_matters': 'Students with visual impairments or reading difficulties need adequate font sizes (11pt+) and clear, standard fonts to read your syllabus.',
+                'how_to_fix': 'Select the text → Home tab → Change font size to 11pt or larger. Use Arial, Calibri, or Times New Roman.',
+                'help_link': 'https://support.microsoft.com/en-us/office/change-the-font-size-dc5b3f47-9e78-4af6-9734-ffc69175811c',
+                'help_text': 'How to change fonts'
+            },
+            'Table Structure': {
+                'summary': 'Tables need proper structure so screen readers can navigate them.',
+                'why_matters': 'Screen readers announce table contents cell-by-cell. Without proper headers, students using assistive technology can\'t understand what each cell means.',
+                'what_is_it': '<strong>Table header</strong> = the top row that labels each column (e.g., "Week", "Topic", "Reading"). This tells screen readers what each column contains.',
+                'how_to_fix': 'Click anywhere in your table → Table Design tab → Check "Header Row" box. This marks the first row as the header.',
+                'help_link': 'https://support.microsoft.com/en-us/office/video-create-accessible-tables-in-word-cb464015-59dc-46a0-ac01-6217c62210e5',
+                'help_text': 'Video: Fix table headers'
+            },
+            'Color & Contrast': {
+                'summary': 'Some colors may be hard to see or distinguish.',
+                'why_matters': 'About 8% of men have some form of color blindness. Low contrast text is also difficult for students reading on phones or in bright environments.',
+                'how_to_fix': 'Use dark text (black or dark blue) on light backgrounds. If you use color to convey meaning (like red for "late"), also add a text label.',
+                'help_link': 'https://webaim.org/resources/contrastchecker/',
+                'help_text': 'Check your colors'
+            },
+            'Links & Navigation': {
+                'summary': 'Some links use vague text like "click here" that doesn\'t describe the destination.',
+                'why_matters': 'Screen reader users often navigate by jumping between links. If all links say "click here," they can\'t tell where each one goes.',
+                'how_to_fix': 'Right-click the link → Edit Hyperlink → Change "Text to display" to something descriptive like "view the grading rubric" instead of "click here".',
+                'help_link': 'https://support.microsoft.com/en-us/office/create-accessible-links-in-word-28305cc8-3be2-417f-a789-67c5a8d14393',
+                'help_text': 'How to fix link text'
+            },
+            'Text Formatting': {
+                'summary': 'Some formatting choices can make text harder to read.',
+                'why_matters': 'ALL CAPS text is harder to read (we recognize words by their shape). Justified text creates uneven spacing. Underlined text looks like links.',
+                'how_to_fix': 'For emphasis, use <strong>bold</strong> instead of ALL CAPS or underline. Use left alignment instead of justified. Use Word\'s built-in Heading styles.',
+                'help_link': 'https://support.microsoft.com/en-us/office/use-headings-and-styles-in-word-c0d409b5-5c0a-4a5c-8c5e-001e76072e51',
+                'help_text': 'Using Word styles'
+            },
+            'Images': {
+                'summary': 'Some images are missing descriptions (alt text).',
+                'why_matters': 'Students who are blind or have low vision use screen readers that read alt text aloud. Without it, they miss the image content entirely.',
+                'what_is_it': '<strong>Alt text</strong> = a brief description of what\'s in the image. It should convey the same information a sighted person would get.',
+                'how_to_fix': 'Right-click the image → "View Alt Text" (or "Edit Alt Text") → Type a brief description like "UWM logo" or "Chart showing enrollment trends 2020-2024".',
+                'help_link': 'https://support.microsoft.com/en-us/office/add-alternative-text-to-a-shape-picture-chart-smartart-graphic-or-other-object-44989b2a-903c-4d9a-b742-6a75b451c669',
+                'help_text': 'Video: Add alt text'
+            },
+            'Document Properties': {
+                'summary': 'The document is missing a title or language setting.',
+                'why_matters': 'Screen readers announce the document title when opening a file. The language setting ensures text-to-speech uses correct pronunciation.',
+                'how_to_fix': 'File → Info → Properties (on the right) → Add a Title. For language: Review tab → Language → Set Proofing Language.',
+                'help_link': 'https://support.microsoft.com/en-us/office/make-your-word-documents-accessible-d9bf3683-87ac-47ea-b91a-78dcacb3c66d',
+                'help_text': 'Full accessibility guide'
+            },
+            'Heading Structure': {
+                'summary': 'The document structure could be improved with proper headings.',
+                'why_matters': 'Screen reader users navigate long documents by jumping between headings. Proper heading levels (Heading 1, 2, 3) create a logical outline.',
+                'what_is_it': '<strong>Headings</strong> = structural markers that create an outline. Use Heading 1 for the title, Heading 2 for main sections, Heading 3 for subsections.',
+                'how_to_fix': 'Select your heading text → Home tab → Styles group → Click "Heading 1", "Heading 2", etc. Don\'t just make text big and bold—use actual heading styles.',
+                'help_link': 'https://support.microsoft.com/en-us/office/use-headings-and-styles-in-word-c0d409b5-5c0a-4a5c-8c5e-001e76072e51',
+                'help_text': 'Using heading styles'
+            },
+            'Content Quality': {
+                'summary': 'Some content may have formatting issues or accessibility concerns.',
+                'why_matters': 'Pasted content often brings hidden formatting problems. Footnotes can be hard to navigate. Visual symbols need text alternatives.',
+                'how_to_fix': 'When pasting, use Ctrl+Shift+V (or Paste Special → Keep Text Only) to avoid formatting issues. Replace footnotes with inline explanations when possible.',
+                'help_link': 'https://support.microsoft.com/en-us/office/make-your-word-documents-accessible-d9bf3683-87ac-47ea-b91a-78dcacb3c66d',
+                'help_text': 'Accessibility best practices'
+            },
+            'Lists': {
+                'summary': 'List formatting could be improved.',
+                'why_matters': 'Properly formatted lists help screen readers announce "list of 5 items" and navigate item-by-item.',
+                'how_to_fix': 'Use Word\'s built-in bullet or numbered list buttons instead of manually typing dashes or numbers.',
+                'help_link': 'https://support.microsoft.com/en-us/office/create-a-bulleted-or-numbered-list-9ff81241-58a8-4d88-8d8c-acab3006a23e',
+                'help_text': 'Creating proper lists'
+            },
+            'Readability': {
+                'summary': 'Some content may be difficult to read or understand.',
+                'why_matters': 'Long sentences and ambiguous dates can confuse all students, especially non-native English speakers and those with cognitive disabilities.',
+                'how_to_fix': 'Break long sentences into shorter ones. Use clear date formats like "January 15, 2024" instead of "1/15/24".',
+                'help_link': 'https://support.microsoft.com/en-us/office/get-your-document-s-readability-and-level-statistics-85b4969e-e80a-4777-8dd3-f7fc3c8b3fd2',
+                'help_text': 'Check readability'
+            },
         }
 
         # Map each issue type to its report section header
@@ -393,6 +481,7 @@ def upload_file():
             'missing_sections': missing_sections,
             'category_counts': category_counts,
             'category_details': category_details,
+            'category_help': category_help,  # Faculty-friendly explanations
             'report_text': report_text,
             'summary_section': summary_section,
             'marked_file': marked_filename,
@@ -403,6 +492,93 @@ def upload_file():
             'quality_analysis': quality_analysis,
             'image_alt_analysis': image_alt_analysis
         }
+
+        # Store scan results in analytics database
+        try:
+            # Use LLM-extracted metadata (not form inputs)
+            instructor_name = None
+            department = None
+            course_subject = None
+            course_number = None
+            course_title = None
+            semester = None
+            metadata_extraction_status = course_metadata.get('status', 'error')
+
+            if course_metadata.get('status') == 'success':
+                instructor_name = course_metadata.get('instructor_name')
+                department = course_metadata.get('department')
+                course_subject = course_metadata.get('course_subject')
+                course_number = course_metadata.get('course_number')
+                course_title = course_metadata.get('course_title')
+                semester = course_metadata.get('semester')
+
+            # Generate summaries for the four key areas
+            # Language & Tone (Growth Mindset) - extract score if available
+            language_tone_summary = None
+            growth_mindset_score = None
+            if growth_mindset_analysis.get('status') == 'success':
+                analysis_text = growth_mindset_analysis.get('analysis', '')
+                # Try to extract score from analysis (look for patterns like "Score: 7/10" or "7 out of 10")
+                import re
+                score_match = re.search(r'(?:score|rating)[:\s]*(\d+)(?:/10|\s*out of\s*10)?', analysis_text, re.IGNORECASE)
+                if score_match:
+                    growth_mindset_score = int(score_match.group(1))
+                # Create brief summary
+                if 'growth' in analysis_text.lower() and 'strong' in analysis_text.lower():
+                    language_tone_summary = 'Strong growth mindset language'
+                elif 'opportunities' in analysis_text.lower() or 'could' in analysis_text.lower():
+                    language_tone_summary = 'Some improvement opportunities'
+                else:
+                    language_tone_summary = 'Analysis completed'
+            elif growth_mindset_analysis.get('error'):
+                language_tone_summary = 'Analysis unavailable'
+
+            # Clarity & Quality - count number of issues/suggestions
+            clarity_quality_summary = None
+            quality_issues_count = 0
+            if quality_analysis.get('status') == 'success':
+                analysis_text = quality_analysis.get('analysis', '')
+                # Count bullet points or numbered items as suggestions
+                quality_issues_count = len(re.findall(r'(?:^|\n)\s*[-•*]\s+|(?:^|\n)\s*\d+[.)]\s+', analysis_text))
+                if quality_issues_count == 0:
+                    clarity_quality_summary = 'Excellent clarity'
+                elif quality_issues_count < 5:
+                    clarity_quality_summary = f'{quality_issues_count} suggestions for improvement'
+                else:
+                    clarity_quality_summary = f'{quality_issues_count} areas to review'
+            elif quality_analysis.get('error'):
+                clarity_quality_summary = 'Analysis unavailable'
+
+            # Generate accessibility summary from top issues
+            accessibility_summary = None
+            if category_counts:
+                top_issues = sorted(category_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+                if top_issues:
+                    accessibility_summary = '; '.join([f"{cat}: {count}" for cat, count in top_issues])
+
+            analytics_db.store_scan_result(
+                filename=filename,
+                instructor_name=instructor_name,
+                department=department,
+                course_subject=course_subject,
+                course_number=course_number,
+                course_title=course_title,
+                semester=semester,
+                total_issues=total_web_issues,
+                missing_sections=missing_sections,
+                category_counts=category_counts,
+                growth_mindset_status=growth_mindset_analysis.get('status'),
+                growth_mindset_score=growth_mindset_score,
+                quality_analysis_status=quality_analysis.get('status'),
+                quality_issues_count=quality_issues_count,
+                language_tone_summary=language_tone_summary,
+                clarity_quality_summary=clarity_quality_summary,
+                accessibility_summary=accessibility_summary,
+                metadata_extraction_status=metadata_extraction_status
+            )
+        except Exception as db_error:
+            # Don't fail the request if analytics storage fails
+            print(f"Analytics storage error: {db_error}")
 
         return render_template('results.html', results=results)
 
@@ -433,6 +609,68 @@ def download_file(filename):
 def about():
     """About page"""
     return render_template('about.html')
+
+# ============================================================
+# ADMIN ANALYTICS ROUTES
+# ============================================================
+
+@app.route('/admin/analytics')
+def admin_analytics():
+    """Admin analytics dashboard"""
+    # Get filter parameters
+    department_filter = request.args.get('department', '')
+    dept_param = department_filter if department_filter else None
+
+    # Get overview statistics
+    stats = analytics_db.get_overview_stats(dept_param)
+
+    # Get four areas summary
+    four_areas = analytics_db.get_four_areas_summary(dept_param)
+
+    # Get common issues (accessibility)
+    common_issues = analytics_db.get_common_issues(limit=10, department=dept_param)
+
+    # Get trends by month
+    trends = analytics_db.get_trends_by_month(months=6, department=dept_param)
+
+    # Get growth mindset trends
+    growth_mindset_trends = analytics_db.get_growth_mindset_trends(months=6, department=dept_param)
+
+    # Get quality analysis trends
+    quality_trends = analytics_db.get_quality_analysis_trends(months=6, department=dept_param)
+
+    # Get language & tone breakdown
+    language_tone_breakdown = analytics_db.get_language_tone_breakdown(dept_param)
+
+    # Get clarity & quality breakdown
+    clarity_quality_breakdown = analytics_db.get_clarity_quality_breakdown(dept_param)
+
+    # Get department summary
+    department_summary = analytics_db.get_department_summary()
+
+    # Get missing sections frequency
+    missing_sections_freq = analytics_db.get_missing_sections_frequency()
+
+    # Get list of departments for filter dropdown
+    departments = analytics_db.get_departments_list()
+
+    # Get recent scans
+    recent_scans = analytics_db.get_all_scans(limit=25, department=dept_param)
+
+    return render_template('admin_analytics.html',
+                           stats=stats,
+                           four_areas=four_areas,
+                           common_issues=common_issues,
+                           trends=trends,
+                           growth_mindset_trends=growth_mindset_trends,
+                           quality_trends=quality_trends,
+                           language_tone_breakdown=language_tone_breakdown,
+                           clarity_quality_breakdown=clarity_quality_breakdown,
+                           department_summary=department_summary,
+                           missing_sections_freq=missing_sections_freq,
+                           departments=departments,
+                           department_filter=department_filter,
+                           recent_scans=recent_scans)
 
 if __name__ == '__main__':
     # Clean up temp folder on exit

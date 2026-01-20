@@ -3266,20 +3266,21 @@ class SyllabusChecker:
         self.issues.extend(self.check_full_justification())
         self.issues.extend(self.check_all_caps_blocks())
         self.issues.extend(self.check_non_descriptive_links())
-        self.issues.extend(self.check_unstyled_links())
+        # Removed checks (pared back to critical issues):
+        # self.issues.extend(self.check_unstyled_links())  # Unstyled links
         self.issues.extend(self.check_long_urls())
         # PDF link check removed - users typically can't control accessibility of institutional PDFs
         # self.issues.extend(self.check_pdf_links())
-        self.issues.extend(self.check_missing_toc())
-        self.issues.extend(self.check_missing_bookmarks())
-        self.issues.extend(self.check_nested_list_hierarchy())
-        self.issues.extend(self.check_layout_lists())
-        self.issues.extend(self.check_long_sentences())
+        # self.issues.extend(self.check_missing_toc())  # Missing table of contents
+        # self.issues.extend(self.check_missing_bookmarks())  # Missing bookmarks/internal navigation
+        # self.issues.extend(self.check_nested_list_hierarchy())  # Inconsistent list hierarchy
+        # self.issues.extend(self.check_layout_lists())  # Lists used for layout
+        # self.issues.extend(self.check_long_sentences())  # Overly long sentences
         self.issues.extend(self.check_excessive_formatting())
         self.issues.extend(self.check_images_alt_text())
         self.issues.extend(self.check_decorative_images())
         self.issues.extend(self.check_image_text_content())
-        self.issues.extend(self.check_date_formats())
+        # self.issues.extend(self.check_date_formats())  # Numeric date formats
         self.issues.extend(self.check_copied_content_broken_styles())
         self.issues.extend(self.check_footnotes())
         self.issues.extend(self.check_visual_indicators())
@@ -4042,6 +4043,96 @@ If no issues found, state: "✓ All alt text is clear, concise, and descriptive.
                 'status': 'error'
             }
 
+    def extract_course_metadata(self) -> Dict[str, str]:
+        """
+        Use OpenAI GPT API to extract course metadata from the syllabus.
+        Returns instructor name, department, course subject, and course number.
+        """
+        # Extract first portion of syllabus text (metadata is usually at the top)
+        syllabus_text = []
+        for para_info in self.all_paragraphs[:50]:  # First 50 paragraphs should contain header info
+            text = para_info.paragraph.text.strip()
+            if text:
+                syllabus_text.append(text)
+
+        # Also check tables (course info is often in tables)
+        for table in self.target_doc.tables[:3]:  # Check first 3 tables
+            for row in table.rows:
+                for cell in row.cells:
+                    text = cell.text.strip()
+                    if text:
+                        syllabus_text.append(text)
+
+        full_text = "\n".join(syllabus_text)
+
+        # Limit text length
+        if len(full_text) > 4000:
+            full_text = full_text[:4000]
+
+        # Get API key from environment
+        api_key = os.environ.get('OPENAI_API_KEY')
+        if not api_key:
+            return {
+                'status': 'error',
+                'error': 'OPENAI_API_KEY not set'
+            }
+
+        try:
+            client = OpenAI(api_key=api_key)
+
+            prompt = f"""Extract the following information from this course syllabus. Return ONLY a JSON object with these exact keys. If a field cannot be determined, use null.
+
+SYLLABUS TEXT:
+{full_text}
+
+Extract:
+1. "instructor_name": The instructor's full name (e.g., "Dr. Jane Smith", "Professor John Doe", "Sarah Johnson, PhD")
+2. "department": The academic department (e.g., "Computer Science", "English", "Biology", "School of Business")
+3. "course_subject": The course subject code/prefix (e.g., "CS", "ENGL", "BIO", "MATH", "PSYCH")
+4. "course_number": The course number (e.g., "101", "350", "4400")
+5. "course_title": The full course title (e.g., "Introduction to Programming", "American Literature")
+6. "semester": The semester/term (e.g., "Fall 2024", "Spring 2025")
+
+Return ONLY valid JSON, no other text. Example:
+{{"instructor_name": "Dr. Jane Smith", "department": "Computer Science", "course_subject": "CS", "course_number": "101", "course_title": "Introduction to Programming", "semester": "Fall 2024"}}
+"""
+
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",  # Use faster/cheaper model for simple extraction
+                messages=[
+                    {"role": "system", "content": "You are a data extraction assistant. Extract course metadata from syllabi and return only valid JSON."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=300,
+                temperature=0.1  # Low temperature for consistent extraction
+            )
+
+            response_text = response.choices[0].message.content.strip()
+
+            # Parse JSON response
+            import json
+            # Clean up response if needed (remove markdown code blocks)
+            if response_text.startswith('```'):
+                response_text = response_text.split('```')[1]
+                if response_text.startswith('json'):
+                    response_text = response_text[4:]
+                response_text = response_text.strip()
+
+            metadata = json.loads(response_text)
+            metadata['status'] = 'success'
+            return metadata
+
+        except json.JSONDecodeError as e:
+            return {
+                'status': 'error',
+                'error': f'Failed to parse metadata response: {str(e)}'
+            }
+        except Exception as e:
+            return {
+                'status': 'error',
+                'error': f'Error extracting metadata: {str(e)}'
+            }
+
     def generate_report(self) -> str:
         """Generate comprehensive assessment report organized by category"""
         report_lines = []
@@ -4407,20 +4498,7 @@ If no issues found, state: "✓ All alt text is clear, concise, and descriptive.
             report_lines.append("[OK] No non-descriptive links detected")
         report_lines.append("")
 
-        # Unstyled links
-        report_lines.append("ACCESSIBILITY: UNSTYLED LINKS")
-        report_lines.append("-" * 80)
-        unstyled_link_issues = [issue for issue in self.issues if issue.issue_type == "UNSTYLED_LINK"]
-        if unstyled_link_issues:
-            report_lines.append(f"[X] Found {len(unstyled_link_issues)} link(s) styled as normal text:")
-            report_lines.append("    (Links should be underlined and/or colored to be distinguishable)")
-            for issue in unstyled_link_issues[:5]:
-                report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(unstyled_link_issues) > 5:
-                report_lines.append(f"  ... and {len(unstyled_link_issues) - 5} more")
-        else:
-            report_lines.append("[OK] All links have distinguishable styling")
-        report_lines.append("")
+        # Unstyled links check removed (pared back to critical issues)
 
         # Long URLs
         report_lines.append("ACCESSIBILITY: LONG URLs")
@@ -4438,30 +4516,7 @@ If no issues found, state: "✓ All alt text is clear, concise, and descriptive.
         report_lines.append("")
 
         # PDF link check removed - users typically can't control accessibility of institutional PDFs
-
-        # Table of contents
-        report_lines.append("ACCESSIBILITY: TABLE OF CONTENTS")
-        report_lines.append("-" * 80)
-        toc_issues = [issue for issue in self.issues if issue.issue_type == "MISSING_TOC"]
-        if toc_issues:
-            for issue in toc_issues:
-                report_lines.append(f"[X] {issue.description}")
-            report_lines.append("    (Long documents benefit from a table of contents for navigation)")
-        else:
-            report_lines.append("[OK] Document has table of contents or is short enough not to require one")
-        report_lines.append("")
-
-        # Bookmarks
-        report_lines.append("ACCESSIBILITY: INTERNAL NAVIGATION/BOOKMARKS")
-        report_lines.append("-" * 80)
-        bookmark_issues = [issue for issue in self.issues if issue.issue_type == "MISSING_BOOKMARKS"]
-        if bookmark_issues:
-            for issue in bookmark_issues:
-                report_lines.append(f"[X] {issue.description}")
-            report_lines.append("    (Add bookmarks to major sections for easier navigation)")
-        else:
-            report_lines.append("[OK] Document has internal navigation or is short enough not to require it")
-        report_lines.append("")
+        # Table of contents and bookmarks checks removed (pared back to critical issues)
 
         # ============================================================
         # CATEGORY 5: LISTS
@@ -4484,35 +4539,7 @@ If no issues found, state: "✓ All alt text is clear, concise, and descriptive.
             report_lines.append("[OK] List formatting looks good")
         report_lines.append("")
 
-        # Nested list hierarchy
-        report_lines.append("ACCESSIBILITY: NESTED LIST HIERARCHY")
-        report_lines.append("-" * 80)
-        list_hierarchy_issues = [issue for issue in self.issues if issue.issue_type == "INCONSISTENT_LIST_HIERARCHY"]
-        if list_hierarchy_issues:
-            report_lines.append(f"[X] Found {len(list_hierarchy_issues)} inconsistent list level(s):")
-            report_lines.append("    (List levels should increment by 1, not skip levels)")
-            for issue in list_hierarchy_issues[:5]:
-                report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(list_hierarchy_issues) > 5:
-                report_lines.append(f"  ... and {len(list_hierarchy_issues) - 5} more")
-        else:
-            report_lines.append("[OK] List hierarchy is consistent")
-        report_lines.append("")
-
-        # Layout lists
-        report_lines.append("ACCESSIBILITY: LISTS USED FOR LAYOUT")
-        report_lines.append("-" * 80)
-        layout_list_issues = [issue for issue in self.issues if issue.issue_type == "LAYOUT_LIST"]
-        if layout_list_issues:
-            report_lines.append(f"[X] Found {len(layout_list_issues)} list(s) potentially used for layout/indentation:")
-            report_lines.append("    (Lists should be used for semantic grouping, not layout)")
-            for issue in layout_list_issues[:5]:
-                report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(layout_list_issues) > 5:
-                report_lines.append(f"  ... and {len(layout_list_issues) - 5} more")
-        else:
-            report_lines.append("[OK] Lists appear to be used semantically")
-        report_lines.append("")
+        # Nested list hierarchy and layout lists checks removed (pared back to critical issues)
 
         # ============================================================
         # CATEGORY 6: TEXT FORMATTING
@@ -4627,46 +4654,10 @@ If no issues found, state: "✓ All alt text is clear, concise, and descriptive.
             report_lines.append("[OK] Formatting usage is appropriate")
         report_lines.append("")
 
-        # ============================================================
-        # CATEGORY 7: READABILITY
-        # ============================================================
-        report_lines.append("=" * 80)
-        report_lines.append("CATEGORY: READABILITY")
-        report_lines.append("=" * 80)
-        report_lines.append("")
-
-        # Long sentences
-        report_lines.append("ACCESSIBILITY: SENTENCE LENGTH")
-        report_lines.append("-" * 80)
-        long_sentence_issues = [issue for issue in self.issues if issue.issue_type == "LONG_SENTENCE"]
-        if long_sentence_issues:
-            report_lines.append(f"[X] Found {len(long_sentence_issues)} overly long sentence(s) (>50 words):")
-            report_lines.append("    (Shorter sentences improve readability and comprehension)")
-            for issue in long_sentence_issues[:5]:
-                report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(long_sentence_issues) > 5:
-                report_lines.append(f"  ... and {len(long_sentence_issues) - 5} more")
-        else:
-            report_lines.append("[OK] Sentence lengths are within recommended limits")
-        report_lines.append("")
-
-        # Date formats
-        report_lines.append("ACCESSIBILITY: DATE FORMATS")
-        report_lines.append("-" * 80)
-        date_format_issues = [issue for issue in self.issues if issue.issue_type == "NUMERIC_DATE_FORMAT"]
-        if date_format_issues:
-            report_lines.append(f"[X] Found {len(date_format_issues)} paragraph(s) with numeric-only date formats:")
-            report_lines.append("    (Numeric dates like 12/5/24 are ambiguous - use 'December 5, 2024' or '5 Dec 2024')")
-            for issue in date_format_issues[:5]:
-                report_lines.append(f"  - {issue.location}: {issue.description}")
-            if len(date_format_issues) > 5:
-                report_lines.append(f"  ... and {len(date_format_issues) - 5} more")
-        else:
-            report_lines.append("[OK] No ambiguous numeric date formats detected")
-        report_lines.append("")
+        # CATEGORY 7: READABILITY removed (long sentences and date formats checks pared back)
 
         # ============================================================
-        # CATEGORY 8: IMAGES
+        # CATEGORY 7: IMAGES
         # ============================================================
         report_lines.append("=" * 80)
         report_lines.append("CATEGORY: IMAGES")

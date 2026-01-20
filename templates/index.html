@@ -102,6 +102,22 @@
             Comprehensive analysis for <strong>accessibility</strong>, <strong>required content</strong>, <strong>student belonging</strong>, and <strong>quality</strong>
         </p>
 
+        <!-- Pre-Submit Instructions -->
+        <div class="alert alert-info border-0 shadow-sm mb-4" role="alert" style="background: linear-gradient(135deg, #e7f3ff 0%, #f0f7ff 100%); border-left: 4px solid #0d6efd !important;">
+            <div class="d-flex align-items-start">
+                <i class="bi bi-lightbulb-fill text-primary me-3" style="font-size: 1.5rem;"></i>
+                <div>
+                    <h6 class="alert-heading mb-2"><strong>Before You Upload</strong></h6>
+                    <p class="mb-2">
+                        For best results, run <strong>Word's built-in Accessibility Checker</strong> first and fix what you can.
+                    </p>
+                    <p class="small text-muted mb-0">
+                        <i class="bi bi-info-circle"></i> In Word: <strong>Review</strong> tab &rarr; <strong>Check Accessibility</strong>. This catches basic issues like missing alt text and heading structure problems.
+                    </p>
+                </div>
+            </div>
+        </div>
+
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -146,154 +162,14 @@
         <div class="card" style="border: 2px solid #ffbd00;">
             <div class="card-body">
                 <h5 class="card-title text-center mb-3">
-                    <i class="bi bi-list-check"></i> Five Types of Feedback
+                    <i class="bi bi-list-check"></i> Four Types of Feedback
                 </h5>
 
-                <!-- 1. Accessibility Checks -->
+                <!-- 1. Missing Required Sections -->
                 <div class="mb-3">
                     <h6 class="fw-bold mb-2">
-                        <i class="bi bi-universal-access text-primary"></i> 1. Accessibility Checks (44+)
-                    </h6>
-                    <p class="small text-muted mb-2">
-                        Ensures your syllabus is accessible to all students, including those using screen readers or assistive technologies.
-                    </p>
-                    <p class="text-center mb-2">
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
-                                data-bs-target="#accessibilityChecksList" aria-expanded="false" aria-controls="accessibilityChecksList">
-                            <i class="bi bi-chevron-down"></i> Show/Hide Complete List
-                        </button>
-                    </p>
-                </div>
-
-                <div class="collapse" id="accessibilityChecksList">
-                    <!-- Introduction and Standards -->
-                    <div class="alert alert-light border mb-4">
-                        <h6 class="fw-bold mb-2"><i class="bi bi-mortarboard"></i> Why Syllabus Accessibility Matters</h6>
-                        <p class="small mb-2">
-                            A syllabus is often the first document students encounter and serves as a contract, roadmap, and accessibility gateway.
-                            Inaccessible syllabi disproportionately affect students with disabilities, international students, first-generation students, and neurodivergent learners.
-                        </p>
-                        <p class="small mb-3">
-                            Our checks are based on established standards from leading organizations:
-                        </p>
-                        <div class="row small">
-                            <div class="col-md-6">
-                                <strong><i class="bi bi-file-earmark-text"></i> Document Accessibility Standards:</strong>
-                                <ul class="mb-2">
-                                    <li><strong>WCAG 2.1/2.2</strong> - International accessibility guidelines (W3C/WAI)</li>
-                                    <li><strong>Section 508</strong> - U.S. federal accessibility requirements</li>
-                                    <li><strong>ADA</strong> - Americans with Disabilities Act compliance</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-6">
-                                <strong><i class="bi bi-book"></i> Educational Best Practices:</strong>
-                                <ul class="mb-0">
-                                    <li><strong>UDL</strong> - Universal Design for Learning (CAST)</li>
-                                    <li><strong>Quality Matters</strong> - Course design standards</li>
-                                    <li><strong>AEM Center</strong> - Accessible Educational Materials</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="fw-bold mt-3"><i class="bi bi-fonts"></i> Font Usage</h6>
-                            <ul class="small">
-                                <li>Small font sizes (below 11pt)</li>
-                                <li>Decorative or inaccessible fonts</li>
-                                <li>Inconsistent font families</li>
-                            </ul>
-
-                            <h6 class="fw-bold mt-3"><i class="bi bi-table"></i> Table Structure</h6>
-                            <ul class="small">
-                                <li>Empty table rows or columns</li>
-                                <li>Tables used for layout instead of data</li>
-                                <li>Missing table headers</li>
-                                <li>Missing scope declarations</li>
-                                <li>Missing table captions</li>
-                                <li>Merged cells affecting reading order</li>
-                                <li>Incorrect numeric alignment</li>
-                                <li>Confusing table reading order</li>
-                                <li>Embedded images in tables</li>
-                            </ul>
-
-                            <h6 class="fw-bold mt-3"><i class="bi bi-palette"></i> Color & Contrast</h6>
-                            <ul class="small">
-                                <li>Low color contrast</li>
-                                <li>Color used as sole indicator of meaning</li>
-                                <li>Text over colored backgrounds</li>
-                                <li>Color-coded tables without text labels</li>
-                            </ul>
-
-                            <h6 class="fw-bold mt-3"><i class="bi bi-link-45deg"></i> Links & Navigation</h6>
-                            <ul class="small">
-                                <li>Non-descriptive link text ("click here")</li>
-                                <li>Unstyled links (missing underline)</li>
-                                <li>Long URLs in text</li>
-                                <li>Missing table of contents</li>
-                                <li>Missing bookmarks/internal navigation</li>
-                            </ul>
-
-                            <h6 class="fw-bold mt-3"><i class="bi bi-list-ul"></i> Lists</h6>
-                            <ul class="small">
-                                <li>Inconsistent list hierarchy</li>
-                                <li>Lists used for layout</li>
-                            </ul>
-                        </div>
-
-                        <div class="col-md-6">
-                            <h6 class="fw-bold mt-3"><i class="bi bi-text-paragraph"></i> Text Formatting</h6>
-                            <ul class="small">
-                                <li>Pseudo-tables (manual alignment with tabs/spaces)</li>
-                                <li>Underlined non-link text</li>
-                                <li>Insufficient line spacing</li>
-                                <li>Full text justification</li>
-                                <li>Large blocks of ALL CAPS text</li>
-                                <li>Excessive bold, italic, or underline</li>
-                                <li>Inconsistent formatting</li>
-                            </ul>
-
-                            <h6 class="fw-bold mt-3"><i class="bi bi-book"></i> Readability</h6>
-                            <ul class="small">
-                                <li>Overly long sentences (>50 words)</li>
-                                <li>Numeric date formats (ambiguous dates)</li>
-                            </ul>
-
-                            <h6 class="fw-bold mt-3"><i class="bi bi-image"></i> Images</h6>
-                            <ul class="small">
-                                <li>Missing alt text</li>
-                                <li>Questionable decorative image marking</li>
-                                <li>Images containing text or schedules</li>
-                            </ul>
-
-                            <h6 class="fw-bold mt-3"><i class="bi bi-file-earmark-text"></i> Document Properties</h6>
-                            <ul class="small">
-                                <li>Missing document title</li>
-                                <li>Missing language setting</li>
-                                <li>Multiple languages without proper tagging</li>
-                            </ul>
-
-                            <h6 class="fw-bold mt-3"><i class="bi bi-stars"></i> Content Quality</h6>
-                            <ul class="small">
-                                <li>Copied content with broken formatting</li>
-                                <li>Footnotes instead of inline explanations</li>
-                                <li>Visual indicators without text equivalents</li>
-                                <li>Math expressions without accessible markup</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="alert alert-warning mt-3 mb-0" role="alert">
-                        <i class="bi bi-shield-check"></i> <strong>Legal Compliance:</strong> These checks help institutions comply with federal accessibility laws (ADA, Section 504, Section 508).
-                    </div>
-                </div>
-
-                <hr class="my-4">
-
-                <!-- 2. Missing Required Sections -->
-                <div class="mb-3">
-                    <h6 class="fw-bold mb-2">
-                        <i class="bi bi-exclamation-triangle text-warning"></i> 2. Missing Required Sections
+                        <i class="bi bi-list-check text-primary"></i> 1. Missing Required Sections
+                        <span class="badge bg-warning text-dark ms-2">Quick Wins</span>
                     </h6>
                     <p class="small text-muted mb-2">
                         Verifies your syllabus includes essential information that students need and institutions require.
@@ -353,10 +229,11 @@
 
                 <hr class="my-4">
 
-                <!-- 3. Growth Mindset and Belonging -->
+                <!-- 2. Language & Tone (Growth Mindset and Belonging) -->
                 <div class="mb-3">
                     <h6 class="fw-bold mb-2">
-                        <i class="bi bi-heart text-danger"></i> 3. Growth Mindset and Belonging Analysis
+                        <i class="bi bi-chat-heart text-danger"></i> 2. Language & Tone Suggestions
+                        <span class="badge bg-info text-dark ms-2">Ready-to-Use Text</span>
                     </h6>
                     <p class="small text-muted mb-2">
                         AI-powered analysis of how well your syllabus promotes student belonging and communicates growth mindset.
@@ -415,14 +292,14 @@
 
                 <hr class="my-4">
 
-                <!-- 4. Syllabus Quality Analysis -->
+                <!-- 3. Clarity & Quality Analysis -->
                 <div class="mb-3">
                     <h6 class="fw-bold mb-2">
                         <i class="bi bi-clipboard-check text-success"></i>
-                        4. Syllabus Quality Analysis
+                        3. Clarity & Quality Analysis
                     </h6>
                     <p class="small text-muted mb-2">
-                        AI-powered analysis identifies quality and clarity issues that may confuse or exclude students...
+                        AI-powered analysis identifies terminology, policies, or formatting that may confuse or exclude students.
                     </p>
                     <p class="text-center mb-2">
                     <button class="btn btn-sm btn-outline-secondary" type="button"
@@ -468,44 +345,151 @@
 
                 <hr class="my-4">
 
-                <!-- 5. Image Alt Text Analysis -->
+                <!-- 4. Digital Accessibility & Formatting -->
                 <div class="mb-3">
                     <h6 class="fw-bold mb-2">
-                        <i class="bi bi-image text-info"></i>
-                        5. Image Alt Text Analysis
+                        <i class="bi bi-universal-access text-primary"></i> 4. Digital Accessibility & Formatting (37+ checks)
                     </h6>
                     <p class="small text-muted mb-2">
-                        AI-powered analysis evaluates the quality of alt text for images in your syllabus...
+                        Ensures your syllabus is accessible to all students, including those using screen readers or assistive technologies.
                     </p>
                     <p class="text-center mb-2">
-                    <button class="btn btn-sm btn-outline-secondary" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#imageAltAnalysisList">
-                        <i class="bi bi-chevron-down"></i> Show/Hide Analysis Details
-                    </button>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#accessibilityChecksList" aria-expanded="false" aria-controls="accessibilityChecksList">
+                            <i class="bi bi-chevron-down"></i> Show/Hide Complete List
+                        </button>
                     </p>
                 </div>
-                <div class="collapse" id="imageAltAnalysisList">
-                    <div class="alert alert-light border">
-                        <p class="small mb-3">
-                            This analysis uses AI to examine all images in your syllabus for alt text quality issues:
-                        </p>
-                        <ol class="small mb-0">
-                            <li class="mb-2">
-                                <strong>Institutional Logos:</strong> Flags logos or organizational branding with missing
-                                or insufficient alt text (e.g., just "logo" instead of "University of Michigan logo").
-                            </li>
-                            <li class="mb-2">
-                                <strong>Poor Quality Alt Text:</strong> Identifies alt text that is too short (single words),
-                                redundant (starts with "Image of..." or "Picture of..."), irrelevant (describes the file format
-                                instead of content), or non-descriptive (vague terms like "illustration" or "diagram").
-                            </li>
-                        </ol>
 
-                        <p class="small mb-0 mt-3">
-                            <i class="bi bi-lightbulb"></i> <strong>What You'll Get:</strong> For each image with problematic alt text,
-                            you'll receive the current alt text, an explanation of why it's inadequate, and a specific recommendation
-                            for improved alt text that conveys the image's content and purpose.
+                <div class="collapse" id="accessibilityChecksList">
+                    <!-- Introduction and Standards -->
+                    <div class="alert alert-light border mb-4">
+                        <h6 class="fw-bold mb-2"><i class="bi bi-mortarboard"></i> Why Syllabus Accessibility Matters</h6>
+                        <p class="small mb-2">
+                            A syllabus is often the first document students encounter and serves as a contract, roadmap, and accessibility gateway.
+                            Inaccessible syllabi disproportionately affect students with disabilities, international students, first-generation students, and neurodivergent learners.
                         </p>
+                        <p class="small mb-3">
+                            Our checks are based on established standards from leading organizations:
+                        </p>
+                        <div class="row small">
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-file-earmark-text"></i> Document Accessibility Standards:</strong>
+                                <ul class="mb-2">
+                                    <li><strong>WCAG 2.1/2.2</strong> - International accessibility guidelines (W3C/WAI)</li>
+                                    <li><strong>Section 508</strong> - U.S. federal accessibility requirements</li>
+                                    <li><strong>ADA</strong> - Americans with Disabilities Act compliance</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-book"></i> Educational Best Practices:</strong>
+                                <ul class="mb-0">
+                                    <li><strong>UDL</strong> - Universal Design for Learning (CAST)</li>
+                                    <li><strong>Quality Matters</strong> - Course design standards</li>
+                                    <li><strong>AEM Center</strong> - Accessible Educational Materials</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mt-3"><i class="bi bi-fonts"></i> Font Usage
+                                <a href="https://support.microsoft.com/en-us/office/change-the-font-size-dc5b3f47-9e78-4af6-9734-ffc69175811c" target="_blank" class="ms-2 small text-decoration-none" title="Learn how to fix"><i class="bi bi-question-circle text-info"></i> Learn how</a>
+                            </h6>
+                            <ul class="small">
+                                <li>Small font sizes (below 11pt)</li>
+                                <li>Decorative or inaccessible fonts</li>
+                                <li>Inconsistent font families</li>
+                            </ul>
+                            <p class="small text-muted mb-2"><i class="bi bi-lightbulb"></i> <strong>Quick fix:</strong> Select text &rarr; Home tab &rarr; Font size dropdown &rarr; Choose 11pt or larger. Use Arial, Calibri, or Times New Roman.</p>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-table"></i> Table Structure
+                                <a href="https://support.microsoft.com/en-us/office/video-create-accessible-tables-in-word-cb464015-59dc-46a0-ac01-6217c62210e5" target="_blank" class="ms-2 small text-decoration-none" title="Watch video"><i class="bi bi-play-circle text-info"></i> Video</a>
+                            </h6>
+                            <ul class="small">
+                                <li>Empty table rows or columns</li>
+                                <li>Tables used for layout instead of data</li>
+                                <li>Missing table headers</li>
+                                <li>Missing scope declarations</li>
+                                <li>Missing table captions</li>
+                                <li>Merged cells affecting reading order</li>
+                                <li>Incorrect numeric alignment</li>
+                                <li>Confusing table reading order</li>
+                                <li>Embedded images in tables</li>
+                            </ul>
+                            <p class="small text-muted mb-2"><i class="bi bi-lightbulb"></i> <strong>What's a table header?</strong> The top row that labels each column (e.g., "Date", "Topic", "Assignment"). To set: Click in table &rarr; Table Design tab &rarr; Check "Header Row".</p>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-palette"></i> Color & Contrast
+                                <a href="https://webaim.org/resources/contrastchecker/" target="_blank" class="ms-2 small text-decoration-none" title="Check your colors"><i class="bi bi-palette text-info"></i> Contrast checker</a>
+                            </h6>
+                            <ul class="small">
+                                <li>Low color contrast</li>
+                                <li>Color used as sole indicator of meaning</li>
+                                <li>Text over colored backgrounds</li>
+                                <li>Color-coded tables without text labels</li>
+                            </ul>
+                            <p class="small text-muted mb-2"><i class="bi bi-lightbulb"></i> <strong>Quick fix:</strong> Use dark text on light backgrounds. If using color to show meaning (e.g., red = late), also add text labels.</p>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-link-45deg"></i> Links
+                                <a href="https://support.microsoft.com/en-us/office/create-accessible-links-in-word-28305cc8-3be2-417f-a789-67c5a8d14393" target="_blank" class="ms-2 small text-decoration-none" title="Learn how"><i class="bi bi-question-circle text-info"></i> Learn how</a>
+                            </h6>
+                            <ul class="small">
+                                <li>Non-descriptive link text ("click here")</li>
+                                <li>Long URLs in text</li>
+                            </ul>
+                            <p class="small text-muted mb-2"><i class="bi bi-lightbulb"></i> <strong>Quick fix:</strong> Instead of "click here", use descriptive text like "view the grading rubric". Right-click link &rarr; Edit Hyperlink &rarr; Change "Text to display".</p>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mt-3"><i class="bi bi-text-paragraph"></i> Text Formatting
+                                <a href="https://support.microsoft.com/en-us/office/use-headings-and-styles-in-word-c0d409b5-5c0a-4a5c-8c5e-001e76072e51" target="_blank" class="ms-2 small text-decoration-none" title="Learn about styles"><i class="bi bi-question-circle text-info"></i> Using styles</a>
+                            </h6>
+                            <ul class="small">
+                                <li>Pseudo-tables (manual alignment with tabs/spaces)</li>
+                                <li>Underlined non-link text</li>
+                                <li>Insufficient line spacing</li>
+                                <li>Full text justification</li>
+                                <li>Large blocks of ALL CAPS text</li>
+                                <li>Excessive bold, italic, or underline</li>
+                                <li>Inconsistent formatting</li>
+                            </ul>
+                            <p class="small text-muted mb-2"><i class="bi bi-lightbulb"></i> <strong>Quick fix:</strong> Use left alignment (not justified). For emphasis, use <strong>bold</strong> instead of ALL CAPS or underline.</p>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-image"></i> Images & Alt Text
+                                <a href="https://support.microsoft.com/en-us/office/add-alternative-text-to-a-shape-picture-chart-smartart-graphic-or-other-object-44989b2a-903c-4d9a-b742-6a75b451c669" target="_blank" class="ms-2 small text-decoration-none" title="Watch video"><i class="bi bi-play-circle text-info"></i> Video</a>
+                            </h6>
+                            <ul class="small">
+                                <li>Missing alt text</li>
+                                <li>Questionable decorative image marking</li>
+                                <li>Images containing text or schedules</li>
+                                <li>AI-powered alt text quality analysis</li>
+                                <li>Logos with insufficient descriptions</li>
+                            </ul>
+                            <p class="small text-muted mb-2"><i class="bi bi-lightbulb"></i> <strong>What's alt text?</strong> A brief description of an image for screen readers. Right-click image &rarr; "View Alt Text" &rarr; Type description (e.g., "UWM logo" or "Chart showing enrollment trends").</p>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-file-earmark-text"></i> Document Properties
+                                <a href="https://support.microsoft.com/en-us/office/make-your-word-documents-accessible-d9bf3683-87ac-47ea-b91a-78dcacb3c66d" target="_blank" class="ms-2 small text-decoration-none" title="Full guide"><i class="bi bi-book text-info"></i> Full guide</a>
+                            </h6>
+                            <ul class="small">
+                                <li>Missing document title</li>
+                                <li>Missing language setting</li>
+                                <li>Multiple languages without proper tagging</li>
+                            </ul>
+                            <p class="small text-muted mb-2"><i class="bi bi-lightbulb"></i> <strong>Quick fix:</strong> File &rarr; Info &rarr; Properties &rarr; Add Title. For language: Review tab &rarr; Language &rarr; Set Proofing Language.</p>
+
+                            <h6 class="fw-bold mt-3"><i class="bi bi-stars"></i> Content Quality</h6>
+                            <ul class="small">
+                                <li>Copied content with broken formatting</li>
+                                <li>Footnotes instead of inline explanations</li>
+                                <li>Visual indicators without text equivalents</li>
+                                <li>Math expressions without accessible markup</li>
+                            </ul>
+                            <p class="small text-muted mb-2"><i class="bi bi-lightbulb"></i> <strong>Quick fix:</strong> When pasting, use "Paste Special" &rarr; "Keep Text Only" to avoid formatting issues.</p>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning mt-3 mb-0" role="alert">
+                        <i class="bi bi-shield-check"></i> <strong>Legal Compliance:</strong> These checks help institutions comply with federal accessibility laws (ADA, Section 504, Section 508).
                     </div>
                 </div>
 
@@ -515,20 +499,20 @@
         <div class="feature-list mt-3">
             <div class="row text-center justify-content-center">
                 <div class="col-md-3 col-6">
-                    <i class="bi bi-universal-access" style="font-size: 2rem;"></i>
-                    <p class="mt-2"><strong>Accessibility</strong><br><small>44+ automated checks</small></p>
-                </div>
-                <div class="col-md-3 col-6">
-                    <i class="bi bi-clipboard-check" style="font-size: 2rem;"></i>
+                    <i class="bi bi-list-check" style="font-size: 2rem; color: #ffbd00;"></i>
                     <p class="mt-2"><strong>Required Sections</strong><br><small>Content verification</small></p>
                 </div>
                 <div class="col-md-3 col-6">
-                    <i class="bi bi-heart" style="font-size: 2rem;"></i>
-                    <p class="mt-2"><strong>Growth Mindset</strong><br><small>Belonging analysis</small></p>
+                    <i class="bi bi-chat-heart" style="font-size: 2rem; color: #ffbd00;"></i>
+                    <p class="mt-2"><strong>Language & Tone</strong><br><small>Belonging analysis</small></p>
                 </div>
                 <div class="col-md-3 col-6">
-                    <i class="bi bi-lightbulb" style="font-size: 2rem;"></i>
-                    <p class="mt-2"><strong>Quality Analysis</strong><br><small>Clarity & inclusivity</small></p>
+                    <i class="bi bi-clipboard-check" style="font-size: 2rem; color: #ffbd00;"></i>
+                    <p class="mt-2"><strong>Clarity & Quality</strong><br><small>Student-friendly</small></p>
+                </div>
+                <div class="col-md-3 col-6">
+                    <i class="bi bi-universal-access" style="font-size: 2rem; color: #ffbd00;"></i>
+                    <p class="mt-2"><strong>Accessibility</strong><br><small>37+ automated checks</small></p>
                 </div>
             </div>
         </div>
@@ -543,7 +527,7 @@
                         <i class="bi bi-hourglass-split text-primary" style="font-size: 3rem;"></i>
                     </div>
                     <h5 class="mb-3">Analyzing Your Syllabus</h5>
-                    <p class="text-muted mb-4" id="progressStatus">Running accessibility checks...</p>
+                    <p class="text-muted mb-4" id="progressStatus">Uploading document...</p>
 
                     <div class="progress mb-3" style="height: 25px;">
                         <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
@@ -556,10 +540,10 @@
                     <div class="small text-muted mt-4">
                         <div id="progressStage">
                             <i class="bi bi-check-circle text-success"></i> Uploading document...<br>
-                            <i class="bi bi-arrow-right text-muted"></i> Running 44+ accessibility checks...<br>
-                            <i class="bi bi-arrow-right text-muted"></i> AI-powered quality analysis...<br>
-                            <i class="bi bi-arrow-right text-muted"></i> AI-powered growth mindset analysis...<br>
-                            <i class="bi bi-arrow-right text-muted"></i> AI-powered image alt text analysis...<br>
+                            <i class="bi bi-arrow-right text-muted"></i> Checking required sections...<br>
+                            <i class="bi bi-arrow-right text-muted"></i> Analyzing language & tone...<br>
+                            <i class="bi bi-arrow-right text-muted"></i> Analyzing clarity & quality...<br>
+                            <i class="bi bi-arrow-right text-muted"></i> Running accessibility checks...<br>
                             <i class="bi bi-arrow-right text-muted"></i> Generating report...
                         </div>
                     </div>
@@ -636,10 +620,10 @@
             let stage = 0;
             const stages = [
                 'Uploading document...',
-                'Running 44+ accessibility checks...',
-                'AI-powered quality analysis...',
-                'AI-powered growth mindset analysis...',
-                'AI-powered image alt text analysis...',
+                'Checking required sections...',
+                'Analyzing language & tone...',
+                'Analyzing clarity & quality...',
+                'Running accessibility checks...',
                 'Generating report...'
             ];
 
@@ -683,10 +667,10 @@
             const stageDiv = document.getElementById('progressStage');
             const stages = [
                 'Uploading document...',
-                'Running 44+ accessibility checks...',
-                'AI-powered quality analysis...',
-                'AI-powered growth mindset analysis...',
-                'AI-powered image alt text analysis...',
+                'Checking required sections...',
+                'Analyzing language & tone...',
+                'Analyzing clarity & quality...',
+                'Running accessibility checks...',
                 'Generating report...'
             ];
 
