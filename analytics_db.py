@@ -46,15 +46,19 @@ def init_db():
             -- AREA 1: Missing Required Sections
             missing_sections_summary TEXT,
 
-            -- AREA 2: Language & Tone (Growth Mindset)
+            -- AREA 2: Language & Tone (Growth Mindset) - 6 subcategories
             growth_mindset_status TEXT,
             growth_mindset_score INTEGER,
             language_tone_summary TEXT,
+            -- Subcategory assessments stored as JSON: {category: "Strong/Moderate/Weak/Not Addressed"}
+            language_tone_subcategories JSON,
 
-            -- AREA 3: Clarity & Quality
+            -- AREA 3: Clarity & Quality - 4 subcategories
             quality_analysis_status TEXT,
             quality_issues_count INTEGER DEFAULT 0,
             clarity_quality_summary TEXT,
+            -- Subcategory issue counts stored as JSON: {category: count}
+            clarity_quality_subcategories JSON,
 
             -- AREA 4: Accessibility
             accessibility_summary TEXT,
@@ -73,7 +77,9 @@ def init_db():
         ("semester", "TEXT"),
         ("growth_mindset_score", "INTEGER"),
         ("quality_issues_count", "INTEGER DEFAULT 0"),
-        ("metadata_extraction_status", "TEXT")
+        ("metadata_extraction_status", "TEXT"),
+        ("language_tone_subcategories", "JSON"),
+        ("clarity_quality_subcategories", "JSON")
     ]
 
     for col_name, col_type in new_columns:
@@ -109,7 +115,9 @@ def store_scan_result(
     language_tone_summary: str = None,
     clarity_quality_summary: str = None,
     accessibility_summary: str = None,
-    metadata_extraction_status: str = None
+    metadata_extraction_status: str = None,
+    language_tone_subcategories: Dict[str, str] = None,
+    clarity_quality_subcategories: Dict[str, int] = None
 ) -> int:
     """Store a scan result in the database"""
     conn = get_db_connection()
@@ -132,6 +140,9 @@ def store_scan_result(
         else:
             accessibility_summary = 'No accessibility issues'
 
+    language_tone_subcategories = language_tone_subcategories or {}
+    clarity_quality_subcategories = clarity_quality_subcategories or {}
+
     cursor.execute('''
         INSERT INTO scans (
             filename, instructor_name, department, course_subject, course_number,
@@ -141,8 +152,9 @@ def store_scan_result(
             clarity_quality_summary, accessibility_summary,
             growth_mindset_status, growth_mindset_score,
             quality_analysis_status, quality_issues_count,
-            metadata_extraction_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            metadata_extraction_status,
+            language_tone_subcategories, clarity_quality_subcategories
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         filename,
         instructor_name,
@@ -163,7 +175,9 @@ def store_scan_result(
         growth_mindset_score,
         quality_analysis_status,
         quality_issues_count,
-        metadata_extraction_status
+        metadata_extraction_status,
+        json.dumps(language_tone_subcategories),
+        json.dumps(clarity_quality_subcategories)
     ))
 
     scan_id = cursor.lastrowid
@@ -532,6 +546,115 @@ def get_clarity_quality_breakdown(department: str = None) -> List[Dict]:
     conn.close()
 
     return [dict(row) for row in rows]
+
+def get_language_tone_subcategory_stats(department: str = None) -> Dict[str, Dict]:
+    """
+    Get aggregated statistics for Language & Tone subcategories.
+    Returns counts of Strong/Moderate/Weak/Not Addressed for each of the 6 categories:
+    - Growth Mindset
+    - Normalizing Challenge
+    - Instructor Care
+    - Valuing Diversity
+    - Normalizing Student Challenges
+    - Normalizing Academic Support
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if department:
+        cursor.execute('''
+            SELECT language_tone_subcategories FROM scans
+            WHERE language_tone_subcategories IS NOT NULL AND department = ?
+        ''', (department,))
+    else:
+        cursor.execute('''
+            SELECT language_tone_subcategories FROM scans
+            WHERE language_tone_subcategories IS NOT NULL
+        ''')
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    # Define the 6 subcategories
+    subcategories = [
+        'Growth Mindset',
+        'Normalizing Challenge',
+        'Instructor Care',
+        'Valuing Diversity',
+        'Normalizing Student Challenges',
+        'Normalizing Academic Support'
+    ]
+
+    # Initialize stats
+    stats = {cat: {'Strong': 0, 'Moderate': 0, 'Weak': 0, 'Not Addressed': 0, 'total': 0}
+             for cat in subcategories}
+
+    # Aggregate data
+    for row in rows:
+        if row['language_tone_subcategories']:
+            data = json.loads(row['language_tone_subcategories'])
+            for cat in subcategories:
+                if cat in data:
+                    assessment = data[cat]
+                    if assessment in stats[cat]:
+                        stats[cat][assessment] += 1
+                        stats[cat]['total'] += 1
+
+    return stats
+
+def get_clarity_quality_subcategory_stats(department: str = None) -> Dict[str, Dict]:
+    """
+    Get aggregated statistics for Clarity & Quality subcategories.
+    Returns issue counts for each of the 4 categories:
+    - Undefined Terminology
+    - Tone Issues
+    - Confusing Policies
+    - Formatting Inconsistencies
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if department:
+        cursor.execute('''
+            SELECT clarity_quality_subcategories FROM scans
+            WHERE clarity_quality_subcategories IS NOT NULL AND department = ?
+        ''', (department,))
+    else:
+        cursor.execute('''
+            SELECT clarity_quality_subcategories FROM scans
+            WHERE clarity_quality_subcategories IS NOT NULL
+        ''')
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    # Define the 4 subcategories
+    subcategories = [
+        'Undefined Terminology',
+        'Tone Issues',
+        'Confusing Policies',
+        'Formatting Inconsistencies'
+    ]
+
+    # Initialize stats
+    stats = {cat: {'total_issues': 0, 'scans_with_issues': 0, 'scans_clean': 0, 'total_scans': 0}
+             for cat in subcategories}
+
+    # Aggregate data
+    for row in rows:
+        if row['clarity_quality_subcategories']:
+            data = json.loads(row['clarity_quality_subcategories'])
+            for cat in subcategories:
+                if cat in data:
+                    count = data[cat]
+                    stats[cat]['total_issues'] += count
+                    stats[cat]['total_scans'] += 1
+                    if count > 0:
+                        stats[cat]['scans_with_issues'] += 1
+                    else:
+                        stats[cat]['scans_clean'] += 1
+
+    return stats
 
 # Initialize database on module load
 init_db()

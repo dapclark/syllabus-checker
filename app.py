@@ -513,39 +513,99 @@ def upload_file():
                 semester = course_metadata.get('semester')
 
             # Generate summaries for the four key areas
-            # Language & Tone (Growth Mindset) - extract score if available
+            import re
+
+            # ===== LANGUAGE & TONE (Growth Mindset) - 6 subcategories =====
             language_tone_summary = None
             growth_mindset_score = None
+            language_tone_subcategories = {}
+
             if growth_mindset_analysis.get('status') == 'success':
                 analysis_text = growth_mindset_analysis.get('analysis', '')
-                # Try to extract score from analysis (look for patterns like "Score: 7/10" or "7 out of 10")
-                import re
-                score_match = re.search(r'(?:score|rating)[:\s]*(\d+)(?:/10|\s*out of\s*10)?', analysis_text, re.IGNORECASE)
+
+                # Extract assessments for each of the 6 subcategories
+                # Format in LLM output: "## QUESTION N: Title\n**Assessment:** Strong/Moderate/Weak/Not Addressed"
+                subcategory_patterns = [
+                    (r'(?:QUESTION\s*1|Growth\s*Mindset)[^\n]*\n\**Assessment:?\**\s*(Strong|Moderate|Weak|Not\s*Addressed)', 'Growth Mindset'),
+                    (r'(?:QUESTION\s*2|Normalizing\s*Challenge)[^\n]*\n\**Assessment:?\**\s*(Strong|Moderate|Weak|Not\s*Addressed)', 'Normalizing Challenge'),
+                    (r'(?:QUESTION\s*3|Instructor\s*Care)[^\n]*\n\**Assessment:?\**\s*(Strong|Moderate|Weak|Not\s*Addressed)', 'Instructor Care'),
+                    (r'(?:QUESTION\s*4|Valuing\s*Diversity)[^\n]*\n\**Assessment:?\**\s*(Strong|Moderate|Weak|Not\s*Addressed)', 'Valuing Diversity'),
+                    (r'(?:QUESTION\s*5|Normalizing\s*Student\s*Challenges)[^\n]*\n\**Assessment:?\**\s*(Strong|Moderate|Weak|Not\s*Addressed)', 'Normalizing Student Challenges'),
+                    (r'(?:QUESTION\s*6|Normalizing\s*Academic\s*Support)[^\n]*\n\**Assessment:?\**\s*(Strong|Moderate|Weak|Not\s*Addressed)', 'Normalizing Academic Support'),
+                ]
+
+                for pattern, category in subcategory_patterns:
+                    match = re.search(pattern, analysis_text, re.IGNORECASE)
+                    if match:
+                        assessment = match.group(1).strip().title()
+                        # Normalize "Not Addressed" capitalization
+                        if 'not' in assessment.lower():
+                            assessment = 'Not Addressed'
+                        language_tone_subcategories[category] = assessment
+
+                # Count strong/weak for summary
+                strong_count = sum(1 for v in language_tone_subcategories.values() if v == 'Strong')
+                weak_count = sum(1 for v in language_tone_subcategories.values() if v in ['Weak', 'Not Addressed'])
+
+                if strong_count >= 4:
+                    language_tone_summary = f'Strong ({strong_count}/6 areas)'
+                elif weak_count >= 3:
+                    language_tone_summary = f'Needs work ({weak_count}/6 areas weak)'
+                else:
+                    language_tone_summary = 'Mixed results'
+
+                # Try to extract overall score if present
+                score_match = re.search(r'(?:score|rating|overall)[:\s]*(\d+)(?:/10|\s*out of\s*10)?', analysis_text, re.IGNORECASE)
                 if score_match:
                     growth_mindset_score = int(score_match.group(1))
-                # Create brief summary
-                if 'growth' in analysis_text.lower() and 'strong' in analysis_text.lower():
-                    language_tone_summary = 'Strong growth mindset language'
-                elif 'opportunities' in analysis_text.lower() or 'could' in analysis_text.lower():
-                    language_tone_summary = 'Some improvement opportunities'
-                else:
-                    language_tone_summary = 'Analysis completed'
+
             elif growth_mindset_analysis.get('error'):
                 language_tone_summary = 'Analysis unavailable'
 
-            # Clarity & Quality - count number of issues/suggestions
+            # ===== CLARITY & QUALITY - 4 subcategories =====
             clarity_quality_summary = None
             quality_issues_count = 0
+            clarity_quality_subcategories = {}
+
             if quality_analysis.get('status') == 'success':
                 analysis_text = quality_analysis.get('analysis', '')
-                # Count bullet points or numbered items as suggestions
-                quality_issues_count = len(re.findall(r'(?:^|\n)\s*[-•*]\s+|(?:^|\n)\s*\d+[.)]\s+', analysis_text))
+
+                # Extract issue counts for each of the 4 subcategories
+                # Look for section headers and count issues (bullet points) in each section
+                sections = [
+                    (r'##?\s*1\.?\s*UNDEFINED\s*(?:COURSE\s*)?TERMINOLOGY(.*?)(?=##?\s*2\.|$)', 'Undefined Terminology'),
+                    (r'##?\s*2\.?\s*TONE\s*(?:AND\s*INCLUSIVITY|ISSUES)(.*?)(?=##?\s*3\.|$)', 'Tone Issues'),
+                    (r'##?\s*3\.?\s*(?:POLICIES\s*THAT\s*MAY\s*)?CONFUS(?:ING|E)(.*?)(?=##?\s*4\.|$)', 'Confusing Policies'),
+                    (r'##?\s*4\.?\s*FORMAT(?:TING)?\s*INCONSISTENC(?:IES|Y)(.*?)(?=##?\s*5\.|$)', 'Formatting Inconsistencies'),
+                ]
+
+                for pattern, category in sections:
+                    match = re.search(pattern, analysis_text, re.IGNORECASE | re.DOTALL)
+                    if match:
+                        section_text = match.group(1)
+                        # Check for "no issues" indicators
+                        if re.search(r'✓|no\s*issues|none\s*found|appears?\s*(?:to\s*be\s*)?clear', section_text, re.IGNORECASE):
+                            clarity_quality_subcategories[category] = 0
+                        else:
+                            # Count issues (bullet points, **Term**:, **Issue**:, **Policy**:)
+                            issues = len(re.findall(r'(?:^|\n)\s*[-•*]\s*\*\*(?:Term|Issue|Policy|Problem)', section_text))
+                            if issues == 0:
+                                # Fallback: count any bullet points
+                                issues = len(re.findall(r'(?:^|\n)\s*[-•*]\s+\S', section_text))
+                            clarity_quality_subcategories[category] = issues
+
+                # Calculate total and summary
+                quality_issues_count = sum(clarity_quality_subcategories.values())
+                categories_with_issues = sum(1 for v in clarity_quality_subcategories.values() if v > 0)
+
                 if quality_issues_count == 0:
                     clarity_quality_summary = 'Excellent clarity'
-                elif quality_issues_count < 5:
-                    clarity_quality_summary = f'{quality_issues_count} suggestions for improvement'
+                elif categories_with_issues == 1:
+                    problem_cat = [k for k, v in clarity_quality_subcategories.items() if v > 0][0]
+                    clarity_quality_summary = f'{problem_cat}: {quality_issues_count} issue(s)'
                 else:
-                    clarity_quality_summary = f'{quality_issues_count} areas to review'
+                    clarity_quality_summary = f'{quality_issues_count} issues in {categories_with_issues} areas'
+
             elif quality_analysis.get('error'):
                 clarity_quality_summary = 'Analysis unavailable'
 
@@ -574,7 +634,9 @@ def upload_file():
                 language_tone_summary=language_tone_summary,
                 clarity_quality_summary=clarity_quality_summary,
                 accessibility_summary=accessibility_summary,
-                metadata_extraction_status=metadata_extraction_status
+                metadata_extraction_status=metadata_extraction_status,
+                language_tone_subcategories=language_tone_subcategories,
+                clarity_quality_subcategories=clarity_quality_subcategories
             )
         except Exception as db_error:
             # Don't fail the request if analytics storage fails
@@ -645,6 +707,10 @@ def admin_analytics():
     # Get clarity & quality breakdown
     clarity_quality_breakdown = analytics_db.get_clarity_quality_breakdown(dept_param)
 
+    # Get subcategory statistics for detailed breakdowns
+    language_tone_subcategories = analytics_db.get_language_tone_subcategory_stats(dept_param)
+    clarity_quality_subcategories = analytics_db.get_clarity_quality_subcategory_stats(dept_param)
+
     # Get department summary
     department_summary = analytics_db.get_department_summary()
 
@@ -666,6 +732,8 @@ def admin_analytics():
                            quality_trends=quality_trends,
                            language_tone_breakdown=language_tone_breakdown,
                            clarity_quality_breakdown=clarity_quality_breakdown,
+                           language_tone_subcategories=language_tone_subcategories,
+                           clarity_quality_subcategories=clarity_quality_subcategories,
                            department_summary=department_summary,
                            missing_sections_freq=missing_sections_freq,
                            departments=departments,
