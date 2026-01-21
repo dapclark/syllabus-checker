@@ -563,6 +563,8 @@ def upload_file():
                 language_tone_summary = 'Analysis unavailable'
 
             # ===== CLARITY & QUALITY - 4 subcategories =====
+            # (Note: LLM may output a 5th "Heading Structure" section, but we ignore it
+            # since headings are already covered in accessibility checks)
             clarity_quality_summary = None
             quality_issues_count = 0
             clarity_quality_subcategories = {}
@@ -571,28 +573,29 @@ def upload_file():
                 analysis_text = quality_analysis.get('analysis', '')
 
                 # Extract issue counts for each of the 4 subcategories
-                # Look for section headers and count issues (bullet points) in each section
+                # Format: "1. UNDEFINED COURSE TERMINOLOGY" followed by "Term: ..." entries
                 sections = [
-                    (r'##?\s*1\.?\s*UNDEFINED\s*(?:COURSE\s*)?TERMINOLOGY(.*?)(?=##?\s*2\.|$)', 'Undefined Terminology'),
-                    (r'##?\s*2\.?\s*TONE\s*(?:AND\s*INCLUSIVITY|ISSUES)(.*?)(?=##?\s*3\.|$)', 'Tone Issues'),
-                    (r'##?\s*3\.?\s*(?:POLICIES\s*THAT\s*MAY\s*)?CONFUS(?:ING|E)(.*?)(?=##?\s*4\.|$)', 'Confusing Policies'),
-                    (r'##?\s*4\.?\s*FORMAT(?:TING)?\s*INCONSISTENC(?:IES|Y)(.*?)(?=##?\s*5\.|$)', 'Formatting Inconsistencies'),
+                    # Section 1: Undefined Terminology - count "Term:" entries
+                    (r'1\.?\s*UNDEFINED\s*(?:COURSE\s*)?TERMINOLOGY(.*?)(?=\n\s*2\.|$)', 'Undefined Terminology', r'Term\s*:\s*["\']'),
+                    # Section 2: Tone Issues - count "Issue:" entries
+                    (r'2\.?\s*TONE\s*(?:AND\s*INCLUSIVITY|ISSUES)(.*?)(?=\n\s*3\.|$)', 'Tone Issues', r'Issue\s*:\s*["\']'),
+                    # Section 3: Confusing Policies - count "Policy:" entries
+                    (r'3\.?\s*(?:POLICIES\s*THAT\s*MAY\s*)?CONFUS(?:ING|E)(.*?)(?=\n\s*4\.|$)', 'Confusing Policies', r'Policy\s*:\s*["\']'),
+                    # Section 4: Formatting Inconsistencies - count "Element type:" entries
+                    (r'4\.?\s*(?:INCONSISTENT\s*)?FORMAT(?:TING)?(?:\s*INCONSISTENC(?:IES|Y))?(.*?)(?=\n\s*5\.|$)', 'Formatting Inconsistencies', r'Element\s*type\s*:\s*'),
                 ]
 
-                for pattern, category in sections:
-                    match = re.search(pattern, analysis_text, re.IGNORECASE | re.DOTALL)
+                for section_pattern, category, issue_pattern in sections:
+                    match = re.search(section_pattern, analysis_text, re.IGNORECASE | re.DOTALL)
                     if match:
                         section_text = match.group(1)
-                        # Check for "no issues" indicators
-                        if re.search(r'✓|no\s*issues|none\s*found|appears?\s*(?:to\s*be\s*)?clear', section_text, re.IGNORECASE):
-                            clarity_quality_subcategories[category] = 0
-                        else:
-                            # Count issues (bullet points, **Term**:, **Issue**:, **Policy**:)
-                            issues = len(re.findall(r'(?:^|\n)\s*[-•*]\s*\*\*(?:Term|Issue|Policy|Problem)', section_text))
-                            if issues == 0:
-                                # Fallback: count any bullet points
-                                issues = len(re.findall(r'(?:^|\n)\s*[-•*]\s+\S', section_text))
-                            clarity_quality_subcategories[category] = issues
+                        # Check if section only contains "no issues" indicator (✓ at start of line)
+                        # Only count as clean if there are NO issue entries
+                        issues = len(re.findall(issue_pattern, section_text, re.IGNORECASE))
+                        clarity_quality_subcategories[category] = issues
+                    else:
+                        # Section not found, mark as 0
+                        clarity_quality_subcategories[category] = 0
 
                 # Calculate total and summary
                 quality_issues_count = sum(clarity_quality_subcategories.values())
