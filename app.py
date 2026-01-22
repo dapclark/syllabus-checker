@@ -579,17 +579,17 @@ def upload_file():
                 print(f"DEBUG clarity_quality: 'Term:' in text = {'Term:' in analysis_text}")
 
                 # Extract issue counts for each of the 4 subcategories
-                # Format: "1. UNDEFINED COURSE TERMINOLOGY" followed by "Term: ..." entries
-                # Note: Handle both straight quotes ("') and curly/smart quotes (""'')
+                # Format varies - LLM may output "Term:" or "**Term**:" (bold markdown)
+                # Handle both straight quotes ("') and curly/smart quotes (""'')
                 sections = [
-                    # Section 1: Undefined Terminology - count "Term:" entries
-                    (r'1\.?\s*UNDEFINED\s*(?:COURSE\s*)?TERMINOLOGY(.*?)(?=\n\s*2\.|$)', 'Undefined Terminology', r'Term\s*:\s*[""\'\']'),
-                    # Section 2: Tone Issues - count "Issue:" entries
-                    (r'2\.?\s*TONE\s*(?:AND\s*INCLUSIVITY|ISSUES)(.*?)(?=\n\s*3\.|$)', 'Tone Issues', r'Issue\s*:\s*[""\'\']'),
-                    # Section 3: Confusing Policies - count "Policy:" entries
-                    (r'3\.?\s*(?:POLICIES\s*THAT\s*MAY\s*)?CONFUS(?:ING|E)(.*?)(?=\n\s*4\.|$)', 'Confusing Policies', r'Policy\s*:\s*[""\'\']'),
+                    # Section 1: Undefined Terminology - count "Term:" or "**Term**:" entries
+                    (r'1\.?\s*UNDEFINED\s*(?:COURSE\s*)?TERMINOLOGY(.*?)(?=\n\s*(?:##\s*)?2\.|$)', 'Undefined Terminology', r'\*?\*?Term\*?\*?\s*:\s*[""\'\']'),
+                    # Section 2: Tone Issues - count "Issue:" or "**Issue**:" entries
+                    (r'2\.?\s*TONE\s*(?:AND\s*INCLUSIVITY|ISSUES)(.*?)(?=\n\s*(?:##\s*)?3\.|$)', 'Tone Issues', r'\*?\*?Issue\*?\*?\s*:\s*[""\'\']'),
+                    # Section 3: Confusing Policies - count "Policy:" or "**Policy**:" entries
+                    (r'3\.?\s*(?:POLICIES\s*THAT\s*MAY\s*)?CONFUS(?:ING|E)(.*?)(?=\n\s*(?:##\s*)?4\.|$)', 'Confusing Policies', r'\*?\*?Policy\*?\*?\s*:\s*[""\'\']'),
                     # Section 4: Formatting Inconsistencies - count "Element type:" entries
-                    (r'4\.?\s*(?:INCONSISTENT\s*)?FORMAT(?:TING)?(?:\s*INCONSISTENC(?:IES|Y))?(.*?)(?=\n\s*5\.|$)', 'Formatting Inconsistencies', r'Element\s*type\s*:\s*'),
+                    (r'4\.?\s*(?:INCONSISTENT\s*)?FORMAT(?:TING)?(?:\s*INCONSISTENC(?:IES|Y))?(.*?)(?=\n\s*(?:##\s*)?5\.|$)', 'Formatting Inconsistencies', r'\*?\*?Element\s*type\*?\*?\s*:\s*'),
                 ]
 
                 for section_pattern, category, issue_pattern in sections:
