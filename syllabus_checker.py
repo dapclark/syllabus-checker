@@ -3785,10 +3785,10 @@ Identify any technical terms, jargon, or course-specific vocabulary that student
 - Assignment types or formats that may be unfamiliar (e.g., "response paper", "think-pair-share", "flipped classroom")
 - Institutional terminology that may not be universally understood
 
-For each undefined term found:
+For each undefined term found, use this NESTED bullet format:
 - **Term**: [the term or phrase]
-- **Why it might be unclear**: [brief explanation]
-- **Suggested fix**: [how to define or clarify it]
+  - **Why it might be unclear**: [brief explanation]
+  - **Suggested fix**: [how to define or clarify it]
 
 If no issues found, state: "✓ All course terminology appears to be clearly defined or would be familiar to students."
 
@@ -3801,10 +3801,10 @@ Examine the tone of policies, rules, and requirements. Look for:
 - Overly legalistic or bureaucratic tone that creates distance
 - Policies that assume all students have the same resources, circumstances, or prior knowledge
 
-For each issue found:
+For each issue found, use this NESTED bullet format:
 - **Issue**: [quote the problematic language]
-- **Problem**: [why this language may be problematic]
-- **Better alternative**: [rewritten version with more inclusive, supportive tone]
+  - **Problem**: [why this language may be problematic]
+  - **Better alternative**: [rewritten version with more inclusive, supportive tone]
 
 If no issues found, state: "✓ Policy language uses an inclusive, supportive tone throughout."
 
@@ -3817,10 +3817,10 @@ Identify policies or statements that:
 - Make assumptions about student circumstances (e.g., access to technology, transportation, childcare)
 - May inadvertently exclude certain student populations
 
-For each policy issue:
+For each policy issue, use this NESTED bullet format:
 - **Policy**: [quote the policy]
-- **Potential problem**: [what confusion or exclusion this might cause]
-- **Recommendation**: [how to revise or clarify]
+  - **Potential problem**: [what confusion or exclusion this might cause]
+  - **Recommendation**: [how to revise or clarify]
 
 If no issues found, state: "✓ All policies appear clear and inclusive."
 
@@ -3834,16 +3834,17 @@ Look for inconsistencies in how repeated elements are formatted:
 - Contact information or office hours presented inconsistently
 - Bullets, numbering, or other list formatting used inconsistently
 
-For each formatting inconsistency:
+For each formatting inconsistency, use this NESTED bullet format:
 - **Element type**: [e.g., "dates", "headings", "assignment names"]
-- **Inconsistency**: [describe the variation found]
-- **Recommendation**: [suggest a consistent format to use throughout]
+  - **Inconsistency**: [describe the variation found]
+  - **Recommendation**: [suggest a consistent format to use throughout]
 
 If no issues found, state: "✓ Formatting appears consistent throughout the syllabus."
 
 ---
 
 **IMPORTANT FORMATTING NOTE**:
+- Use NESTED bullets: main item as top-level bullet, sub-items indented with 2 spaces
 - Use clear markdown formatting with ## for main headings and **bold** for labels
 - Be specific and quote actual text from the syllabus
 - Prioritize the most significant issues in each category
