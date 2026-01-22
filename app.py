@@ -572,12 +572,6 @@ def upload_file():
             if quality_analysis.get('status') == 'success':
                 analysis_text = quality_analysis.get('analysis', '')
 
-                # Debug: Log first 500 chars and check for section markers
-                print(f"DEBUG clarity_quality: analysis_text length = {len(analysis_text)}")
-                print(f"DEBUG clarity_quality: first 300 chars = {repr(analysis_text[:300])}")
-                print(f"DEBUG clarity_quality: '1. UNDEFINED' in text = {'1. UNDEFINED' in analysis_text.upper()}")
-                print(f"DEBUG clarity_quality: 'Term:' in text = {'Term:' in analysis_text}")
-
                 # Extract issue counts for each of the 4 subcategories
                 # Format varies - LLM may output "Term:" or "**Term**:" (bold markdown)
                 # Handle both straight quotes ("') and curly/smart quotes (""'')
@@ -598,11 +592,9 @@ def upload_file():
                         section_text = match.group(1)
                         issues = len(re.findall(issue_pattern, section_text, re.IGNORECASE))
                         clarity_quality_subcategories[category] = issues
-                        print(f"DEBUG clarity_quality: {category} - section found, {issues} issues")
                     else:
                         # Section not found, mark as 0
                         clarity_quality_subcategories[category] = 0
-                        print(f"DEBUG clarity_quality: {category} - SECTION NOT FOUND")
 
                 # Calculate total and summary
                 quality_issues_count = sum(clarity_quality_subcategories.values())
