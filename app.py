@@ -572,15 +572,22 @@ def upload_file():
             if quality_analysis.get('status') == 'success':
                 analysis_text = quality_analysis.get('analysis', '')
 
+                # Debug: Log first 500 chars and check for section markers
+                print(f"DEBUG clarity_quality: analysis_text length = {len(analysis_text)}")
+                print(f"DEBUG clarity_quality: first 300 chars = {repr(analysis_text[:300])}")
+                print(f"DEBUG clarity_quality: '1. UNDEFINED' in text = {'1. UNDEFINED' in analysis_text.upper()}")
+                print(f"DEBUG clarity_quality: 'Term:' in text = {'Term:' in analysis_text}")
+
                 # Extract issue counts for each of the 4 subcategories
                 # Format: "1. UNDEFINED COURSE TERMINOLOGY" followed by "Term: ..." entries
+                # Note: Handle both straight quotes ("') and curly/smart quotes (""'')
                 sections = [
                     # Section 1: Undefined Terminology - count "Term:" entries
-                    (r'1\.?\s*UNDEFINED\s*(?:COURSE\s*)?TERMINOLOGY(.*?)(?=\n\s*2\.|$)', 'Undefined Terminology', r'Term\s*:\s*["\']'),
+                    (r'1\.?\s*UNDEFINED\s*(?:COURSE\s*)?TERMINOLOGY(.*?)(?=\n\s*2\.|$)', 'Undefined Terminology', r'Term\s*:\s*[""\'\']'),
                     # Section 2: Tone Issues - count "Issue:" entries
-                    (r'2\.?\s*TONE\s*(?:AND\s*INCLUSIVITY|ISSUES)(.*?)(?=\n\s*3\.|$)', 'Tone Issues', r'Issue\s*:\s*["\']'),
+                    (r'2\.?\s*TONE\s*(?:AND\s*INCLUSIVITY|ISSUES)(.*?)(?=\n\s*3\.|$)', 'Tone Issues', r'Issue\s*:\s*[""\'\']'),
                     # Section 3: Confusing Policies - count "Policy:" entries
-                    (r'3\.?\s*(?:POLICIES\s*THAT\s*MAY\s*)?CONFUS(?:ING|E)(.*?)(?=\n\s*4\.|$)', 'Confusing Policies', r'Policy\s*:\s*["\']'),
+                    (r'3\.?\s*(?:POLICIES\s*THAT\s*MAY\s*)?CONFUS(?:ING|E)(.*?)(?=\n\s*4\.|$)', 'Confusing Policies', r'Policy\s*:\s*[""\'\']'),
                     # Section 4: Formatting Inconsistencies - count "Element type:" entries
                     (r'4\.?\s*(?:INCONSISTENT\s*)?FORMAT(?:TING)?(?:\s*INCONSISTENC(?:IES|Y))?(.*?)(?=\n\s*5\.|$)', 'Formatting Inconsistencies', r'Element\s*type\s*:\s*'),
                 ]
@@ -589,13 +596,13 @@ def upload_file():
                     match = re.search(section_pattern, analysis_text, re.IGNORECASE | re.DOTALL)
                     if match:
                         section_text = match.group(1)
-                        # Check if section only contains "no issues" indicator (✓ at start of line)
-                        # Only count as clean if there are NO issue entries
                         issues = len(re.findall(issue_pattern, section_text, re.IGNORECASE))
                         clarity_quality_subcategories[category] = issues
+                        print(f"DEBUG clarity_quality: {category} - section found, {issues} issues")
                     else:
                         # Section not found, mark as 0
                         clarity_quality_subcategories[category] = 0
+                        print(f"DEBUG clarity_quality: {category} - SECTION NOT FOUND")
 
                 # Calculate total and summary
                 quality_issues_count = sum(clarity_quality_subcategories.values())
