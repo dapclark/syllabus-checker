@@ -3841,21 +3841,6 @@ For each formatting inconsistency:
 
 If no issues found, state: "✓ Formatting appears consistent throughout the syllabus."
 
-## 5. HEADING STRUCTURE ISSUES
-
-Examine how headings are used in the document. Look for:
-- **Fake headings**: Paragraphs that are styled to look like headings (bold, larger font, etc.) but not using semantic heading styles (Heading 1, Heading 2, etc.)
-- **Non-descriptive headings**: Headings that are vague or don't clearly indicate the content that follows (e.g., "Information", "Details", "Notes")
-- **Inconsistent heading styles**: Some sections use proper heading styles while others use manual formatting
-
-For each heading issue:
-- **Type**: [Fake heading / Non-descriptive / Inconsistent]
-- **Text**: [quote the problematic heading or styled text]
-- **Problem**: [explain why this is problematic for accessibility or clarity]
-- **Recommendation**: [suggest how to fix it - e.g., "Use Heading 2 style" or "Change to 'Assignment Submission Guidelines'"]
-
-If no issues found, state: "✓ All headings use proper semantic styles and are descriptive."
-
 ---
 
 **IMPORTANT FORMATTING NOTE**:
@@ -3863,6 +3848,7 @@ If no issues found, state: "✓ All headings use proper semantic styles and are 
 - Be specific and quote actual text from the syllabus
 - Prioritize the most significant issues in each category
 - If you find 5+ issues in a category, focus on the most important ones
+- DO NOT include a section on heading structure - that is covered separately in accessibility checks
 """
 
             response = client.chat.completions.create(
