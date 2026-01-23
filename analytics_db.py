@@ -186,6 +186,24 @@ def store_scan_result(
 
     return scan_id
 
+def delete_scans(scan_ids: List[int]) -> int:
+    """Delete multiple scans by their IDs. Returns number of deleted rows."""
+    if not scan_ids:
+        return 0
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Use parameterized query with placeholders for each ID
+    placeholders = ','.join('?' * len(scan_ids))
+    cursor.execute(f'DELETE FROM scans WHERE id IN ({placeholders})', scan_ids)
+
+    deleted_count = cursor.rowcount
+    conn.commit()
+    conn.close()
+
+    return deleted_count
+
 def get_all_scans(limit: int = 100, offset: int = 0, department: str = None) -> List[Dict]:
     """Get all scans with optional department filter"""
     conn = get_db_connection()

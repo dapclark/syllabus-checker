@@ -742,6 +742,34 @@ def admin_analytics():
                            department_filter=department_filter,
                            recent_scans=recent_scans)
 
+@app.route('/admin/analytics/delete', methods=['POST'])
+def admin_analytics_delete():
+    """Delete selected scan entries"""
+    try:
+        # Get scan IDs from form
+        scan_ids = request.form.getlist('scan_ids')
+
+        if not scan_ids:
+            flash('No scans selected for deletion', 'warning')
+            return redirect(url_for('admin_analytics'))
+
+        # Convert to integers
+        scan_ids = [int(id) for id in scan_ids]
+
+        # Delete the scans
+        deleted_count = analytics_db.delete_scans(scan_ids)
+
+        flash(f'Successfully deleted {deleted_count} scan(s)', 'success')
+
+    except Exception as e:
+        flash(f'Error deleting scans: {str(e)}', 'error')
+
+    # Preserve department filter if present
+    department = request.form.get('department_filter', '')
+    if department:
+        return redirect(url_for('admin_analytics', department=department))
+    return redirect(url_for('admin_analytics'))
+
 if __name__ == '__main__':
     # Clean up temp folder on exit
     import atexit

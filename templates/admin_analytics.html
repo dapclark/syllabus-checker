@@ -92,33 +92,18 @@
         </div>
         {% endif %}
 
-        <!-- Overview Stats -->
-        <div class="row mb-4">
-            <div class="col-md-3 mb-3">
-                <div class="stat-card">
-                    <div class="stat-value">{{ stats.total_scans or 0 }}</div>
-                    <div class="stat-label">Total Scans</div>
-                </div>
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show mb-4" role="alert">
+                <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'warning' %}exclamation-triangle{% else %}exclamation-circle{% endif %}"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-            <div class="col-md-3 mb-3">
-                <div class="stat-card">
-                    <div class="stat-value">{{ "%.1f"|format(stats.avg_issues or 0) }}</div>
-                    <div class="stat-label">Avg Issues per Syllabus</div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="stat-card">
-                    <div class="stat-value">{{ stats.perfect_scans or 0 }}</div>
-                    <div class="stat-label">Perfect Scores (0 issues)</div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="stat-card">
-                    <div class="stat-value">{{ "%.1f"|format(stats.avg_missing_sections or 0) }}</div>
-                    <div class="stat-label">Avg Missing Sections</div>
-                </div>
-            </div>
-        </div>
+            {% endfor %}
+            {% endif %}
+        {% endwith %}
 
         <!-- Four Assessment Areas Summary -->
         <div class="chart-container mb-4">
@@ -151,14 +136,27 @@
                             <i class="bi bi-chat-heart"></i> Language & Tone
                         </div>
                         <div class="card-body text-center">
-                            {% if four_areas.avg_growth_score %}
-                            <h3 class="{% if four_areas.avg_growth_score >= 7 %}text-success{% elif four_areas.avg_growth_score >= 5 %}text-warning{% else %}text-danger{% endif %}">
-                                {{ "%.1f"|format(four_areas.avg_growth_score) }}/10
-                            </h3>
-                            <p class="small text-muted mb-2">avg growth mindset score</p>
+                            {% set strong_total = 0 %}
+                            {% set weak_total = 0 %}
+                            {% for cat, stats in language_tone_subcategories.items() %}
+                                {% set strong_total = strong_total + (stats.Strong or 0) %}
+                                {% set weak_total = weak_total + (stats.Weak or 0) + (stats['Not Addressed'] or 0) %}
+                            {% endfor %}
+                            {% if four_areas.growth_mindset_analyzed and four_areas.growth_mindset_analyzed > 0 %}
+                            <div class="d-flex justify-content-around mb-2">
+                                <div>
+                                    <span class="badge bg-success fs-6">{{ strong_total }}</span>
+                                    <p class="small text-muted mb-0">Strong</p>
+                                </div>
+                                <div>
+                                    <span class="badge bg-danger fs-6">{{ weak_total }}</span>
+                                    <p class="small text-muted mb-0">Weak</p>
+                                </div>
+                            </div>
+                            <p class="small text-muted mb-2">across 6 categories</p>
                             {% else %}
                             <h3 class="text-muted">—</h3>
-                            <p class="small text-muted mb-2">no scores available</p>
+                            <p class="small text-muted mb-2">no data yet</p>
                             {% endif %}
                             <p class="mb-0">
                                 <span class="badge bg-info">{{ four_areas.growth_mindset_analyzed or 0 }}</span> analyzed
@@ -468,90 +466,106 @@
 
         <!-- Recent Scans -->
         <div class="table-container">
-            <h5 class="mb-3"><i class="bi bi-clock-history"></i> Recent Scans</h5>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Scans</h5>
+                {% if recent_scans %}
+                <button type="submit" form="delete-scans-form" class="btn btn-sm btn-outline-danger" id="delete-selected-btn" disabled>
+                    <i class="bi bi-trash"></i> Delete Selected (<span id="selected-count">0</span>)
+                </button>
+                {% endif %}
+            </div>
 
             {% if recent_scans %}
-            <div class="table-responsive">
-                <table class="table table-hover table-sm">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Course</th>
-                            <th>Instructor</th>
-                            <th>Department</th>
-                            <th title="Missing Required Sections"><i class="bi bi-list-check text-danger"></i> Missing</th>
-                            <th title="Language & Tone"><i class="bi bi-chat-heart text-info"></i> Tone</th>
-                            <th title="Clarity & Quality"><i class="bi bi-stars text-warning"></i> Quality</th>
-                            <th title="Accessibility Issues"><i class="bi bi-universal-access text-success"></i> Access</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for scan in recent_scans %}
-                        <tr>
-                            <td class="text-nowrap small">{{ scan.scan_date[:10] if scan.scan_date else 'N/A' }}</td>
-                            <td>
-                                {% if scan.course_subject or scan.course_number %}
-                                <strong>{{ scan.course_subject or '' }} {{ scan.course_number or '' }}</strong>
-                                {% if scan.course_title %}
-                                <br><span class="small text-muted">{{ scan.course_title[:30] }}{% if scan.course_title|length > 30 %}...{% endif %}</span>
-                                {% endif %}
-                                {% else %}
-                                <span class="text-muted">{{ scan.filename[:20] }}...</span>
-                                {% endif %}
-                            </td>
-                            <td class="small">{{ scan.instructor_name or '—' }}</td>
-                            <td>
-                                {% if scan.department %}
-                                <span class="badge bg-secondary badge-dept">{{ scan.department }}</span>
-                                {% else %}
-                                —
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if scan.missing_sections_count == 0 %}
-                                <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
-                                {% else %}
-                                <span class="badge bg-danger">{{ scan.missing_sections_count }}</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if scan.growth_mindset_status == 'success' %}
-                                    {% if scan.growth_mindset_score %}
-                                    <span class="badge {% if scan.growth_mindset_score >= 7 %}bg-success{% elif scan.growth_mindset_score >= 5 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
-                                        {{ scan.growth_mindset_score }}/10
-                                    </span>
-                                    {% else %}
-                                    <span class="text-success"><i class="bi bi-check-circle"></i></span>
+            <form id="delete-scans-form" method="POST" action="{{ url_for('admin_analytics_delete') }}" onsubmit="return confirmDelete()">
+                <input type="hidden" name="department_filter" value="{{ department_filter }}">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">
+                                    <input type="checkbox" id="select-all" class="form-check-input" title="Select all">
+                                </th>
+                                <th>Date</th>
+                                <th>Course</th>
+                                <th>Instructor</th>
+                                <th>Department</th>
+                                <th title="Missing Required Sections"><i class="bi bi-list-check text-danger"></i> Missing</th>
+                                <th title="Language & Tone"><i class="bi bi-chat-heart text-info"></i> Tone</th>
+                                <th title="Clarity & Quality"><i class="bi bi-stars text-warning"></i> Quality</th>
+                                <th title="Accessibility Issues"><i class="bi bi-universal-access text-success"></i> Access</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for scan in recent_scans %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" name="scan_ids" value="{{ scan.id }}" class="form-check-input scan-checkbox">
+                                </td>
+                                <td class="text-nowrap small">{{ scan.scan_date[:10] if scan.scan_date else 'N/A' }}</td>
+                                <td>
+                                    {% if scan.course_subject or scan.course_number %}
+                                    <strong>{{ scan.course_subject or '' }} {{ scan.course_number or '' }}</strong>
+                                    {% if scan.course_title %}
+                                    <br><span class="small text-muted">{{ scan.course_title[:30] }}{% if scan.course_title|length > 30 %}...{% endif %}</span>
                                     {% endif %}
-                                {% else %}
-                                <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if scan.quality_analysis_status == 'success' %}
-                                    {% if scan.quality_issues_count == 0 %}
+                                    {% else %}
+                                    <span class="text-muted">{{ scan.filename[:20] }}...</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small">{{ scan.instructor_name or '—' }}</td>
+                                <td>
+                                    {% if scan.department %}
+                                    <span class="badge bg-secondary badge-dept">{{ scan.department }}</span>
+                                    {% else %}
+                                    —
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if scan.missing_sections_count == 0 %}
                                     <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
                                     {% else %}
-                                    <span class="badge bg-warning text-dark">{{ scan.quality_issues_count }}</span>
+                                    <span class="badge bg-danger">{{ scan.missing_sections_count }}</span>
                                     {% endif %}
-                                {% else %}
-                                <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if scan.accessibility_issues_count == 0 %}
-                                <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
-                                {% else %}
-                                <span class="badge {% if scan.accessibility_issues_count < 10 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
-                                    {{ scan.accessibility_issues_count }}
-                                </span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                                </td>
+                                <td>
+                                    {% if scan.growth_mindset_status == 'success' %}
+                                        {% if scan.growth_mindset_score %}
+                                        <span class="badge {% if scan.growth_mindset_score >= 7 %}bg-success{% elif scan.growth_mindset_score >= 5 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                            {{ scan.growth_mindset_score }}/10
+                                        </span>
+                                        {% else %}
+                                        <span class="text-success"><i class="bi bi-check-circle"></i></span>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if scan.quality_analysis_status == 'success' %}
+                                        {% if scan.quality_issues_count == 0 %}
+                                        <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">{{ scan.quality_issues_count }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if scan.accessibility_issues_count == 0 %}
+                                    <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
+                                    {% else %}
+                                    <span class="badge {% if scan.accessibility_issues_count < 10 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                        {{ scan.accessibility_issues_count }}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
             <p class="small text-muted mt-2">
                 <i class="bi bi-info-circle"></i> Hover over column headers for details.
                 <i class="bi bi-check-circle-fill text-success"></i> = no issues found.
@@ -675,5 +689,49 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Multi-select delete functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAll = document.getElementById('select-all');
+            const checkboxes = document.querySelectorAll('.scan-checkbox');
+            const deleteBtn = document.getElementById('delete-selected-btn');
+            const selectedCount = document.getElementById('selected-count');
+
+            function updateDeleteButton() {
+                const checked = document.querySelectorAll('.scan-checkbox:checked');
+                const count = checked.length;
+                if (selectedCount) selectedCount.textContent = count;
+                if (deleteBtn) deleteBtn.disabled = count === 0;
+            }
+
+            if (selectAll) {
+                selectAll.addEventListener('change', function() {
+                    checkboxes.forEach(cb => cb.checked = this.checked);
+                    updateDeleteButton();
+                });
+            }
+
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', function() {
+                    // Update select all checkbox state
+                    if (selectAll) {
+                        const allChecked = document.querySelectorAll('.scan-checkbox:checked').length === checkboxes.length;
+                        selectAll.checked = allChecked;
+                        selectAll.indeterminate = !allChecked && document.querySelectorAll('.scan-checkbox:checked').length > 0;
+                    }
+                    updateDeleteButton();
+                });
+            });
+        });
+
+        function confirmDelete() {
+            const count = document.querySelectorAll('.scan-checkbox:checked').length;
+            if (count === 0) {
+                alert('Please select at least one scan to delete.');
+                return false;
+            }
+            return confirm('Are you sure you want to delete ' + count + ' scan(s)? This action cannot be undone.');
+        }
+    </script>
 </body>
 </html>
