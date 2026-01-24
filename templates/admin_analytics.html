@@ -118,7 +118,7 @@
                             <i class="bi bi-list-check"></i> Missing Sections
                         </div>
                         <div class="card-body text-center">
-                            <h3 class="{% if four_areas.avg_missing_sections == 0 %}text-success{% elif four_areas.avg_missing_sections < 2 %}text-warning{% else %}text-danger{% endif %}">
+                            <h3 class="{% if (four_areas.avg_missing_sections or 0) == 0 %}text-success{% elif (four_areas.avg_missing_sections or 0) < 2 %}text-warning{% else %}text-danger{% endif %}">
                                 {{ "%.1f"|format(four_areas.avg_missing_sections or 0) }}
                             </h3>
                             <p class="small text-muted mb-2">avg missing per syllabus</p>
@@ -180,7 +180,7 @@
                             <i class="bi bi-stars"></i> Clarity & Quality
                         </div>
                         <div class="card-body text-center">
-                            <h3 class="{% if four_areas.avg_quality_issues == 0 %}text-success{% elif four_areas.avg_quality_issues < 5 %}text-warning{% else %}text-muted{% endif %}">
+                            <h3 class="{% if (four_areas.avg_quality_issues or 0) == 0 %}text-success{% elif (four_areas.avg_quality_issues or 0) < 5 %}text-warning{% else %}text-muted{% endif %}">
                                 {{ "%.1f"|format(four_areas.avg_quality_issues or 0) }}
                             </h3>
                             <p class="small text-muted mb-2">avg suggestions per syllabus</p>
@@ -198,7 +198,7 @@
                             <i class="bi bi-universal-access"></i> Accessibility
                         </div>
                         <div class="card-body text-center">
-                            <h3 class="{% if four_areas.avg_accessibility_issues == 0 %}text-success{% elif four_areas.avg_accessibility_issues < 10 %}text-warning{% else %}text-danger{% endif %}">
+                            <h3 class="{% if (four_areas.avg_accessibility_issues or 0) == 0 %}text-success{% elif (four_areas.avg_accessibility_issues or 0) < 10 %}text-warning{% else %}text-danger{% endif %}">
                                 {{ "%.1f"|format(four_areas.avg_accessibility_issues or 0) }}
                             </h3>
                             <p class="small text-muted mb-2">avg issues per syllabus</p>
@@ -392,13 +392,13 @@
                             <td><strong>{{ trends[i].month }}</strong></td>
                             <td>{{ trends[i].scan_count }}</td>
                             <td>
-                                <span class="{% if trends[i].avg_missing_sections == 0 %}text-success{% elif trends[i].avg_missing_sections < 2 %}text-warning{% else %}text-danger{% endif %}">
+                                <span class="{% if (trends[i].avg_missing_sections or 0) == 0 %}text-success{% elif (trends[i].avg_missing_sections or 0) < 2 %}text-warning{% else %}text-danger{% endif %}">
                                     {{ "%.1f"|format(trends[i].avg_missing_sections or 0) }}
                                 </span>
                             </td>
                             <td>
                                 {% if growth_mindset_trends[i] is defined and growth_mindset_trends[i].avg_score %}
-                                <span class="{% if growth_mindset_trends[i].avg_score >= 7 %}text-success{% elif growth_mindset_trends[i].avg_score >= 5 %}text-warning{% else %}text-danger{% endif %}">
+                                <span class="{% if (growth_mindset_trends[i].avg_score or 0) >= 7 %}text-success{% elif (growth_mindset_trends[i].avg_score or 0) >= 5 %}text-warning{% else %}text-danger{% endif %}">
                                     {{ "%.1f"|format(growth_mindset_trends[i].avg_score) }}/10
                                 </span>
                                 {% else %}
@@ -407,7 +407,7 @@
                             </td>
                             <td>
                                 {% if quality_trends[i] is defined and quality_trends[i].avg_issues is not none %}
-                                <span class="{% if quality_trends[i].avg_issues == 0 %}text-success{% elif quality_trends[i].avg_issues < 5 %}text-warning{% else %}text-muted{% endif %}">
+                                <span class="{% if (quality_trends[i].avg_issues or 0) == 0 %}text-success{% elif (quality_trends[i].avg_issues or 0) < 5 %}text-warning{% else %}text-muted{% endif %}">
                                     {{ "%.1f"|format(quality_trends[i].avg_issues or 0) }}
                                 </span>
                                 {% else %}
@@ -415,7 +415,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="{% if trends[i].avg_accessibility_issues == 0 %}text-success{% elif trends[i].avg_accessibility_issues < 10 %}text-warning{% else %}text-danger{% endif %}">
+                                <span class="{% if (trends[i].avg_accessibility_issues or 0) == 0 %}text-success{% elif (trends[i].avg_accessibility_issues or 0) < 10 %}text-warning{% else %}text-danger{% endif %}">
                                     {{ "%.1f"|format(trends[i].avg_accessibility_issues or 0) }}
                                 </span>
                             </td>
