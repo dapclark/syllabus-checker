@@ -136,25 +136,20 @@
                             <i class="bi bi-chat-heart"></i> Language & Tone
                         </div>
                         <div class="card-body text-center">
-                            {% set strong_total = 0 %}
-                            {% set weak_total = 0 %}
-                            {% set has_subcategory_data = false %}
+                            {% set ns = namespace(strong_total=0, weak_total=0) %}
                             {% for cat, stats in language_tone_subcategories.items() %}
-                                {% if stats.total > 0 %}
-                                    {% set has_subcategory_data = true %}
-                                {% endif %}
-                                {% set strong_total = strong_total + (stats.Strong or 0) %}
-                                {% set weak_total = weak_total + (stats.Weak or 0) + (stats['Not Addressed'] or 0) %}
+                                {% set ns.strong_total = ns.strong_total + (stats.Strong or 0) %}
+                                {% set ns.weak_total = ns.weak_total + (stats.Weak or 0) + (stats['Not Addressed'] or 0) %}
                             {% endfor %}
                             {% if four_areas.growth_mindset_analyzed and four_areas.growth_mindset_analyzed > 0 %}
-                                {% if has_subcategory_data %}
+                                {% if ns.strong_total > 0 or ns.weak_total > 0 %}
                                 <div class="d-flex justify-content-around mb-2">
                                     <div>
-                                        <span class="badge bg-success fs-6">{{ strong_total }}</span>
+                                        <span class="badge bg-success fs-6">{{ ns.strong_total }}</span>
                                         <p class="small text-muted mb-0">Strong</p>
                                     </div>
                                     <div>
-                                        <span class="badge bg-danger fs-6">{{ weak_total }}</span>
+                                        <span class="badge bg-danger fs-6">{{ ns.weak_total }}</span>
                                         <p class="small text-muted mb-0">Weak</p>
                                     </div>
                                 </div>
