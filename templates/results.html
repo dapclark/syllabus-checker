@@ -50,11 +50,31 @@
         .report-section {
             background: white;
             border-radius: 10px;
-            padding: 25px;
             margin-bottom: 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            border-left: 4px solid #ffbd00;
+            overflow: hidden;
         }
+        .report-section .section-header {
+            padding: 15px 20px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .report-section .section-header h4 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        .report-section .section-header.bg-warning {
+            color: #000;
+        }
+        .report-section .section-body {
+            padding: 20px;
+        }
+        .section-header-danger { background-color: #dc3545; }
+        .section-header-info { background-color: #0dcaf0; }
+        .section-header-warning { background-color: #ffc107; color: #000 !important; }
+        .section-header-success { background-color: #198754; }
         .btn-download {
             background: #ffbd00;
             color: #000000;
@@ -261,16 +281,14 @@
         <!-- SECTION 1: Missing Required Sections (most urgent / easiest to act on) -->
         {% if results.missing_sections %}
         <div class="report-section">
-            <h4 class="mb-3">
-                <i class="bi bi-list-check text-danger"></i> 1. Missing Required Sections
-                <span class="badge bg-warning text-dark ms-2">Quick Wins</span>
-                <button class="btn btn-sm btn-outline-secondary float-end" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#missingSectionsContent" aria-expanded="false" aria-controls="missingSectionsContent">
+            <div class="section-header section-header-danger">
+                <h4><i class="bi bi-list-check"></i> 1. Missing Sections</h4>
+                <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#missingSectionsContent" aria-expanded="false">
                     <i class="bi bi-chevron-down"></i> Show/Hide
                 </button>
-            </h4>
-
-            <div class="collapse" id="missingSectionsContent">
+            </div>
+            <div class="collapse section-body" id="missingSectionsContent">
                 <div class="alert alert-light border">
                     <i class="bi bi-lightbulb text-warning"></i>
                     These {{ results.missing_sections|length }} section{{ 's' if results.missing_sections|length > 1 else '' }} should be added to your syllabus.
@@ -279,7 +297,7 @@
                 <ul class="list-group">
                     {% for section in results.missing_sections %}
                     <li class="list-group-item d-flex align-items-center">
-                        <i class="bi bi-plus-circle text-primary me-2"></i> {{ section }}
+                        <i class="bi bi-plus-circle text-danger me-2"></i> {{ section }}
                     </li>
                     {% endfor %}
                 </ul>
@@ -289,16 +307,14 @@
 
         <!-- SECTION 2: Growth Mindset and Belonging (high engagement + ready-to-use text) -->
         <div class="report-section">
-            <h4 class="mb-3">
-                <i class="bi bi-chat-heart text-info"></i> 2. Language & Tone Suggestions
-                <span class="badge bg-info text-dark ms-2">Ready-to-Use Text</span>
-                <button class="btn btn-sm btn-outline-secondary float-end" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#growthMindsetContent" aria-expanded="false" aria-controls="growthMindsetContent">
+            <div class="section-header section-header-info">
+                <h4><i class="bi bi-chat-heart"></i> 2. Language & Tone</h4>
+                <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#growthMindsetContent" aria-expanded="false">
                     <i class="bi bi-chevron-down"></i> Show/Hide
                 </button>
-            </h4>
-
-            <div class="collapse" id="growthMindsetContent">
+            </div>
+            <div class="collapse section-body" id="growthMindsetContent">
                 {% if results.growth_mindset_analysis.status == 'success' %}
                     <div class="alert alert-success border-0 mb-3" style="background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);">
                         <i class="bi bi-stars text-success"></i> <strong>High-Impact Section:</strong>
@@ -329,15 +345,14 @@
 
         <!-- SECTION 3: Syllabus Quality Analysis -->
         <div class="report-section">
-            <h4 class="mb-3">
-                <i class="bi bi-stars text-warning"></i> 3. Clarity & Quality
-                <button class="btn btn-sm btn-outline-secondary float-end" type="button"
+            <div class="section-header section-header-warning">
+                <h4><i class="bi bi-stars"></i> 3. Clarity & Quality</h4>
+                <button class="btn btn-sm btn-dark" type="button"
                         data-bs-toggle="collapse" data-bs-target="#qualityAnalysisContent">
                     <i class="bi bi-chevron-down"></i> Show/Hide
                 </button>
-            </h4>
-
-            <div class="collapse" id="qualityAnalysisContent">
+            </div>
+            <div class="collapse section-body" id="qualityAnalysisContent">
                 {% if results.quality_analysis.status == 'success' %}
                     <div class="alert alert-info mb-3">
                         <i class="bi bi-info-circle"></i> <strong>About This Analysis:</strong>
@@ -373,15 +388,14 @@
         <!-- SECTION 4: Digital Accessibility (important but after trust is built) -->
         {% if results.category_counts %}
         <div class="report-section">
-            <h4 class="mb-3">
-                <i class="bi bi-universal-access text-success"></i> 4. Digital Accessibility & Formatting
-                <button class="btn btn-sm btn-outline-secondary float-end" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#accessibilityIssuesContent" aria-expanded="false" aria-controls="accessibilityIssuesContent">
+            <div class="section-header section-header-success">
+                <h4><i class="bi bi-universal-access"></i> 4. Accessibility</h4>
+                <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#accessibilityIssuesContent" aria-expanded="false">
                     <i class="bi bi-chevron-down"></i> Show/Hide
                 </button>
-            </h4>
-
-            <div class="collapse" id="accessibilityIssuesContent">
+            </div>
+            <div class="collapse section-body" id="accessibilityIssuesContent">
                 <div class="alert alert-light border mb-3">
                     <i class="bi bi-info-circle"></i>
                     These checks ensure your syllabus works well for students using screen readers or other assistive technology.
