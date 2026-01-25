@@ -105,265 +105,232 @@
             {% endif %}
         {% endwith %}
 
-        <!-- Four Assessment Areas Summary -->
-        <div class="chart-container mb-4">
-            <h5 class="mb-3"><i class="bi bi-clipboard-check text-primary"></i> Four Assessment Areas Overview</h5>
-            <p class="text-muted small">Track performance across all syllabus quality dimensions</p>
+        <!-- Four Assessment Areas - Combined Summary and Details -->
+        <div class="row">
+            <!-- Accessibility -->
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100 border-success">
+                    <div class="card-header bg-success text-white">
+                        <i class="bi bi-universal-access"></i> Accessibility
+                    </div>
+                    <div class="card-body">
+                        <!-- Summary Stats -->
+                        <div class="d-flex justify-content-around text-center mb-3 pb-3 border-bottom">
+                            <div>
+                                <h3 class="mb-0 {% if (four_areas.avg_accessibility_issues or 0) == 0 %}text-success{% elif (four_areas.avg_accessibility_issues or 0) < 10 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ "%.1f"|format(four_areas.avg_accessibility_issues or 0) }}
+                                </h3>
+                                <p class="small text-muted mb-0">avg issues per syllabus</p>
+                            </div>
+                            <div>
+                                <h3 class="mb-0 text-success">{{ four_areas.fully_accessible or 0 }}</h3>
+                                <p class="small text-muted mb-0">fully accessible</p>
+                            </div>
+                        </div>
 
-            <div class="row">
-                <!-- Area 1: Missing Required Sections -->
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100 border-danger">
-                        <div class="card-header bg-danger text-white">
-                            <i class="bi bi-list-check"></i> Missing Sections
+                        <!-- Detail: Common Issues -->
+                        <p class="text-muted small mb-2">Most common issues - target for training</p>
+                        {% if common_issues %}
+                        {% set max_count = common_issues[0].count if common_issues else 1 %}
+                        {% for issue in common_issues %}
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small">{{ issue.category }}</span>
+                                <span class="badge bg-success">{{ issue.count }}</span>
+                            </div>
+                            <div class="issue-bar" style="width: {{ (issue.count / max_count * 100)|int }}%; background: linear-gradient(90deg, #198754 0%, #20c997 100%);"></div>
                         </div>
-                        <div class="card-body text-center">
-                            <h3 class="{% if (four_areas.avg_missing_sections or 0) == 0 %}text-success{% elif (four_areas.avg_missing_sections or 0) < 2 %}text-warning{% else %}text-danger{% endif %}">
-                                {{ "%.1f"|format(four_areas.avg_missing_sections or 0) }}
-                            </h3>
-                            <p class="small text-muted mb-2">avg missing per syllabus</p>
-                            <p class="mb-0">
-                                <span class="badge bg-success">{{ four_areas.complete_syllabi or 0 }}</span> complete syllabi
-                            </p>
-                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <p class="text-muted">No data yet.</p>
+                        {% endif %}
                     </div>
                 </div>
+            </div>
 
-                <!-- Area 2: Language & Tone (Growth Mindset) -->
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100 border-info">
-                        <div class="card-header bg-info text-white">
-                            <i class="bi bi-chat-heart"></i> Language & Tone
+            <!-- Missing Sections -->
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100 border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <i class="bi bi-list-check"></i> Missing Sections
+                    </div>
+                    <div class="card-body">
+                        <!-- Summary Stats -->
+                        <div class="d-flex justify-content-around text-center mb-3 pb-3 border-bottom">
+                            <div>
+                                <h3 class="mb-0 {% if (four_areas.avg_missing_sections or 0) == 0 %}text-success{% elif (four_areas.avg_missing_sections or 0) < 2 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ "%.1f"|format(four_areas.avg_missing_sections or 0) }}
+                                </h3>
+                                <p class="small text-muted mb-0">avg missing per syllabus</p>
+                            </div>
+                            <div>
+                                <h3 class="mb-0 text-success">{{ four_areas.complete_syllabi or 0 }}</h3>
+                                <p class="small text-muted mb-0">complete syllabi</p>
+                            </div>
                         </div>
-                        <div class="card-body text-center">
-                            {% set ns = namespace(strong_total=0, weak_total=0) %}
-                            {% for cat, stats in language_tone_subcategories.items() %}
-                                {% set ns.strong_total = ns.strong_total + (stats.Strong or 0) %}
-                                {% set ns.weak_total = ns.weak_total + (stats.Weak or 0) + (stats['Not Addressed'] or 0) %}
-                            {% endfor %}
-                            {% if four_areas.growth_mindset_analyzed and four_areas.growth_mindset_analyzed > 0 %}
-                                {% if ns.strong_total > 0 or ns.weak_total > 0 %}
-                                <div class="d-flex justify-content-around mb-2">
-                                    <div>
-                                        <span class="badge bg-success fs-6">{{ ns.strong_total }}</span>
-                                        <p class="small text-muted mb-0">Strong</p>
-                                    </div>
-                                    <div>
-                                        <span class="badge bg-danger fs-6">{{ ns.weak_total }}</span>
-                                        <p class="small text-muted mb-0">Weak</p>
-                                    </div>
-                                </div>
-                                <p class="small text-muted mb-2">across 6 categories</p>
-                                {% else %}
-                                <p class="small text-muted mb-2">
-                                    <i class="bi bi-check-circle text-success"></i> Analyzed
-                                </p>
-                                <p class="small text-muted mb-0" style="font-size: 0.75rem;">
-                                    Re-scan for detailed breakdown
-                                </p>
+
+                        <!-- Detail: Missing Sections Frequency -->
+                        <p class="text-muted small mb-2">Most frequently missing - add to templates</p>
+                        {% if missing_sections_freq %}
+                        {% set max_section_count = missing_sections_freq[0].count if missing_sections_freq else 1 %}
+                        {% for section in missing_sections_freq[:8] %}
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small">{{ section.section }}</span>
+                                <span class="badge bg-danger">{{ section.count }}</span>
+                            </div>
+                            <div class="issue-bar" style="width: {{ (section.count / max_section_count * 100)|int }}%; background: linear-gradient(90deg, #dc3545 0%, #ea868f 100%);"></div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <p class="text-muted">No data yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Language & Tone -->
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100 border-info">
+                    <div class="card-header bg-info text-white">
+                        <i class="bi bi-chat-heart"></i> Language & Tone
+                    </div>
+                    <div class="card-body">
+                        <!-- Summary Stats -->
+                        {% set ns = namespace(strong_total=0, weak_total=0) %}
+                        {% for cat, stats in language_tone_subcategories.items() %}
+                            {% set ns.strong_total = ns.strong_total + (stats.Strong or 0) %}
+                            {% set ns.weak_total = ns.weak_total + (stats.Weak or 0) + (stats['Not Addressed'] or 0) %}
+                        {% endfor %}
+                        <div class="d-flex justify-content-around text-center mb-3 pb-3 border-bottom">
+                            <div>
+                                <h3 class="mb-0 text-success">{{ ns.strong_total }}</h3>
+                                <p class="small text-muted mb-0">strong ratings</p>
+                            </div>
+                            <div>
+                                <h3 class="mb-0 text-danger">{{ ns.weak_total }}</h3>
+                                <p class="small text-muted mb-0">weak/not addressed</p>
+                            </div>
+                            <div>
+                                <h3 class="mb-0 text-info">{{ four_areas.growth_mindset_analyzed or 0 }}</h3>
+                                <p class="small text-muted mb-0">analyzed</p>
+                            </div>
+                        </div>
+
+                        <!-- Detail: Subcategory Table -->
+                        <p class="text-muted small mb-2">Growth mindset and belonging - 6 assessment areas</p>
+                        {% if language_tone_subcategories %}
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th class="text-center text-success">Strong</th>
+                                    <th class="text-center text-warning">Moderate</th>
+                                    <th class="text-center text-danger">Weak</th>
+                                    <th class="text-center text-muted">N/A</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cat in ['Growth Mindset', 'Normalizing Challenge', 'Instructor Care', 'Valuing Diversity', 'Normalizing Student Challenges', 'Normalizing Academic Support'] %}
+                                {% if cat in language_tone_subcategories %}
+                                {% set stats = language_tone_subcategories[cat] %}
+                                <tr>
+                                    <td class="small">{{ cat }}</td>
+                                    <td class="text-center">
+                                        {% if stats.Strong > 0 %}<span class="badge bg-success">{{ stats.Strong }}</span>{% else %}-{% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if stats.Moderate > 0 %}<span class="badge bg-warning text-dark">{{ stats.Moderate }}</span>{% else %}-{% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if stats.Weak > 0 %}<span class="badge bg-danger">{{ stats.Weak }}</span>{% else %}-{% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if stats['Not Addressed'] > 0 %}<span class="badge bg-secondary">{{ stats['Not Addressed'] }}</span>{% else %}-{% endif %}
+                                    </td>
+                                </tr>
                                 {% endif %}
-                            {% else %}
-                            <h3 class="text-muted">—</h3>
-                            <p class="small text-muted mb-2">no data yet</p>
-                            {% endif %}
-                            <p class="mb-0 mt-2">
-                                <span class="badge bg-info">{{ four_areas.growth_mindset_analyzed or 0 }}</span> analyzed
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Area 3: Clarity & Quality -->
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100 border-warning">
-                        <div class="card-header bg-warning text-dark">
-                            <i class="bi bi-stars"></i> Clarity & Quality
-                        </div>
-                        <div class="card-body text-center">
-                            <h3 class="{% if (four_areas.avg_quality_issues or 0) == 0 %}text-success{% elif (four_areas.avg_quality_issues or 0) < 5 %}text-warning{% else %}text-muted{% endif %}">
-                                {{ "%.1f"|format(four_areas.avg_quality_issues or 0) }}
-                            </h3>
-                            <p class="small text-muted mb-2">avg suggestions per syllabus</p>
-                            <p class="mb-0">
-                                <span class="badge bg-warning text-dark">{{ four_areas.quality_analyzed or 0 }}</span> analyzed
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Area 4: Digital Accessibility -->
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100 border-success">
-                        <div class="card-header bg-success text-white">
-                            <i class="bi bi-universal-access"></i> Accessibility
-                        </div>
-                        <div class="card-body text-center">
-                            <h3 class="{% if (four_areas.avg_accessibility_issues or 0) == 0 %}text-success{% elif (four_areas.avg_accessibility_issues or 0) < 10 %}text-warning{% else %}text-danger{% endif %}">
-                                {{ "%.1f"|format(four_areas.avg_accessibility_issues or 0) }}
-                            </h3>
-                            <p class="small text-muted mb-2">avg issues per syllabus</p>
-                            <p class="mb-0">
-                                <span class="badge bg-success">{{ four_areas.fully_accessible or 0 }}</span> fully accessible
-                            </p>
-                        </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}
+                        <p class="text-muted">No data yet. Data will appear after scans.</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row">
-            <!-- Common Issues -->
+            <!-- Clarity & Quality -->
             <div class="col-lg-6 mb-4">
-                <div class="chart-container h-100">
-                    <h5 class="mb-3"><i class="bi bi-universal-access text-success"></i> Accessibility</h5>
-                    <p class="text-muted small">Target these areas for training and support materials</p>
-
-                    {% if common_issues %}
-                    {% set max_count = common_issues[0].count if common_issues else 1 %}
-                    {% for issue in common_issues %}
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="small">{{ issue.category }}</span>
-                            <span class="badge bg-primary">{{ issue.count }}</span>
-                        </div>
-                        <div class="issue-bar" style="width: {{ (issue.count / max_count * 100)|int }}%; background: linear-gradient(90deg, #198754 0%, #20c997 100%);"></div>
+                <div class="card h-100 border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <i class="bi bi-stars"></i> Clarity & Quality
                     </div>
-                    {% endfor %}
-                    {% else %}
-                    <p class="text-muted">No data yet. Scans will appear here as they're performed.</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Missing Sections Frequency -->
-            <div class="col-lg-6 mb-4">
-                <div class="chart-container h-100">
-                    <h5 class="mb-3"><i class="bi bi-list-check text-danger"></i> Missing Sections</h5>
-                    <p class="text-muted small">Consider adding these to department templates</p>
-
-                    {% if missing_sections_freq %}
-                    {% set max_section_count = missing_sections_freq[0].count if missing_sections_freq else 1 %}
-                    {% for section in missing_sections_freq[:8] %}
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="small">{{ section.section }}</span>
-                            <span class="badge bg-warning text-dark">{{ section.count }}</span>
+                    <div class="card-body">
+                        <!-- Summary Stats -->
+                        <div class="d-flex justify-content-around text-center mb-3 pb-3 border-bottom">
+                            <div>
+                                <h3 class="mb-0 {% if (four_areas.avg_quality_issues or 0) == 0 %}text-success{% elif (four_areas.avg_quality_issues or 0) < 5 %}text-warning{% else %}text-muted{% endif %}">
+                                    {{ "%.1f"|format(four_areas.avg_quality_issues or 0) }}
+                                </h3>
+                                <p class="small text-muted mb-0">avg suggestions per syllabus</p>
+                            </div>
+                            <div>
+                                <h3 class="mb-0 text-warning">{{ four_areas.quality_analyzed or 0 }}</h3>
+                                <p class="small text-muted mb-0">analyzed</p>
+                            </div>
                         </div>
-                        <div class="issue-bar" style="width: {{ (section.count / max_section_count * 100)|int }}%; background: linear-gradient(90deg, #dc3545 0%, #ea868f 100%);"></div>
+
+                        <!-- Detail: Subcategory Table -->
+                        <p class="text-muted small mb-2">Syllabus clarity - 4 assessment areas</p>
+                        {% if clarity_quality_subcategories %}
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th class="text-center">Total Issues</th>
+                                    <th class="text-center">Syllabi w/ Issues</th>
+                                    <th class="text-center text-success">Clean</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cat in ['Undefined Terminology', 'Tone Issues', 'Confusing Policies', 'Formatting Inconsistencies'] %}
+                                {% if cat in clarity_quality_subcategories %}
+                                {% set stats = clarity_quality_subcategories[cat] %}
+                                <tr>
+                                    <td class="small">{{ cat }}</td>
+                                    <td class="text-center">
+                                        {% if stats.total_issues > 0 %}
+                                        <span class="badge bg-warning text-dark">{{ stats.total_issues }}</span>
+                                        {% else %}
+                                        <span class="text-success">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if stats.scans_with_issues > 0 %}
+                                        <span class="text-danger">{{ stats.scans_with_issues }}</span>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if stats.scans_clean > 0 %}
+                                        <span class="text-success">{{ stats.scans_clean }}</span>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}
+                        <p class="text-muted">No data yet. Data will appear after scans.</p>
+                        {% endif %}
                     </div>
-                    {% endfor %}
-                    {% else %}
-                    <p class="text-muted">No data yet.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Language & Tone and Clarity & Quality Subcategory Breakdown -->
-        <div class="row">
-            <!-- Language & Tone Subcategories (6 areas) -->
-            <div class="col-lg-6 mb-4">
-                <div class="chart-container h-100">
-                    <h5 class="mb-3"><i class="bi bi-chat-heart text-info"></i> Language & Tone</h5>
-                    <p class="text-muted small">Growth mindset and belonging - 6 assessment areas</p>
-
-                    {% if language_tone_subcategories %}
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Category</th>
-                                <th class="text-center text-success">Strong</th>
-                                <th class="text-center text-warning">Moderate</th>
-                                <th class="text-center text-danger">Weak</th>
-                                <th class="text-center text-muted">N/A</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for cat in ['Growth Mindset', 'Normalizing Challenge', 'Instructor Care', 'Valuing Diversity', 'Normalizing Student Challenges', 'Normalizing Academic Support'] %}
-                            {% if cat in language_tone_subcategories %}
-                            {% set stats = language_tone_subcategories[cat] %}
-                            <tr>
-                                <td class="small">{{ cat }}</td>
-                                <td class="text-center">
-                                    {% if stats.Strong > 0 %}<span class="badge bg-success">{{ stats.Strong }}</span>{% else %}-{% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if stats.Moderate > 0 %}<span class="badge bg-warning text-dark">{{ stats.Moderate }}</span>{% else %}-{% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if stats.Weak > 0 %}<span class="badge bg-danger">{{ stats.Weak }}</span>{% else %}-{% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if stats['Not Addressed'] > 0 %}<span class="badge bg-secondary">{{ stats['Not Addressed'] }}</span>{% else %}-{% endif %}
-                                </td>
-                            </tr>
-                            {% endif %}
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    <p class="small text-muted mt-2">
-                        <i class="bi bi-lightbulb"></i> Focus training on categories with high Weak/N/A counts.
-                    </p>
-                    {% else %}
-                    <p class="text-muted">No language & tone subcategory data yet. Data will appear after scans.</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Clarity & Quality Subcategories (4 areas) -->
-            <div class="col-lg-6 mb-4">
-                <div class="chart-container h-100">
-                    <h5 class="mb-3"><i class="bi bi-stars text-warning"></i> Clarity & Quality</h5>
-                    <p class="text-muted small">Syllabus clarity - 4 assessment areas</p>
-
-                    {% if clarity_quality_subcategories %}
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Category</th>
-                                <th class="text-center">Total Issues</th>
-                                <th class="text-center">Syllabi w/ Issues</th>
-                                <th class="text-center text-success">Clean</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for cat in ['Undefined Terminology', 'Tone Issues', 'Confusing Policies', 'Formatting Inconsistencies'] %}
-                            {% if cat in clarity_quality_subcategories %}
-                            {% set stats = clarity_quality_subcategories[cat] %}
-                            <tr>
-                                <td class="small">{{ cat }}</td>
-                                <td class="text-center">
-                                    {% if stats.total_issues > 0 %}
-                                    <span class="badge bg-warning text-dark">{{ stats.total_issues }}</span>
-                                    {% else %}
-                                    <span class="text-success">0</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if stats.scans_with_issues > 0 %}
-                                    <span class="text-danger">{{ stats.scans_with_issues }}</span>
-                                    {% else %}
-                                    -
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if stats.scans_clean > 0 %}
-                                    <span class="text-success">{{ stats.scans_clean }}</span>
-                                    {% else %}
-                                    -
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endif %}
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    <p class="small text-muted mt-2">
-                        <i class="bi bi-lightbulb"></i> Categories with high issue counts need targeted training.
-                    </p>
-                    {% else %}
-                    <p class="text-muted">No clarity & quality subcategory data yet. Data will appear after scans.</p>
-                    {% endif %}
                 </div>
             </div>
         </div>
