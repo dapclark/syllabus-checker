@@ -81,6 +81,31 @@
         .feature-list li {
             margin-bottom: 10px;
         }
+        .feedback-section {
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .feedback-section .section-header {
+            padding: 12px 15px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .feedback-section .section-header h6 {
+            margin: 0;
+            font-weight: 600;
+        }
+        .feedback-section .section-body {
+            padding: 15px;
+        }
+        .section-header-danger { background-color: #dc3545; }
+        .section-header-info { background-color: #0dcaf0; }
+        .section-header-warning { background-color: #ffc107; color: #000 !important; }
+        .section-header-success { background-color: #198754; }
     </style>
 </head>
 <body>
@@ -162,24 +187,23 @@
                     <i class="bi bi-list-check"></i> Four Types of Feedback
                 </h5>
 
-                <!-- 1. Missing Required Sections -->
-                <div class="mb-3">
-                    <h6 class="fw-bold mb-2">
-                        <i class="bi bi-list-check text-danger"></i> 1. Missing Required Sections
-                        <span class="badge bg-warning text-dark ms-2">Quick Wins</span>
-                    </h6>
-                    <p class="small text-muted mb-2">
-                        Verifies your syllabus includes essential information that students need and institutions require.
-                    </p>
-                    <p class="text-center mb-2">
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
-                                data-bs-target="#requiredSectionsList" aria-expanded="false" aria-controls="requiredSectionsList">
-                            <i class="bi bi-chevron-down"></i> Show/Hide Required Sections
+                <!-- 1. Missing Sections -->
+                <div class="feedback-section">
+                    <div class="section-header section-header-danger">
+                        <h6><i class="bi bi-list-check"></i> 1. Missing Sections</h6>
+                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#requiredSectionsList" aria-expanded="false">
+                            <i class="bi bi-chevron-down"></i>
                         </button>
-                    </p>
+                    </div>
+                    <div class="section-body">
+                        <p class="small text-muted mb-0">
+                            Verifies your syllabus includes essential information that students need and institutions require.
+                        </p>
+                    </div>
                 </div>
 
-                <div class="collapse" id="requiredSectionsList">
+                <div class="collapse mb-3" id="requiredSectionsList">
                     <div class="alert alert-light border mb-3">
                         <h6 class="fw-bold mb-2"><i class="bi bi-clipboard-check"></i> Required Syllabus Components</h6>
                         <p class="small mb-3">
@@ -224,26 +248,23 @@
                     </div>
                 </div>
 
-                <hr class="my-4">
-
-                <!-- 2. Language & Tone (Growth Mindset and Belonging) -->
-                <div class="mb-3">
-                    <h6 class="fw-bold mb-2">
-                        <i class="bi bi-chat-heart text-info"></i> 2. Language & Tone Suggestions
-                        <span class="badge bg-info text-dark ms-2">Ready-to-Use Text</span>
-                    </h6>
-                    <p class="small text-muted mb-2">
-                        AI-powered analysis of how well your syllabus promotes student belonging and communicates growth mindset.
-                    </p>
-                    <p class="text-center mb-2">
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
-                                data-bs-target="#growthMindsetList" aria-expanded="false" aria-controls="growthMindsetList">
-                            <i class="bi bi-chevron-down"></i> Show/Hide Analysis Details
+                <!-- 2. Language & Tone -->
+                <div class="feedback-section">
+                    <div class="section-header section-header-info">
+                        <h6><i class="bi bi-chat-heart"></i> 2. Language & Tone</h6>
+                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#growthMindsetList" aria-expanded="false">
+                            <i class="bi bi-chevron-down"></i>
                         </button>
-                    </p>
+                    </div>
+                    <div class="section-body">
+                        <p class="small text-muted mb-0">
+                            AI-powered analysis of how well your syllabus promotes student belonging and communicates growth mindset.
+                        </p>
+                    </div>
                 </div>
 
-                <div class="collapse" id="growthMindsetList">
+                <div class="collapse mb-3" id="growthMindsetList">
                     <div class="alert alert-light border mb-3">
                         <h6 class="fw-bold mb-2"><i class="bi bi-lightbulb"></i> Research-Based Analysis</h6>
                         <p class="small mb-3">
@@ -287,25 +308,23 @@
                     </div>
                 </div>
 
-                <hr class="my-4">
-
-                <!-- 3. Clarity & Quality Analysis -->
-                <div class="mb-3">
-                    <h6 class="fw-bold mb-2">
-                        <i class="bi bi-stars text-warning"></i>
-                        3. Clarity & Quality Analysis
-                    </h6>
-                    <p class="small text-muted mb-2">
-                        AI-powered analysis identifies terminology, policies, or formatting that may confuse or exclude students.
-                    </p>
-                    <p class="text-center mb-2">
-                    <button class="btn btn-sm btn-outline-secondary" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#qualityAnalysisList">
-                        <i class="bi bi-chevron-down"></i> Show/Hide Analysis Details
-                    </button>
-                    </p>
+                <!-- 3. Clarity & Quality -->
+                <div class="feedback-section">
+                    <div class="section-header section-header-warning">
+                        <h6><i class="bi bi-stars"></i> 3. Clarity & Quality</h6>
+                        <button class="btn btn-sm btn-dark" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#qualityAnalysisList">
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                    </div>
+                    <div class="section-body">
+                        <p class="small text-muted mb-0">
+                            AI-powered analysis identifies terminology, policies, or formatting that may confuse or exclude students.
+                        </p>
+                    </div>
                 </div>
-                <div class="collapse" id="qualityAnalysisList">
+
+                <div class="collapse mb-3" id="qualityAnalysisList">
                     <div class="alert alert-light border">
                         <p class="small mb-3">
                             This analysis uses AI to examine your syllabus across five key areas:
@@ -340,25 +359,23 @@
                     </div>
                 </div>
 
-                <hr class="my-4">
-
-                <!-- 4. Digital Accessibility & Formatting -->
-                <div class="mb-3">
-                    <h6 class="fw-bold mb-2">
-                        <i class="bi bi-universal-access text-success"></i> 4. Digital Accessibility & Formatting (37+ checks)
-                    </h6>
-                    <p class="small text-muted mb-2">
-                        Ensures your syllabus is accessible to all students, including those using screen readers or assistive technologies.
-                    </p>
-                    <p class="text-center mb-2">
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
-                                data-bs-target="#accessibilityChecksList" aria-expanded="false" aria-controls="accessibilityChecksList">
-                            <i class="bi bi-chevron-down"></i> Show/Hide Complete List
+                <!-- 4. Accessibility -->
+                <div class="feedback-section">
+                    <div class="section-header section-header-success">
+                        <h6><i class="bi bi-universal-access"></i> 4. Accessibility</h6>
+                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#accessibilityChecksList" aria-expanded="false">
+                            <i class="bi bi-chevron-down"></i>
                         </button>
-                    </p>
+                    </div>
+                    <div class="section-body">
+                        <p class="small text-muted mb-0">
+                            Ensures your syllabus is accessible to all students, including those using screen readers or assistive technologies. (37+ checks)
+                        </p>
+                    </div>
                 </div>
 
-                <div class="collapse" id="accessibilityChecksList">
+                <div class="collapse mb-3" id="accessibilityChecksList">
                     <!-- Introduction and Standards -->
                     <div class="alert alert-light border mb-4">
                         <h6 class="fw-bold mb-2"><i class="bi bi-mortarboard"></i> Why Syllabus Accessibility Matters</h6>
