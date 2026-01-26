@@ -102,10 +102,10 @@
         .feedback-section .section-body {
             padding: 15px;
         }
-        .section-header-danger { background-color: #dc3545; }
-        .section-header-info { background-color: #0dcaf0; }
-        .section-header-warning { background-color: #ffc107; color: #000 !important; }
-        .section-header-success { background-color: #198754; }
+        .section-header-missing { background-color: #F79651; color: #000; }
+        .section-header-tone { background-color: #14364D; color: #fff; }
+        .section-header-quality { background-color: #CFD25B; color: #000; }
+        .section-header-access { background-color: #035056; color: #fff; }
     </style>
 </head>
 <body>
@@ -189,7 +189,7 @@
 
                 <!-- 1. Missing Sections -->
                 <div class="feedback-section">
-                    <div class="section-header section-header-danger">
+                    <div class="section-header section-header-missing">
                         <h6><i class="bi bi-list-check"></i> 1. Missing Sections</h6>
                         <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse"
                                 data-bs-target="#requiredSectionsList" aria-expanded="false">
@@ -250,7 +250,7 @@
 
                 <!-- 2. Language & Tone -->
                 <div class="feedback-section">
-                    <div class="section-header section-header-info">
+                    <div class="section-header section-header-tone">
                         <h6><i class="bi bi-chat-heart"></i> 2. Language & Tone</h6>
                         <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse"
                                 data-bs-target="#growthMindsetList" aria-expanded="false">
@@ -310,7 +310,7 @@
 
                 <!-- 3. Clarity & Quality -->
                 <div class="feedback-section">
-                    <div class="section-header section-header-warning">
+                    <div class="section-header section-header-quality">
                         <h6><i class="bi bi-stars"></i> 3. Clarity & Quality</h6>
                         <button class="btn btn-sm btn-dark" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#qualityAnalysisList">
@@ -361,7 +361,7 @@
 
                 <!-- 4. Accessibility -->
                 <div class="feedback-section">
-                    <div class="section-header section-header-success">
+                    <div class="section-header section-header-access">
                         <h6><i class="bi bi-universal-access"></i> 4. Accessibility</h6>
                         <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse"
                                 data-bs-target="#accessibilityChecksList" aria-expanded="false">
@@ -513,19 +513,19 @@
         <div class="feature-list mt-3">
             <div class="row text-center justify-content-center">
                 <div class="col-md-3 col-6">
-                    <i class="bi bi-list-check" style="font-size: 2rem; color: #dc3545;"></i>
+                    <i class="bi bi-list-check" style="font-size: 2rem; color: #F79651;"></i>
                     <p class="mt-2"><strong>Missing Sections</strong><br><small>Content verification</small></p>
                 </div>
                 <div class="col-md-3 col-6">
-                    <i class="bi bi-chat-heart" style="font-size: 2rem; color: #0dcaf0;"></i>
+                    <i class="bi bi-chat-heart" style="font-size: 2rem; color: #14364D;"></i>
                     <p class="mt-2"><strong>Language & Tone</strong><br><small>Belonging analysis</small></p>
                 </div>
                 <div class="col-md-3 col-6">
-                    <i class="bi bi-stars" style="font-size: 2rem; color: #ffc107;"></i>
+                    <i class="bi bi-stars" style="font-size: 2rem; color: #CFD25B;"></i>
                     <p class="mt-2"><strong>Clarity & Quality</strong><br><small>Student-friendly</small></p>
                 </div>
                 <div class="col-md-3 col-6">
-                    <i class="bi bi-universal-access" style="font-size: 2rem; color: #198754;"></i>
+                    <i class="bi bi-universal-access" style="font-size: 2rem; color: #035056;"></i>
                     <p class="mt-2"><strong>Accessibility</strong><br><small>37+ automated checks</small></p>
                 </div>
             </div>

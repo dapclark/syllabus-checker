@@ -51,6 +51,23 @@
             font-size: 0.75rem;
             padding: 0.35em 0.65em;
         }
+        /* Organization brand colors */
+        .card-missing { border-color: #F79651 !important; }
+        .card-missing .card-header { background-color: #F79651 !important; color: #000 !important; }
+        .card-tone { border-color: #14364D !important; }
+        .card-tone .card-header { background-color: #14364D !important; color: #fff !important; }
+        .card-quality { border-color: #CFD25B !important; }
+        .card-quality .card-header { background-color: #CFD25B !important; color: #000 !important; }
+        .card-access { border-color: #035056 !important; }
+        .card-access .card-header { background-color: #035056 !important; color: #fff !important; }
+        .text-missing { color: #F79651 !important; }
+        .text-tone { color: #14364D !important; }
+        .text-quality { color: #CFD25B !important; }
+        .text-access { color: #035056 !important; }
+        .bg-missing { background-color: #F79651 !important; color: #000 !important; }
+        .bg-tone { background-color: #14364D !important; color: #fff !important; }
+        .bg-quality { background-color: #CFD25B !important; color: #000 !important; }
+        .bg-access { background-color: #035056 !important; color: #fff !important; }
     </style>
 </head>
 <body>
@@ -109,8 +126,8 @@
         <div class="row">
             <!-- Accessibility -->
             <div class="col-lg-6 mb-4">
-                <div class="card h-100 border-success">
-                    <div class="card-header bg-success text-white">
+                <div class="card h-100 card-access">
+                    <div class="card-header">
                         <i class="bi bi-universal-access"></i> Accessibility
                     </div>
                     <div class="card-body">
@@ -136,9 +153,9 @@
                         <div class="mb-2">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="small">{{ issue.category }}</span>
-                                <span class="badge bg-success">{{ issue.count }}</span>
+                                <span class="badge bg-access">{{ issue.count }}</span>
                             </div>
-                            <div class="issue-bar" style="width: {{ (issue.count / max_count * 100)|int }}%; background: linear-gradient(90deg, #198754 0%, #20c997 100%);"></div>
+                            <div class="issue-bar" style="width: {{ (issue.count / max_count * 100)|int }}%; background: linear-gradient(90deg, #035056 0%, #4CC0B0 100%);"></div>
                         </div>
                         {% endfor %}
                         {% else %}
@@ -150,8 +167,8 @@
 
             <!-- Missing Sections -->
             <div class="col-lg-6 mb-4">
-                <div class="card h-100 border-danger">
-                    <div class="card-header bg-danger text-white">
+                <div class="card h-100 card-missing">
+                    <div class="card-header">
                         <i class="bi bi-list-check"></i> Missing Sections
                     </div>
                     <div class="card-body">
@@ -177,9 +194,9 @@
                         <div class="mb-2">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="small">{{ section.section }}</span>
-                                <span class="badge bg-danger">{{ section.count }}</span>
+                                <span class="badge bg-missing">{{ section.count }}</span>
                             </div>
-                            <div class="issue-bar" style="width: {{ (section.count / max_section_count * 100)|int }}%; background: linear-gradient(90deg, #dc3545 0%, #ea868f 100%);"></div>
+                            <div class="issue-bar" style="width: {{ (section.count / max_section_count * 100)|int }}%; background: linear-gradient(90deg, #F79651 0%, #FEF2DA 100%);"></div>
                         </div>
                         {% endfor %}
                         {% else %}
@@ -193,8 +210,8 @@
         <div class="row">
             <!-- Language & Tone -->
             <div class="col-lg-6 mb-4">
-                <div class="card h-100 border-info">
-                    <div class="card-header bg-info text-white">
+                <div class="card h-100 card-tone">
+                    <div class="card-header">
                         <i class="bi bi-chat-heart"></i> Language & Tone
                     </div>
                     <div class="card-body">
@@ -264,8 +281,8 @@
 
             <!-- Clarity & Quality -->
             <div class="col-lg-6 mb-4">
-                <div class="card h-100 border-warning">
-                    <div class="card-header bg-warning text-dark">
+                <div class="card h-100 card-quality">
+                    <div class="card-header">
                         <i class="bi bi-stars"></i> Clarity & Quality
                     </div>
                     <div class="card-body">
@@ -559,8 +576,8 @@
                 <!-- Missing Sections Recommendations -->
                 {% if four_areas.avg_missing_sections and four_areas.avg_missing_sections > 0 %}
                 <div class="col-md-6 col-lg-3 mb-3">
-                    <div class="card h-100 border-danger">
-                        <div class="card-header bg-danger text-white">
+                    <div class="card h-100 card-missing">
+                        <div class="card-header">
                             <i class="bi bi-list-check"></i> Missing Sections
                         </div>
                         <div class="card-body">
@@ -584,8 +601,8 @@
                 <!-- Language & Tone Recommendations -->
                 {% if four_areas.growth_mindset_analyzed and four_areas.growth_mindset_analyzed > 0 %}
                 <div class="col-md-6 col-lg-3 mb-3">
-                    <div class="card h-100 border-info">
-                        <div class="card-header bg-info text-white">
+                    <div class="card h-100 card-tone">
+                        <div class="card-header">
                             <i class="bi bi-chat-heart"></i> Language & Tone
                         </div>
                         <div class="card-body">
@@ -606,8 +623,8 @@
                 <!-- Clarity & Quality Recommendations -->
                 {% if four_areas.quality_analyzed and four_areas.quality_analyzed > 0 %}
                 <div class="col-md-6 col-lg-3 mb-3">
-                    <div class="card h-100 border-warning">
-                        <div class="card-header bg-warning text-dark">
+                    <div class="card h-100 card-quality">
+                        <div class="card-header">
                             <i class="bi bi-stars"></i> Clarity & Quality
                         </div>
                         <div class="card-body">
@@ -626,8 +643,8 @@
                 <!-- Accessibility Recommendations -->
                 {% if common_issues %}
                 <div class="col-md-6 col-lg-3 mb-3">
-                    <div class="card h-100 border-success">
-                        <div class="card-header bg-success text-white">
+                    <div class="card h-100 card-access">
+                        <div class="card-header">
                             <i class="bi bi-universal-access"></i> Accessibility
                         </div>
                         <div class="card-body">

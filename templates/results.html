@@ -71,10 +71,10 @@
         .report-section .section-body {
             padding: 20px;
         }
-        .section-header-danger { background-color: #dc3545; }
-        .section-header-info { background-color: #0dcaf0; }
-        .section-header-warning { background-color: #ffc107; color: #000 !important; }
-        .section-header-success { background-color: #198754; }
+        .section-header-missing { background-color: #F79651; color: #000; }
+        .section-header-tone { background-color: #14364D; color: #fff; }
+        .section-header-quality { background-color: #CFD25B; color: #000; }
+        .section-header-access { background-color: #035056; color: #fff; }
         .btn-download {
             background: #ffbd00;
             color: #000000;
@@ -281,7 +281,7 @@
         <!-- SECTION 1: Missing Required Sections (most urgent / easiest to act on) -->
         {% if results.missing_sections %}
         <div class="report-section">
-            <div class="section-header section-header-danger">
+            <div class="section-header section-header-missing">
                 <h4><i class="bi bi-list-check"></i> 1. Missing Sections</h4>
                 <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse"
                         data-bs-target="#missingSectionsContent" aria-expanded="false">
@@ -307,7 +307,7 @@
 
         <!-- SECTION 2: Growth Mindset and Belonging (high engagement + ready-to-use text) -->
         <div class="report-section">
-            <div class="section-header section-header-info">
+            <div class="section-header section-header-tone">
                 <h4><i class="bi bi-chat-heart"></i> 2. Language & Tone</h4>
                 <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse"
                         data-bs-target="#growthMindsetContent" aria-expanded="false">
@@ -345,7 +345,7 @@
 
         <!-- SECTION 3: Syllabus Quality Analysis -->
         <div class="report-section">
-            <div class="section-header section-header-warning">
+            <div class="section-header section-header-quality">
                 <h4><i class="bi bi-stars"></i> 3. Clarity & Quality</h4>
                 <button class="btn btn-sm btn-dark" type="button"
                         data-bs-toggle="collapse" data-bs-target="#qualityAnalysisContent">
@@ -388,7 +388,7 @@
         <!-- SECTION 4: Digital Accessibility (important but after trust is built) -->
         {% if results.category_counts %}
         <div class="report-section">
-            <div class="section-header section-header-success">
+            <div class="section-header section-header-access">
                 <h4><i class="bi bi-universal-access"></i> 4. Accessibility</h4>
                 <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse"
                         data-bs-target="#accessibilityIssuesContent" aria-expanded="false">
