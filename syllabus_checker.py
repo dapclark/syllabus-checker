@@ -76,28 +76,47 @@ class AccessibilityIssue:
 class SyllabusChecker:
     """Analyzes a syllabus document for completeness and accessibility"""
 
-    # Required sections based on UWM template
+    # Required sections based on UWM template (aligned with Quality Matters & AAC&U)
     REQUIRED_SECTIONS = {
-        "Course Title": ["course title", "course name"],
-        "Instructor": ["instructor", "professor", "teacher"],
+        # Basic Course Info
+        "Instructor Name & Contact": ["instructor", "professor", "contact information"],
+        "Office Hours": ["office hours", "drop-in hours", "student hours"],
+        "Course Title & Credits": ["course title", "credits", "credit hours"],
+        "Meeting Times & Location": ["meeting time", "location", "class meets", "when and where"],
+
+        # Welcome Statement
         "Welcome Statement": ["welcome"],
-        "Course Overview": ["course overview", "overview", "course description"],
-        "Course Objectives": ["course objectives", "objectives", "goals"],
+
+        # Course Overview
+        "Course Objectives": ["course objectives", "objectives"],
         "Student Learning Outcomes": ["student learning outcomes", "learning outcomes", "outcomes"],
         "Assessment": ["assessment"],
-        "Prerequisites": ["prerequisites", "prerequisite", "required skills"],
-        "Course Modality": ["course modality", "modality", "format", "meeting times"],
+        "Prerequisites": ["prerequisites", "prerequisite", "special skills required"],
+        "Course Modality and Format": ["course modality", "modality", "format"],
         "Course Materials": ["course materials", "materials", "textbook", "required materials"],
-        "Time Investment": ["time investment", "expected workload", "time commitment"],
-        "Assignments & Grading": ["assignments", "grading", "grade"],
-        "Grading Scheme": ["grading scheme", "grade breakdown"],
-        "Grading Scale": ["grading scale", "grade scale"],
-        "Course Policies": ["course policies", "policies"],
-        "University Policies": ["university policies", "uwm policies"],
-        "Resources": ["resources", "student resources"],
-        "Academic Supports": ["academic supports", "tutoring", "academic resources"],
-        "Important Dates": ["important dates", "key dates", "deadlines"],
-        "Calendar": ["calendar", "schedule"],
+        "Time Investment": ["time investment", "workload", "time commitment"],
+
+        # Assignments & Grading
+        "Assignment and Grading Policies": ["assignment", "grading polic"],
+        "Grading Scheme": ["grading scheme", "grade breakdown", "breakdown"],
+        "Grading Scale": ["grading scale", "grade scale", "letter grade"],
+
+        # Policies
+        "Course Policies": ["course policies", "course policy"],
+        "Department Policies": ["department policies", "department policy"],
+        "University Policies": ["university policies", "uwm policies", "institutional policies"],
+
+        # Resources
+        "Resources": ["resources", "student resources", "support services"],
+
+        # Important Dates
+        "Important Dates": ["important dates", "key dates"],
+
+        # Instructor Statement of Support
+        "Instructor Statement of Support": ["statement of support", "support statement", "here to help", "want you to succeed"],
+
+        # Calendar
+        "Calendar": ["calendar", "schedule", "course schedule"],
     }
 
     def __init__(self, template_path: str, target_path: str):
