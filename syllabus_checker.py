@@ -219,6 +219,124 @@ class SyllabusChecker:
                 missing.append(section)
         return missing
 
+    def analyze_sections_with_llm(self) -> Dict:
+        """
+        Use LLM to semantically analyze syllabus sections.
+        Returns a dictionary with:
+        - 'found': sections present with standard naming
+        - 'suggest_rename': sections present but with non-standard naming (includes current_name and suggested_name)
+        - 'missing': sections not found at all
+        """
+        # Extract all headings and potential heading text from document
+        headings = []
+
+        # Get formal heading styles
+        for section in self.target_sections:
+            if section['text'].strip():
+                headings.append(section['text'].strip())
+
+        # Also get short paragraphs that might be informal headings
+        for para_info in self.all_paragraphs:
+            text = para_info.paragraph.text.strip()
+            if text and len(text) < 100 and text not in headings:
+                # Check if it looks like a heading (short, possibly bold/styled)
+                runs = para_info.paragraph.runs
+                if runs and (runs[0].bold or para_info.paragraph.style.name.startswith('Heading')):
+                    headings.append(text)
+
+        # Get required sections list
+        required_sections = list(self.REQUIRED_SECTIONS.keys())
+
+        # Get API key
+        api_key = os.environ.get('OPENAI_API_KEY')
+        if not api_key:
+            # Fall back to basic keyword matching if no API key
+            missing = self.check_missing_sections()
+            return {
+                'found': [s for s in required_sections if s not in missing],
+                'suggest_rename': [],
+                'missing': missing,
+                'error': 'OPENAI_API_KEY not set - using basic keyword matching'
+            }
+
+        try:
+            client = OpenAI(api_key=api_key)
+
+            prompt = f"""You are an expert at analyzing academic syllabi. Your task is to match syllabus headings to a standard set of required sections.
+
+HEADINGS FOUND IN THE SYLLABUS:
+{chr(10).join(f"- {h}" for h in headings)}
+
+REQUIRED SECTIONS (standard names):
+{chr(10).join(f"- {s}" for s in required_sections)}
+
+For each REQUIRED SECTION, determine:
+1. "found" - if there's a heading that exactly or very closely matches the required section name
+2. "suggest_rename" - if the content appears to be present under a DIFFERENT heading name (e.g., "What You'll Need" instead of "Course Materials", or "Weekly Schedule" instead of "Calendar")
+3. "missing" - if the section content doesn't appear to be present at all
+
+IMPORTANT GUIDELINES:
+- Be generous in matching - if the heading clearly refers to the same concept, it's a match
+- For "suggest_rename", identify cases where the instructor has the right content but used non-standard naming
+- Only mark as "missing" if you genuinely cannot find any heading that covers that content
+- Consider that some headings may cover multiple required sections
+
+Respond with ONLY valid JSON in this exact format:
+{{
+    "found": ["Section Name 1", "Section Name 2"],
+    "suggest_rename": [
+        {{"required_section": "Course Materials", "current_heading": "What You'll Need", "explanation": "Content matches but uses informal heading"}},
+        {{"required_section": "Calendar", "current_heading": "Weekly Schedule", "explanation": "Same content, different terminology"}}
+    ],
+    "missing": ["Section Name 3", "Section Name 4"]
+}}"""
+
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert at analyzing academic syllabi structure. Respond only with valid JSON."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                max_tokens=2000,
+                temperature=0.3
+            )
+
+            # Parse response
+            response_text = response.choices[0].message.content.strip()
+
+            # Handle markdown code blocks if present
+            if response_text.startswith('```'):
+                response_text = response_text.split('```')[1]
+                if response_text.startswith('json'):
+                    response_text = response_text[4:]
+                response_text = response_text.strip()
+
+            import json
+            result = json.loads(response_text)
+
+            # Ensure all expected keys exist
+            result.setdefault('found', [])
+            result.setdefault('suggest_rename', [])
+            result.setdefault('missing', [])
+
+            return result
+
+        except Exception as e:
+            # Fall back to basic keyword matching on error
+            missing = self.check_missing_sections()
+            return {
+                'found': [s for s in required_sections if s not in missing],
+                'suggest_rename': [],
+                'missing': missing,
+                'error': f'LLM analysis failed: {str(e)} - using basic keyword matching'
+            }
+
     def check_unstyled_headings(self) -> List[AccessibilityIssue]:
         """Detect text that looks like headings but doesn't use heading styles"""
         unstyled_headings = []

@@ -66,8 +66,11 @@ def upload_file():
         # Note: SyllabusChecker expects (template_path, target_path)
         checker = SyllabusChecker('Uniform-Syllabus-Template-1.docx', upload_path)
 
-        # Get missing sections
-        missing_sections = checker.check_missing_sections()
+        # Get section analysis using LLM (semantic matching)
+        section_analysis = checker.analyze_sections_with_llm()
+
+        # Extract just the missing sections list for backward compatibility
+        missing_sections = section_analysis.get('missing', [])
 
         # Run all checks
         checker.run_all_checks()
@@ -479,6 +482,7 @@ def upload_file():
             'filename': filename,
             'total_issues': total_web_issues,  # Match the text report calculation
             'missing_sections': missing_sections,
+            'section_analysis': section_analysis,  # Detailed analysis with found/suggest_rename/missing
             'category_counts': category_counts,
             'category_details': category_details,
             'category_help': category_help,  # Faculty-friendly explanations

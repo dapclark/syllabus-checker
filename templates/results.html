@@ -243,9 +243,18 @@
                             {% endif %}
                         </p>
                         <div class="d-flex flex-wrap gap-3 mt-3">
-                            {% if results.missing_sections|length > 0 %}
+                            {% if results.section_analysis and results.section_analysis.missing|length > 0 %}
+                            <span class="badge bg-warning text-dark px-3 py-2">
+                                <i class="bi bi-list-check"></i> {{ results.section_analysis.missing|length }} section{{ 's' if results.section_analysis.missing|length > 1 else '' }} to add
+                            </span>
+                            {% elif results.missing_sections|length > 0 %}
                             <span class="badge bg-warning text-dark px-3 py-2">
                                 <i class="bi bi-list-check"></i> {{ results.missing_sections|length }} section{{ 's' if results.missing_sections|length > 1 else '' }} to add
+                            </span>
+                            {% endif %}
+                            {% if results.section_analysis and results.section_analysis.suggest_rename|length > 0 %}
+                            <span class="badge px-3 py-2" style="background-color: #F79651; color: #000;">
+                                <i class="bi bi-pencil-square"></i> {{ results.section_analysis.suggest_rename|length }} heading{{ 's' if results.section_analysis.suggest_rename|length > 1 else '' }} to rename
                             </span>
                             {% endif %}
                             {% if results.growth_mindset_analysis.status == 'success' %}
@@ -278,8 +287,7 @@
             </p>
         </div>
 
-        <!-- SECTION 1: Missing Required Sections (most urgent / easiest to act on) -->
-        {% if results.missing_sections %}
+        <!-- SECTION 1: Required Sections Analysis -->
         <div class="report-section">
             <div class="section-header section-header-missing">
                 <h4><i class="bi bi-list-check"></i> 1. Missing Sections</h4>
@@ -289,21 +297,102 @@
                 </button>
             </div>
             <div class="collapse section-body" id="missingSectionsContent">
-                <div class="alert alert-light border">
-                    <i class="bi bi-lightbulb text-warning"></i>
-                    These {{ results.missing_sections|length }} section{{ 's' if results.missing_sections|length > 1 else '' }} should be added to your syllabus.
-                    Most can be copied from department templates or previous syllabi.
-                </div>
-                <ul class="list-group">
-                    {% for section in results.missing_sections %}
-                    <li class="list-group-item d-flex align-items-center">
-                        <i class="bi bi-plus-circle text-danger me-2"></i> {{ section }}
-                    </li>
-                    {% endfor %}
-                </ul>
+
+                {% if results.section_analysis %}
+                    <!-- Sections that need renaming (content present, non-standard heading) -->
+                    {% if results.section_analysis.suggest_rename %}
+                    <div class="mb-4">
+                        <h6 class="text-warning"><i class="bi bi-pencil-square"></i> Consider Renaming ({{ results.section_analysis.suggest_rename|length }})</h6>
+                        <div class="alert alert-warning border-0 mb-2" style="background-color: rgba(255, 193, 7, 0.1);">
+                            <small>These sections have the right content but use non-standard headings. Consider renaming for consistency with UWM syllabus standards.</small>
+                        </div>
+                        <ul class="list-group">
+                            {% for item in results.section_analysis.suggest_rename %}
+                            <li class="list-group-item">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-arrow-right-circle text-warning me-2 mt-1"></i>
+                                    <div>
+                                        <strong>Current:</strong> "{{ item.current_heading }}"<br>
+                                        <strong>Suggested:</strong> "{{ item.required_section }}"
+                                        {% if item.explanation %}
+                                        <br><small class="text-muted">{{ item.explanation }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Truly missing sections -->
+                    {% if results.section_analysis.missing %}
+                    <div class="mb-4">
+                        <h6 class="text-danger"><i class="bi bi-x-circle"></i> Missing Sections ({{ results.section_analysis.missing|length }})</h6>
+                        <div class="alert alert-light border mb-2">
+                            <i class="bi bi-lightbulb text-warning"></i>
+                            These sections should be added to your syllabus. Most can be copied from department templates or previous syllabi.
+                        </div>
+                        <ul class="list-group">
+                            {% for section in results.section_analysis.missing %}
+                            <li class="list-group-item d-flex align-items-center">
+                                <i class="bi bi-plus-circle text-danger me-2"></i> {{ section }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Found sections (optional - shows what's present) -->
+                    {% if results.section_analysis.found %}
+                    <div class="mb-2">
+                        <h6 class="text-success"><i class="bi bi-check-circle"></i> Found Sections ({{ results.section_analysis.found|length }})</h6>
+                        <div class="collapse" id="foundSectionsList">
+                            <ul class="list-group list-group-flush">
+                                {% for section in results.section_analysis.found %}
+                                <li class="list-group-item py-1 border-0">
+                                    <small><i class="bi bi-check text-success me-1"></i> {{ section }}</small>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <button class="btn btn-sm btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#foundSectionsList">
+                            <small>Show/hide found sections</small>
+                        </button>
+                    </div>
+                    {% endif %}
+
+                    <!-- Show if no issues found -->
+                    {% if not results.section_analysis.missing and not results.section_analysis.suggest_rename %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <strong>All required sections found!</strong> Your syllabus includes all required sections with standard naming.
+                    </div>
+                    {% endif %}
+
+                {% else %}
+                    <!-- Fallback to simple missing sections list -->
+                    {% if results.missing_sections %}
+                    <div class="alert alert-light border">
+                        <i class="bi bi-lightbulb text-warning"></i>
+                        These {{ results.missing_sections|length }} section{{ 's' if results.missing_sections|length > 1 else '' }} should be added to your syllabus.
+                    </div>
+                    <ul class="list-group">
+                        {% for section in results.missing_sections %}
+                        <li class="list-group-item d-flex align-items-center">
+                            <i class="bi bi-plus-circle text-danger me-2"></i> {{ section }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle-fill me-2"></i> All required sections found!
+                    </div>
+                    {% endif %}
+                {% endif %}
+
             </div>
         </div>
-        {% endif %}
 
         <!-- SECTION 2: Growth Mindset and Belonging (high engagement + ready-to-use text) -->
         <div class="report-section">
