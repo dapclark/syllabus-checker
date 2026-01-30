@@ -352,119 +352,25 @@
             </div>
         </div>
 
-        <!-- Trends Over Time -->
-        <div class="chart-container mb-4">
-            <h5 class="mb-3"><i class="bi bi-graph-down text-success"></i> Trends Over Time</h5>
-            <p class="text-muted small">Track improvement across all four assessment areas</p>
-
-            {% if trends %}
-            <div class="table-responsive">
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Month</th>
-                            <th>Scans</th>
-                            <th>Avg Missing Sections</th>
-                            <th>Avg Growth Mindset Score</th>
-                            <th>Avg Quality Suggestions</th>
-                            <th>Avg Accessibility Issues</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for i in range(trends|length) %}
-                        <tr>
-                            <td><strong>{{ trends[i].month }}</strong></td>
-                            <td>{{ trends[i].scan_count }}</td>
-                            <td>
-                                <span class="{% if (trends[i].avg_missing_sections or 0) == 0 %}text-success{% elif (trends[i].avg_missing_sections or 0) < 2 %}text-warning{% else %}text-danger{% endif %}">
-                                    {{ "%.1f"|format(trends[i].avg_missing_sections or 0) }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if growth_mindset_trends[i] is defined and growth_mindset_trends[i].avg_score %}
-                                <span class="{% if (growth_mindset_trends[i].avg_score or 0) >= 7 %}text-success{% elif (growth_mindset_trends[i].avg_score or 0) >= 5 %}text-warning{% else %}text-danger{% endif %}">
-                                    {{ "%.1f"|format(growth_mindset_trends[i].avg_score) }}/10
-                                </span>
-                                {% else %}
-                                <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if quality_trends[i] is defined and quality_trends[i].avg_issues is not none %}
-                                <span class="{% if (quality_trends[i].avg_issues or 0) == 0 %}text-success{% elif (quality_trends[i].avg_issues or 0) < 5 %}text-warning{% else %}text-muted{% endif %}">
-                                    {{ "%.1f"|format(quality_trends[i].avg_issues or 0) }}
-                                </span>
-                                {% else %}
-                                <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="{% if (trends[i].avg_accessibility_issues or 0) == 0 %}text-success{% elif (trends[i].avg_accessibility_issues or 0) < 10 %}text-warning{% else %}text-danger{% endif %}">
-                                    {{ "%.1f"|format(trends[i].avg_accessibility_issues or 0) }}
-                                </span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p class="text-muted">Not enough data for trends yet. Check back after more scans.</p>
-            {% endif %}
-        </div>
-
-        <!-- Department Summary -->
-        {% if department_summary and not department_filter %}
-        <div class="chart-container mb-4">
-            <h5 class="mb-3"><i class="bi bi-building text-info"></i> Summary by Department</h5>
-            <p class="text-muted small">Identify departments that may need additional support</p>
-
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Department</th>
-                            <th>Scans</th>
-                            <th>Avg Issues</th>
-                            <th>Avg Missing Sections</th>
-                            <th>Avg Accessibility Issues</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for dept in department_summary %}
-                        <tr>
-                            <td><strong>{{ dept.department }}</strong></td>
-                            <td>{{ dept.scan_count }}</td>
-                            <td>
-                                <span class="{% if dept.avg_issues > (stats.avg_issues or 0) %}text-danger{% else %}text-success{% endif %}">
-                                    {{ "%.1f"|format(dept.avg_issues or 0) }}
-                                </span>
-                            </td>
-                            <td>{{ "%.1f"|format(dept.avg_missing_sections or 0) }}</td>
-                            <td>{{ "%.1f"|format(dept.avg_accessibility_issues or 0) }}</td>
-                            <td>
-                                <a href="{{ url_for('admin_analytics', department=dept.department) }}" class="btn btn-sm btn-outline-primary">
-                                    View Details
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Recent Scans -->
+        <!-- All Submitted Syllabi -->
         <div class="table-container">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Scans</h5>
-                {% if recent_scans %}
-                <button type="submit" form="delete-scans-form" class="btn btn-sm btn-outline-danger" id="delete-selected-btn" disabled>
-                    <i class="bi bi-trash"></i> Delete Selected (<span id="selected-count">0</span>)
-                </button>
-                {% endif %}
+                <div>
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> All Submitted Syllabi</h5>
+                    <small class="text-muted">Showing {{ recent_scans|length }} most recent{% if total_scans and total_scans > recent_scans|length %} of {{ total_scans }} total{% endif %}</small>
+                </div>
+                <div class="d-flex gap-2">
+                    {% if total_scans and total_scans > 0 %}
+                    <a href="{{ url_for('admin_analytics_csv') }}{% if department_filter %}?department={{ department_filter }}{% endif %}" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-download"></i> Download Full List (CSV)
+                    </a>
+                    {% endif %}
+                    {% if recent_scans %}
+                    <button type="submit" form="delete-scans-form" class="btn btn-sm btn-outline-danger" id="delete-selected-btn" disabled>
+                        <i class="bi bi-trash"></i> Delete Selected (<span id="selected-count">0</span>)
+                    </button>
+                    {% endif %}
+                </div>
             </div>
 
             {% if recent_scans %}

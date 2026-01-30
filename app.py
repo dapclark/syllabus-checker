@@ -3,7 +3,7 @@ Syllabus Accessibility Checker Web Application
 Flask app for uploading and checking Word documents for accessibility issues
 """
 
-from flask import Flask, render_template, request, redirect, url_for, send_file, flash
+from flask import Flask, render_template, request, redirect, url_for, send_file, flash, Response
 import os
 from werkzeug.utils import secure_filename
 from syllabus_checker import SyllabusChecker
@@ -726,8 +726,11 @@ def admin_analytics():
     # Get list of departments for filter dropdown
     departments = analytics_db.get_departments_list()
 
-    # Get recent scans
-    recent_scans = analytics_db.get_all_scans(limit=25, department=dept_param)
+    # Get recent scans (show 20 most recent)
+    recent_scans = analytics_db.get_all_scans(limit=20, department=dept_param)
+
+    # Get total scan count for CSV download info
+    total_scans = analytics_db.get_scan_count(dept_param)
 
     return render_template('admin_analytics.html',
                            stats=stats,
@@ -744,7 +747,8 @@ def admin_analytics():
                            missing_sections_freq=missing_sections_freq,
                            departments=departments,
                            department_filter=department_filter,
-                           recent_scans=recent_scans)
+                           recent_scans=recent_scans,
+                           total_scans=total_scans)
 
 @app.route('/admin/analytics/delete', methods=['POST'])
 def admin_analytics_delete():
@@ -773,6 +777,70 @@ def admin_analytics_delete():
     if department:
         return redirect(url_for('admin_analytics', department=department))
     return redirect(url_for('admin_analytics'))
+
+@app.route('/admin/analytics/csv')
+def admin_analytics_csv():
+    """Download all scans as CSV"""
+    import csv
+    import io
+
+    # Get optional department filter
+    dept_param = request.args.get('department', None)
+
+    # Get all scans (no limit)
+    all_scans = analytics_db.get_all_scans(limit=10000, department=dept_param)
+
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    writer.writerow([
+        'Date',
+        'Course Subject',
+        'Course Number',
+        'Course Title',
+        'Instructor',
+        'Department',
+        'Semester',
+        'Missing Sections',
+        'Language & Tone Score',
+        'Quality Issues',
+        'Accessibility Issues',
+        'Total Issues',
+        'Filename'
+    ])
+
+    # Write data rows
+    for scan in all_scans:
+        writer.writerow([
+            scan.get('scan_date', '')[:10] if scan.get('scan_date') else '',
+            scan.get('course_subject', ''),
+            scan.get('course_number', ''),
+            scan.get('course_title', ''),
+            scan.get('instructor_name', ''),
+            scan.get('department', ''),
+            scan.get('semester', ''),
+            scan.get('missing_sections_count', 0),
+            scan.get('growth_mindset_score', '') if scan.get('growth_mindset_status') == 'success' else '',
+            scan.get('quality_issues_count', '') if scan.get('quality_analysis_status') == 'success' else '',
+            scan.get('accessibility_issues_count', 0),
+            scan.get('total_issues', 0),
+            scan.get('filename', '')
+        ])
+
+    # Prepare response
+    output.seek(0)
+    filename = f"syllabus_scans_{datetime.now().strftime('%Y%m%d')}"
+    if dept_param:
+        filename += f"_{dept_param}"
+    filename += ".csv"
+
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
 
 if __name__ == '__main__':
     # Clean up temp folder on exit
