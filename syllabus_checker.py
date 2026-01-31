@@ -3924,8 +3924,8 @@ Identify any technical terms, jargon, or course-specific vocabulary that student
 
 For each undefined term found, use this NESTED bullet format:
 - **Term**: [the term or phrase]
-  - **Why it might be unclear**: [brief explanation]
-  - **Suggested fix**: [how to define or clarify it]
+    - **Why it might be unclear**: [brief explanation]
+    - **Suggested fix**: [how to define or clarify it]
 
 If no issues found, state: "✓ All course terminology appears to be clearly defined or would be familiar to students."
 
@@ -3940,8 +3940,8 @@ Examine the tone of policies, rules, and requirements. Look for:
 
 For each issue found, use this NESTED bullet format:
 - **Issue**: [quote the problematic language]
-  - **Problem**: [why this language may be problematic]
-  - **Better alternative**: [rewritten version with more inclusive, supportive tone]
+    - **Problem**: [why this language may be problematic]
+    - **Better alternative**: [rewritten version with more inclusive, supportive tone]
 
 If no issues found, state: "✓ Policy language uses an inclusive, supportive tone throughout."
 
@@ -3956,8 +3956,8 @@ Identify policies or statements that:
 
 For each policy issue, use this NESTED bullet format:
 - **Policy**: [quote the policy]
-  - **Potential problem**: [what confusion or exclusion this might cause]
-  - **Recommendation**: [how to revise or clarify]
+    - **Potential problem**: [what confusion or exclusion this might cause]
+    - **Recommendation**: [how to revise or clarify]
 
 If no issues found, state: "✓ All policies appear clear and inclusive."
 
@@ -3973,15 +3973,15 @@ Look for inconsistencies in how repeated elements are formatted:
 
 For each formatting inconsistency, use this NESTED bullet format:
 - **Element type**: [e.g., "dates", "headings", "assignment names"]
-  - **Inconsistency**: [describe the variation found]
-  - **Recommendation**: [suggest a consistent format to use throughout]
+    - **Inconsistency**: [describe the variation found]
+    - **Recommendation**: [suggest a consistent format to use throughout]
 
 If no issues found, state: "✓ Formatting appears consistent throughout the syllabus."
 
 ---
 
 **IMPORTANT FORMATTING NOTE**:
-- Use NESTED bullets: main item as top-level bullet, sub-items indented with 2 spaces
+- Use NESTED bullets: main item as top-level bullet, sub-items indented with 4 spaces
 - Use clear markdown formatting with ## for main headings and **bold** for labels
 - Be specific and quote actual text from the syllabus
 - Prioritize the most significant issues in each category
