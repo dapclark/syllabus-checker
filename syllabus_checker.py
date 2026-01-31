@@ -3963,17 +3963,22 @@ If no issues found, state: "✓ All policies appear clear and inclusive."
 
 ## 4. INCONSISTENT FORMATTING
 
-Look for inconsistencies in how repeated elements are formatted:
-- Headings at the same level using different styles (bold, underline, size)
-- Dates formatted differently (e.g., "Jan 15" vs "1/15" vs "January 15th")
-- Assignment names using inconsistent capitalization or formatting
-- Learning objectives or outcomes presented with different structures
-- Contact information or office hours presented inconsistently
-- Bullets, numbering, or other list formatting used inconsistently
+Look for inconsistencies in how repeated elements are formatted. IMPORTANT: Only flag TRUE format inconsistencies, not merely different values using the same format.
 
-For each formatting inconsistency, use this NESTED bullet format:
+Examples of TRUE inconsistencies to flag:
+- Date FORMATS differ: "Jan 15" vs "1/15" vs "January 15th" (mixing abbreviated, numeric, and ordinal styles)
+- Headings at the same level using different styles (some bold, some underlined, different sizes)
+- Assignment names using inconsistent capitalization (some Title Case, some lowercase)
+- Times formatted differently: "2pm" vs "2:00 PM" vs "14:00"
+
+Examples that are NOT inconsistencies (do NOT flag these):
+- "September 6" and "September 28" - same format, just different dates
+- "Assignment 1" and "Assignment 2" - same format, just different numbers
+- Multiple headings all using the same bold style
+
+For each TRUE formatting inconsistency, use this NESTED bullet format:
 - **Element type**: [e.g., "dates", "headings", "assignment names"]
-    - **Inconsistency**: [describe the variation found]
+    - **Inconsistency**: [describe the actual format variation, showing contrasting examples]
     - **Recommendation**: [suggest a consistent format to use throughout]
 
 If no issues found, state: "✓ Formatting appears consistent throughout the syllabus."
