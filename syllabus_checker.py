@@ -225,6 +225,7 @@ class SyllabusChecker:
         Returns a dictionary with:
         - 'found': sections present with standard naming
         - 'suggest_rename': sections present but with non-standard naming (includes current_name and suggested_name)
+        - 'add_heading': content is present in document but lacks a dedicated heading
         - 'missing': sections not found at all
         """
         # Extract all headings and potential heading text from document
@@ -244,6 +245,18 @@ class SyllabusChecker:
                 if runs and (runs[0].bold or para_info.paragraph.style.name.startswith('Heading')):
                     headings.append(text)
 
+        # Extract full document content for content analysis
+        document_content = []
+        for para_info in self.all_paragraphs:
+            text = para_info.paragraph.text.strip()
+            if text:
+                document_content.append(text)
+        full_text = "\n".join(document_content)
+
+        # Truncate if too long (keep first ~8000 chars to stay within token limits)
+        if len(full_text) > 8000:
+            full_text = full_text[:8000] + "\n[... document continues ...]"
+
         # Get required sections list
         required_sections = list(self.REQUIRED_SECTIONS.keys())
 
@@ -255,6 +268,7 @@ class SyllabusChecker:
             return {
                 'found': [s for s in required_sections if s not in missing],
                 'suggest_rename': [],
+                'add_heading': [],
                 'missing': missing,
                 'error': 'OPENAI_API_KEY not set - using basic keyword matching'
             }
@@ -262,31 +276,38 @@ class SyllabusChecker:
         try:
             client = OpenAI(api_key=api_key)
 
-            prompt = f"""You are an expert at analyzing academic syllabi. Your task is to match syllabus headings to a standard set of required sections.
+            prompt = f"""You are an expert at analyzing academic syllabi. Your task is to determine whether required sections are present, examining BOTH the headings AND the document content.
 
 HEADINGS FOUND IN THE SYLLABUS:
 {chr(10).join(f"- {h}" for h in headings)}
 
+FULL DOCUMENT CONTENT:
+{full_text}
+
 REQUIRED SECTIONS (standard names):
 {chr(10).join(f"- {s}" for s in required_sections)}
 
-For each REQUIRED SECTION, determine:
-1. "found" - if there's a heading that exactly or very closely matches the required section name
-2. "suggest_rename" - if the content appears to be present under a DIFFERENT heading name (e.g., "What You'll Need" instead of "Course Materials", or "Weekly Schedule" instead of "Calendar")
-3. "missing" - if the section content doesn't appear to be present at all
+For each REQUIRED SECTION, determine which category it falls into:
+
+1. "found" - A heading exists that exactly or very closely matches the required section name
+2. "suggest_rename" - The content is under a heading with a DIFFERENT name (e.g., "What You'll Need" instead of "Course Materials")
+3. "add_heading" - The CONTENT exists somewhere in the document but there is NO dedicated heading for it. For example, office hours might be mentioned in the instructor info paragraph but without an "Office Hours" heading.
+4. "missing" - The content does not appear ANYWHERE in the document
 
 IMPORTANT GUIDELINES:
-- Be generous in matching - if the heading clearly refers to the same concept, it's a match
-- For "suggest_rename", identify cases where the instructor has the right content but used non-standard naming
-- Only mark as "missing" if you genuinely cannot find any heading that covers that content
+- Be generous in matching headings - if the heading clearly refers to the same concept, it's a match
+- For "add_heading", look carefully at the document content - information like office hours, prerequisites, or contact info is often embedded in paragraphs without its own heading
+- Only mark as "missing" if you genuinely cannot find the information ANYWHERE in the document
 - Consider that some headings may cover multiple required sections
 
 Respond with ONLY valid JSON in this exact format:
 {{
     "found": ["Section Name 1", "Section Name 2"],
     "suggest_rename": [
-        {{"required_section": "Course Materials", "current_heading": "What You'll Need", "explanation": "Content matches but uses informal heading"}},
-        {{"required_section": "Calendar", "current_heading": "Weekly Schedule", "explanation": "Same content, different terminology"}}
+        {{"required_section": "Course Materials", "current_heading": "What You'll Need", "explanation": "Content matches but uses informal heading"}}
+    ],
+    "add_heading": [
+        {{"required_section": "Office Hours", "found_in": "Mentioned in instructor contact paragraph", "explanation": "Office hours (MW 2-4pm) are listed but lack a dedicated heading"}}
     ],
     "missing": ["Section Name 3", "Section Name 4"]
 }}"""
@@ -323,6 +344,7 @@ Respond with ONLY valid JSON in this exact format:
             # Ensure all expected keys exist
             result.setdefault('found', [])
             result.setdefault('suggest_rename', [])
+            result.setdefault('add_heading', [])
             result.setdefault('missing', [])
 
             return result
@@ -333,6 +355,7 @@ Respond with ONLY valid JSON in this exact format:
             return {
                 'found': [s for s in required_sections if s not in missing],
                 'suggest_rename': [],
+                'add_heading': [],
                 'missing': missing,
                 'error': f'LLM analysis failed: {str(e)} - using basic keyword matching'
             }

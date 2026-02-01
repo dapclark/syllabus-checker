@@ -257,6 +257,11 @@
                                 <i class="bi bi-pencil-square"></i> {{ results.section_analysis.suggest_rename|length }} heading{{ 's' if results.section_analysis.suggest_rename|length > 1 else '' }} to rename
                             </span>
                             {% endif %}
+                            {% if results.section_analysis and results.section_analysis.add_heading|length > 0 %}
+                            <span class="badge bg-info text-dark px-3 py-2">
+                                <i class="bi bi-bookmark-plus"></i> {{ results.section_analysis.add_heading|length }} heading{{ 's' if results.section_analysis.add_heading|length > 1 else '' }} to add
+                            </span>
+                            {% endif %}
                             {% if results.growth_mindset_analysis.status == 'success' %}
                             <span class="badge bg-info text-dark px-3 py-2">
                                 <i class="bi bi-chat-heart"></i> Ready-to-use language suggestions included
@@ -325,6 +330,32 @@
                     </div>
                     {% endif %}
 
+                    <!-- Content found but needs a heading -->
+                    {% if results.section_analysis.add_heading %}
+                    <div class="mb-4">
+                        <h6 class="text-info"><i class="bi bi-bookmark-plus"></i> Add a Heading ({{ results.section_analysis.add_heading|length }})</h6>
+                        <div class="alert alert-info border-0 mb-2" style="background-color: rgba(13, 202, 240, 0.1);">
+                            <small>This information exists in your syllabus but would be easier to find with a dedicated heading.</small>
+                        </div>
+                        <ul class="list-group">
+                            {% for item in results.section_analysis.add_heading %}
+                            <li class="list-group-item">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-bookmark-plus text-info me-2 mt-1"></i>
+                                    <div>
+                                        <strong>Add heading:</strong> "{{ item.required_section }}"<br>
+                                        <small class="text-muted">{{ item.found_in }}</small>
+                                        {% if item.explanation %}
+                                        <br><small class="text-muted fst-italic">{{ item.explanation }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
                     <!-- Truly missing sections -->
                     {% if results.section_analysis.missing %}
                     <div class="mb-4">
@@ -363,7 +394,7 @@
                     {% endif %}
 
                     <!-- Show if no issues found -->
-                    {% if not results.section_analysis.missing and not results.section_analysis.suggest_rename %}
+                    {% if not results.section_analysis.missing and not results.section_analysis.suggest_rename and not results.section_analysis.add_heading %}
                     <div class="alert alert-success">
                         <i class="bi bi-check-circle-fill me-2"></i>
                         <strong>All required sections found!</strong> Your syllabus includes all required sections with standard naming.
