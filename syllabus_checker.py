@@ -253,9 +253,9 @@ class SyllabusChecker:
                 document_content.append(text)
         full_text = "\n".join(document_content)
 
-        # Truncate if too long (keep first ~8000 chars to stay within token limits)
-        if len(full_text) > 8000:
-            full_text = full_text[:8000] + "\n[... document continues ...]"
+        # Truncate if too long (keep first ~12000 chars to stay within token limits)
+        if len(full_text) > 12000:
+            full_text = full_text[:12000] + "\n[... document continues ...]"
 
         # Get required sections list
         required_sections = list(self.REQUIRED_SECTIONS.keys())
@@ -276,7 +276,9 @@ class SyllabusChecker:
         try:
             client = OpenAI(api_key=api_key)
 
-            prompt = f"""You are an expert at analyzing academic syllabi. Your task is to determine whether required sections are present, examining BOTH the headings AND the document content.
+            prompt = f"""You are an expert at analyzing academic syllabi. Your task is to determine whether required information is present in the syllabus, examining BOTH headings AND body content.
+
+CRITICAL: The goal is to find whether the INFORMATION exists, not whether the exact heading name is used.
 
 HEADINGS FOUND IN THE SYLLABUS:
 {chr(10).join(f"- {h}" for h in headings)}
@@ -284,32 +286,49 @@ HEADINGS FOUND IN THE SYLLABUS:
 FULL DOCUMENT CONTENT:
 {full_text}
 
-REQUIRED SECTIONS (standard names):
+REQUIRED SECTIONS (standard names we want):
 {chr(10).join(f"- {s}" for s in required_sections)}
 
-For each REQUIRED SECTION, determine which category it falls into:
+COMMON EQUIVALENT TERMS (treat these as matches):
+- "Office Hours" = "Office Hours:", "Student Hours", "Drop-in Hours", "Availability", hours listed after "Office:"
+- "Course Materials" = "Materials", "Textbooks", "Required Texts", "Books", "Readings"
+- "Grading Scale" = "Grade Scale", "Grading", point breakdowns (A=93-100, etc.)
+- "Grading Scheme" = "Point System", "Grade Breakdown", "How grades are calculated"
+- "Assignment and Grading Policies" = "Assignments", "Grading", "Policies", "Writing Assignment Guidelines"
+- "Calendar" = "Schedule", "Syllabus", "Tentative Syllabus", "Course Schedule", "Weekly Schedule"
+- "Course Objectives" = "Objectives", "Goals", "Overview", "Topics"
+- "Student Learning Outcomes" = "Learning Outcomes", "Outcomes", "What you will learn"
+- "Prerequisites" = "Requirements", "Prior knowledge needed"
+- "Instructor Name & Contact" = "Instructor", "Professor", "Contact", name/email/phone listed at top
+- "Meeting Times & Location" = class times, room numbers, when/where class meets
 
-1. "found" - A heading exists that exactly or very closely matches the required section name
-2. "suggest_rename" - The content is under a heading with a DIFFERENT name (e.g., "What You'll Need" instead of "Course Materials")
-3. "add_heading" - The CONTENT exists somewhere in the document but there is NO dedicated heading for it. For example, office hours might be mentioned in the instructor info paragraph but without an "Office Hours" heading.
-4. "missing" - The content does not appear ANYWHERE in the document
+For each REQUIRED SECTION, categorize as:
 
-IMPORTANT GUIDELINES:
-- Be generous in matching headings - if the heading clearly refers to the same concept, it's a match
-- For "add_heading", look carefully at the document content - information like office hours, prerequisites, or contact info is often embedded in paragraphs without its own heading
-- Only mark as "missing" if you genuinely cannot find the information ANYWHERE in the document
-- Consider that some headings may cover multiple required sections
+1. "found" - The information IS present with a reasonably matching heading (be generous - "MATERIALS" matches "Course Materials", "Office Hours:" matches "Office Hours")
 
-Respond with ONLY valid JSON in this exact format:
+2. "suggest_rename" - The information is under a heading but the heading name is quite different from our standard (e.g., "Stuff You Need" instead of "Course Materials")
+
+3. "add_heading" - The INFORMATION exists in the document but is embedded in another section without its own heading (e.g., office hours listed under INSTRUCTOR info, or prerequisites mentioned in the overview)
+
+4. "missing" - The information truly does NOT appear ANYWHERE in the document. BE VERY CAREFUL - only use this if the content is genuinely absent.
+
+IMPORTANT:
+- If you see "Office Hours: 4:30-5:30 Tuesday..." that IS office hours - mark it as "found" not missing!
+- If you see "MATERIALS" with a list of textbooks, that IS Course Materials - mark as "found"!
+- If you see a detailed week-by-week schedule, that IS a Calendar - mark as "found"!
+- Search the FULL CONTENT, not just headings. Information often appears without formal headings.
+- When in doubt, mark as "found" or "add_heading" rather than "missing"
+
+Respond with ONLY valid JSON:
 {{
     "found": ["Section Name 1", "Section Name 2"],
     "suggest_rename": [
-        {{"required_section": "Course Materials", "current_heading": "What You'll Need", "explanation": "Content matches but uses informal heading"}}
+        {{"required_section": "Course Materials", "current_heading": "Stuff You Need", "explanation": "Has the right content but informal heading"}}
     ],
     "add_heading": [
-        {{"required_section": "Office Hours", "found_in": "Mentioned in instructor contact paragraph", "explanation": "Office hours (MW 2-4pm) are listed but lack a dedicated heading"}}
+        {{"required_section": "Prerequisites", "found_in": "Mentioned in course overview paragraph", "explanation": "Prerequisites mentioned but no dedicated heading"}}
     ],
-    "missing": ["Section Name 3", "Section Name 4"]
+    "missing": ["Section Name 3"]
 }}"""
 
             response = client.chat.completions.create(
