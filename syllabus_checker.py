@@ -276,59 +276,52 @@ class SyllabusChecker:
         try:
             client = OpenAI(api_key=api_key)
 
-            prompt = f"""You are an expert at analyzing academic syllabi. Your task is to determine whether required information is present in the syllabus, examining BOTH headings AND body content.
+            prompt = f"""Analyze this syllabus to find which required sections are present.
 
-CRITICAL: The goal is to find whether the INFORMATION exists, not whether the exact heading name is used.
-
-HEADINGS FOUND IN THE SYLLABUS:
-{chr(10).join(f"- {h}" for h in headings)}
-
-FULL DOCUMENT CONTENT:
+DOCUMENT CONTENT TO SEARCH:
 {full_text}
 
-REQUIRED SECTIONS (standard names we want):
+REQUIRED SECTIONS TO FIND:
 {chr(10).join(f"- {s}" for s in required_sections)}
 
-COMMON EQUIVALENT TERMS (treat these as matches):
-- "Office Hours" = "Office Hours:", "Student Hours", "Drop-in Hours", "Availability", hours listed after "Office:"
-- "Course Materials" = "Materials", "Textbooks", "Required Texts", "Books", "Readings"
-- "Grading Scale" = "Grade Scale", "Grading", point breakdowns (A=93-100, etc.)
-- "Grading Scheme" = "Point System", "Grade Breakdown", "How grades are calculated"
-- "Assignment and Grading Policies" = "Assignments", "Grading", "Policies", "Writing Assignment Guidelines"
-- "Calendar" = "Schedule", "Syllabus", "Tentative Syllabus", "Course Schedule", "Weekly Schedule"
-- "Course Objectives" = "Objectives", "Goals", "Overview", "Topics"
-- "Student Learning Outcomes" = "Learning Outcomes", "Outcomes", "What you will learn"
-- "Prerequisites" = "Requirements", "Prior knowledge needed"
-- "Instructor Name & Contact" = "Instructor", "Professor", "Contact", name/email/phone listed at top
-- "Meeting Times & Location" = class times, room numbers, when/where class meets
+YOUR TASK: Search the document content above for EACH required section. The information may appear:
+- As a labeled heading/section
+- As a label followed by content (like "Office Hours: 2-4pm")
+- Embedded within another section's text
 
-For each REQUIRED SECTION, categorize as:
+SEARCH INSTRUCTIONS FOR EACH SECTION:
 
-1. "found" - The information IS present with a reasonably matching heading (be generous - "MATERIALS" matches "Course Materials", "Office Hours:" matches "Office Hours")
+"Office Hours" - FOUND if you see "Office Hours:" followed by times, or "student hours", or specific availability times
+"Instructor Name & Contact" - FOUND if you see an instructor name with email, phone, or office location
+"Meeting Times & Location" - FOUND if you see when/where the class meets (days, times, room numbers)
+"Course Materials" - FOUND if you see "MATERIALS", "Textbooks", or a list of required books
+"Course Objectives" - FOUND if you see "OVERVIEW", "Objectives", or course goals described
+"Student Learning Outcomes" - FOUND if you see what students will learn/be able to do
+"Grading Scheme" - FOUND if you see "Point System", assignment point values, or grade weights
+"Grading Scale" - FOUND if you see letter grade cutoffs (A=93-100, B=80-89, etc.)
+"Assignment and Grading Policies" - FOUND if you see policies about late work, revision, plagiarism
+"Calendar" - FOUND if you see "SCHEDULE", "SYLLABUS", or dated weekly topics/assignments
+"Course Policies" - FOUND if you see attendance, participation, or behavior policies
+"Prerequisites" - FOUND if you see required prior courses or skills
 
-2. "suggest_rename" - The information is under a heading but the heading name is quite different from our standard (e.g., "Stuff You Need" instead of "Course Materials")
+CATEGORIZATION RULES:
 
-3. "add_heading" - The INFORMATION exists in the document but is embedded in another section without its own heading (e.g., office hours listed under INSTRUCTOR info, or prerequisites mentioned in the overview)
+"found" = Content EXISTS with its own label/heading (even if label differs)
+  EXAMPLES: "Office Hours: 4:30-5:30" = FOUND, "MATERIALS" with books = FOUND
 
-4. "missing" - The information truly does NOT appear ANYWHERE in the document. BE VERY CAREFUL - only use this if the content is genuinely absent.
+"add_heading" = Content EXISTS but is buried in another section without its own label
+  EXAMPLE: Office hours times appear in INSTRUCTOR section but "Office Hours" isn't a label
 
-IMPORTANT:
-- If you see "Office Hours: 4:30-5:30 Tuesday..." that IS office hours - mark it as "found" not missing!
-- If you see "MATERIALS" with a list of textbooks, that IS Course Materials - mark as "found"!
-- If you see a detailed week-by-week schedule, that IS a Calendar - mark as "found"!
-- Search the FULL CONTENT, not just headings. Information often appears without formal headings.
-- When in doubt, mark as "found" or "add_heading" rather than "missing"
+"missing" = Content DOES NOT EXIST anywhere - use ONLY if truly absent after searching
 
-Respond with ONLY valid JSON:
+NEVER mark something as "missing" if the information appears ANYWHERE in the document.
+
+OUTPUT FORMAT (JSON only):
 {{
-    "found": ["Section Name 1", "Section Name 2"],
-    "suggest_rename": [
-        {{"required_section": "Course Materials", "current_heading": "Stuff You Need", "explanation": "Has the right content but informal heading"}}
-    ],
-    "add_heading": [
-        {{"required_section": "Prerequisites", "found_in": "Mentioned in course overview paragraph", "explanation": "Prerequisites mentioned but no dedicated heading"}}
-    ],
-    "missing": ["Section Name 3"]
+    "found": ["list sections where content exists with a label"],
+    "suggest_rename": [{{"required_section": "X", "current_heading": "Y", "explanation": "..."}}],
+    "add_heading": [{{"required_section": "X", "found_in": "where found", "explanation": "..."}}],
+    "missing": ["ONLY sections with NO content anywhere"]
 }}"""
 
             response = client.chat.completions.create(
@@ -336,7 +329,7 @@ Respond with ONLY valid JSON:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert at analyzing academic syllabi structure. Respond only with valid JSON."
+                        "content": "You are a document analyst. Your job is to SEARCH document content to find specific information. Focus on finding content, not matching heading names. If 'Office Hours: 4:30pm' appears anywhere, that means Office Hours is FOUND. Respond only with valid JSON."
                     },
                     {
                         "role": "user",
@@ -344,7 +337,7 @@ Respond with ONLY valid JSON:
                     }
                 ],
                 max_tokens=2000,
-                temperature=0.3
+                temperature=0.1
             )
 
             # Parse response
