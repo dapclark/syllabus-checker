@@ -306,15 +306,23 @@ SEARCH INSTRUCTIONS FOR EACH SECTION:
 
 CATEGORIZATION RULES:
 
-"found" = Content EXISTS with its own label/heading (even if label differs)
-  EXAMPLES: "Office Hours: 4:30-5:30" = FOUND, "MATERIALS" with books = FOUND
+"found" = Content has a LABEL, even if nested within another section
+  EXAMPLES THAT COUNT AS FOUND:
+  - "Office Hours: 4:30-5:30 Tuesday" → FOUND (has "Office Hours:" label)
+  - "Office:  582 Curtin Hall" followed by "Office Hours: 4:30-5:30" → FOUND
+  - "MATERIALS" followed by book list → FOUND
+  - "Point System" with grade breakdown → FOUND for Grading Scheme
+  - A table showing A=93-100, B+=87-89 → FOUND for Grading Scale
 
-"add_heading" = Content EXISTS but is buried in another section without its own label
-  EXAMPLE: Office hours times appear in INSTRUCTOR section but "Office Hours" isn't a label
+"add_heading" = Content exists but has NO label - just raw information
+  EXAMPLE: "Class meets Tuesdays 6-9pm in Bolton 150" appears in a paragraph
+  with no "Meeting Times:" or similar label preceding it
 
-"missing" = Content DOES NOT EXIST anywhere - use ONLY if truly absent after searching
+"missing" = Content truly DOES NOT EXIST anywhere in the document
+  Use ONLY after confirming the information is completely absent
 
-NEVER mark something as "missing" if the information appears ANYWHERE in the document.
+IMPORTANT: If you see a label like "Office Hours:" followed by times, that is FOUND,
+even if it appears under an "INSTRUCTOR" section. The label "Office Hours:" counts!
 
 OUTPUT FORMAT (JSON only):
 {{
@@ -329,7 +337,7 @@ OUTPUT FORMAT (JSON only):
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a document analyst. Your job is to SEARCH document content to find specific information. Focus on finding content, not matching heading names. If 'Office Hours: 4:30pm' appears anywhere, that means Office Hours is FOUND. Respond only with valid JSON."
+                        "content": "You search documents for required information. KEY RULE: If you see a label like 'Office Hours:' followed by times, that counts as FOUND - even if it's under another section like 'INSTRUCTOR'. A label + content = FOUND. Only use 'add_heading' if content exists with NO label. Only use 'missing' if content is truly absent. Respond with valid JSON only."
                     },
                     {
                         "role": "user",
