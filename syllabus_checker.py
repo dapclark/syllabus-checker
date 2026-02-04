@@ -291,8 +291,8 @@ YOUR TASK: Search the document content above for EACH required section. The info
 
 SEARCH INSTRUCTIONS FOR EACH SECTION:
 
-"Office Hours" - FOUND if you see "Office Hours:" followed by times, or "student hours", or specific availability times
-"Instructor Name & Contact" - FOUND if you see an instructor name with email, phone, or office location
+"Office Hours" - FOUND if you see "Office Hours:" followed by times, or "student hours", or availability times
+"Instructor Name & Contact" - FOUND if you see ANY of: instructor/professor name, "E-mail:", "Phone:", "Office:", email addresses (@), phone numbers. Example: "INSTRUCTOR Dave Clark Office: 582 Curtin Hall Phone: 229.4870 E-mail: dclark@uwm.edu" = FOUND
 "Meeting Times & Location" - FOUND if you see when/where the class meets (days, times, room numbers)
 "Course Materials" - FOUND if you see "MATERIALS", "Textbooks", or a list of required books
 "Course Objectives" - FOUND if you see "OVERVIEW", "Objectives", or course goals described
@@ -308,9 +308,10 @@ CATEGORIZATION RULES:
 
 "found" = Content has a LABEL, even if nested within another section
   EXAMPLES THAT COUNT AS FOUND:
-  - "Office Hours: 4:30-5:30 Tuesday" → FOUND (has "Office Hours:" label)
-  - "Office:  582 Curtin Hall" followed by "Office Hours: 4:30-5:30" → FOUND
-  - "MATERIALS" followed by book list → FOUND
+  - "Office Hours: 4:30-5:30 Tuesday" → FOUND for Office Hours
+  - "INSTRUCTOR Dave Clark Office: 582 Curtin Phone: 229.4870 E-mail: x@y.edu" → FOUND for Instructor Name & Contact
+  - "E-mail:" or "Phone:" with values → FOUND for Instructor Name & Contact
+  - "MATERIALS" followed by book list → FOUND for Course Materials
   - "Point System" with grade breakdown → FOUND for Grading Scheme
   - A table showing A=93-100, B+=87-89 → FOUND for Grading Scale
 
