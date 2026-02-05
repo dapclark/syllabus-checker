@@ -66,11 +66,16 @@ def upload_file():
         # Note: SyllabusChecker expects (template_path, target_path)
         checker = SyllabusChecker('uploads/Uniform-Syllabus-Template-1.docx', upload_path)
 
-        # Get section analysis using LLM (semantic matching)
+        # Get section analysis using LLM (content-based analysis)
         section_analysis = checker.analyze_sections_with_llm()
 
-        # Extract just the missing sections list for backward compatibility
-        missing_sections = section_analysis.get('missing', [])
+        # Extract missing content types for backward compatibility with analytics
+        # New format: missing is [{content_type: "X", description: "...", recommendation: "..."}]
+        missing_items = section_analysis.get('missing', [])
+        if missing_items and isinstance(missing_items[0], dict):
+            missing_sections = [item.get('content_type', str(item)) for item in missing_items]
+        else:
+            missing_sections = missing_items  # Fallback for old format
 
         # Run all checks
         checker.run_all_checks()

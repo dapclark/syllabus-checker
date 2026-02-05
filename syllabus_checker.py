@@ -264,88 +264,81 @@ class SyllabusChecker:
         api_key = os.environ.get('OPENAI_API_KEY')
         if not api_key:
             # Fall back to basic keyword matching if no API key
-            missing = self.check_missing_sections()
+            missing_sections = self.check_missing_sections()
             return {
-                'found': [s for s in required_sections if s not in missing],
-                'suggest_rename': [],
-                'add_heading': [],
-                'missing': missing,
+                'present': [{'content_type': s, 'found': 'Detected via keyword matching', 'heading_ok': True}
+                           for s in required_sections if s not in missing_sections],
+                'missing': [{'content_type': s, 'description': 'Not found', 'recommendation': f'Add {s} to your syllabus'}
+                           for s in missing_sections],
                 'error': 'OPENAI_API_KEY not set - using basic keyword matching'
             }
 
         try:
             client = OpenAI(api_key=api_key)
 
-            prompt = f"""Analyze this syllabus to find which required sections are present.
+            prompt = f"""Analyze this syllabus for REQUIRED CONTENT. Focus on whether the content exists, not on heading names.
 
-DOCUMENT CONTENT TO SEARCH:
+SYLLABUS TEXT:
 {full_text}
 
-REQUIRED SECTIONS TO FIND:
-{chr(10).join(f"- {s}" for s in required_sections)}
+REQUIRED CONTENT TO FIND:
 
-YOUR TASK: Search the document content above for EACH required section. The information may appear:
-- As a labeled heading/section
-- As a label followed by content (like "Office Hours: 2-4pm")
-- Embedded within another section's text
+1. INSTRUCTOR CONTACT INFO: instructor name, email, phone, office location
+2. OFFICE HOURS: when students can meet with instructor (times, days, "by appointment")
+3. MEETING TIMES & LOCATION: when/where class meets (if applicable)
+4. COURSE MATERIALS: textbooks, required readings, supplies needed
+5. COURSE OBJECTIVES: what the course covers, its purpose and goals
+6. LEARNING OUTCOMES: what students will learn or be able to do
+7. ASSESSMENT INFO: how students are evaluated, types of assignments
+8. GRADING SCHEME: point values or weights for assignments
+9. GRADING SCALE: letter grade cutoffs (A=93-100, etc.)
+10. ASSIGNMENT POLICIES: late work, revision, plagiarism policies
+11. COURSE POLICIES: attendance, participation, classroom expectations
+12. CALENDAR/SCHEDULE: weekly topics, assignment due dates
+13. WELCOME STATEMENT: welcoming language to students
+14. PREREQUISITES: required prior courses or knowledge
+15. RESOURCES: support services, tutoring, disability services
+16. UNIVERSITY POLICIES: institutional policies (academic integrity, etc.)
 
-SEARCH INSTRUCTIONS FOR EACH SECTION:
+For each content type, determine:
 
-"Office Hours" - FOUND if you see "Office Hours:" followed by times, or "student hours", or availability times
-"Instructor Name & Contact" - FOUND if you see ANY of: instructor/professor name, "E-mail:", "Phone:", "Office:", email addresses (@), phone numbers. Example: "INSTRUCTOR Dave Clark Office: 582 Curtin Hall Phone: 229.4870 E-mail: dclark@uwm.edu" = FOUND
-"Meeting Times & Location" - FOUND if you see when/where the class meets (days, times, room numbers)
-"Course Materials" - FOUND if you see "MATERIALS", "Textbooks", or a list of required books
-"Course Objectives" - FOUND if you see "OVERVIEW", "Objectives", or course goals described
-"Student Learning Outcomes" - FOUND if you see what students will learn/be able to do
-"Grading Scheme" - FOUND if you see "Point System", assignment point values, or grade weights
-"Grading Scale" - FOUND if you see letter grade cutoffs (A=93-100, B=80-89, etc.)
-"Assignment and Grading Policies" - FOUND if you see policies about late work, revision, plagiarism
-"Calendar" - FOUND if you see "SCHEDULE", "SYLLABUS", or dated weekly topics/assignments
-"Course Policies" - FOUND if you see attendance, participation, or behavior policies
-"Prerequisites" - FOUND if you see required prior courses or skills
+"present" - Content IS in the document (regardless of what heading it's under)
+  Quote a brief snippet showing you found it.
 
-CATEGORIZATION RULES:
+"missing" - Content is NOT in the document anywhere
+  Only use if you genuinely cannot find this information.
 
-"found" = Content has a LABEL, even if nested within another section
-  EXAMPLES THAT COUNT AS FOUND:
-  - "Office Hours: 4:30-5:30 Tuesday" → FOUND for Office Hours
-  - "INSTRUCTOR Dave Clark Office: 582 Curtin Phone: 229.4870 E-mail: x@y.edu" → FOUND for Instructor Name & Contact
-  - "E-mail:" or "Phone:" with values → FOUND for Instructor Name & Contact
-  - "MATERIALS" followed by book list → FOUND for Course Materials
-  - "Point System" with grade breakdown → FOUND for Grading Scheme
-  - A table showing A=93-100, B+=87-89 → FOUND for Grading Scale
-
-"add_heading" = Content exists but has NO label - just raw information
-  EXAMPLE: "Class meets Tuesdays 6-9pm in Bolton 150" appears in a paragraph
-  with no "Meeting Times:" or similar label preceding it
-
-"missing" = Content truly DOES NOT EXIST anywhere in the document
-  Use ONLY after confirming the information is completely absent
-
-IMPORTANT: If you see a label like "Office Hours:" followed by times, that is FOUND,
-even if it appears under an "INSTRUCTOR" section. The label "Office Hours:" counts!
-
-OUTPUT FORMAT (JSON only):
+OUTPUT FORMAT (JSON):
 {{
-    "found": ["list sections where content exists with a label"],
-    "suggest_rename": [{{"required_section": "X", "current_heading": "Y", "explanation": "..."}}],
-    "add_heading": [{{"required_section": "X", "found_in": "where found", "explanation": "..."}}],
-    "missing": ["ONLY sections with NO content anywhere"]
-}}"""
+    "present": [
+        {{"content_type": "Instructor Contact Info", "found": "Dave Clark, dclark@uwm.edu, 229-4870, Curtin 582", "heading_used": "INSTRUCTOR", "standard_heading": "Instructor Name & Contact", "heading_ok": true}},
+        {{"content_type": "Office Hours", "found": "4:30-5:30 Tuesday and Thursday", "heading_used": "Office Hours:", "standard_heading": "Office Hours", "heading_ok": true}},
+        {{"content_type": "Grading Scale", "found": "A=93+, A-=90-93, B+=87-89...", "heading_used": "Point System", "standard_heading": "Grading Scale", "heading_ok": false}}
+    ],
+    "missing": [
+        {{"content_type": "Welcome Statement", "description": "No welcoming language to students found", "recommendation": "Add a brief welcome message at the beginning of the syllabus"}}
+    ]
+}}
+
+RULES:
+- If content exists ANYWHERE, it goes in "present" - quote what you found
+- Set "heading_ok": true if the heading reasonably matches the standard, false if it's quite different
+- Only put in "missing" if the content truly does not exist
+- Be thorough - search the entire document before marking something missing"""
 
             response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {
                         "role": "system",
-                        "content": "You search documents for required information. KEY RULE: If you see a label like 'Office Hours:' followed by times, that counts as FOUND - even if it's under another section like 'INSTRUCTOR'. A label + content = FOUND. Only use 'add_heading' if content exists with NO label. Only use 'missing' if content is truly absent. Respond with valid JSON only."
+                        "content": "You analyze syllabi for required content. Your job is to find whether specific CONTENT exists in the document, regardless of what heading it's under. Quote the actual text you find. Only mark content as 'missing' if it truly doesn't exist anywhere. Respond with valid JSON only."
                     },
                     {
                         "role": "user",
                         "content": prompt
                     }
                 ],
-                max_tokens=2000,
+                max_tokens=3000,
                 temperature=0.1
             )
 
@@ -362,22 +355,20 @@ OUTPUT FORMAT (JSON only):
             import json
             result = json.loads(response_text)
 
-            # Ensure all expected keys exist
-            result.setdefault('found', [])
-            result.setdefault('suggest_rename', [])
-            result.setdefault('add_heading', [])
+            # Ensure all expected keys exist with new structure
+            result.setdefault('present', [])
             result.setdefault('missing', [])
 
             return result
 
         except Exception as e:
             # Fall back to basic keyword matching on error
-            missing = self.check_missing_sections()
+            missing_sections = self.check_missing_sections()
             return {
-                'found': [s for s in required_sections if s not in missing],
-                'suggest_rename': [],
-                'add_heading': [],
-                'missing': missing,
+                'present': [{'content_type': s, 'found': 'Detected via keyword matching', 'heading_ok': True}
+                           for s in required_sections if s not in missing_sections],
+                'missing': [{'content_type': s, 'description': 'Not found', 'recommendation': f'Add {s} to your syllabus'}
+                           for s in missing_sections],
                 'error': f'LLM analysis failed: {str(e)} - using basic keyword matching'
             }
 

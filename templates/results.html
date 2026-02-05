@@ -245,22 +245,20 @@
                         <div class="d-flex flex-wrap gap-3 mt-3">
                             {% if results.section_analysis and results.section_analysis.missing|length > 0 %}
                             <span class="badge bg-warning text-dark px-3 py-2">
-                                <i class="bi bi-list-check"></i> {{ results.section_analysis.missing|length }} section{{ 's' if results.section_analysis.missing|length > 1 else '' }} to add
+                                <i class="bi bi-list-check"></i> {{ results.section_analysis.missing|length }} content area{{ 's' if results.section_analysis.missing|length > 1 else '' }} to add
                             </span>
                             {% elif results.missing_sections|length > 0 %}
                             <span class="badge bg-warning text-dark px-3 py-2">
                                 <i class="bi bi-list-check"></i> {{ results.missing_sections|length }} section{{ 's' if results.missing_sections|length > 1 else '' }} to add
                             </span>
                             {% endif %}
-                            {% if results.section_analysis and results.section_analysis.suggest_rename|length > 0 %}
-                            <span class="badge px-3 py-2" style="background-color: #F79651; color: #000;">
-                                <i class="bi bi-pencil-square"></i> {{ results.section_analysis.suggest_rename|length }} heading{{ 's' if results.section_analysis.suggest_rename|length > 1 else '' }} to rename
-                            </span>
-                            {% endif %}
-                            {% if results.section_analysis and results.section_analysis.add_heading|length > 0 %}
-                            <span class="badge bg-info text-dark px-3 py-2">
-                                <i class="bi bi-bookmark-plus"></i> {{ results.section_analysis.add_heading|length }} heading{{ 's' if results.section_analysis.add_heading|length > 1 else '' }} to add
-                            </span>
+                            {% if results.section_analysis and results.section_analysis.present %}
+                                {% set heading_issues = results.section_analysis.present|selectattr('heading_ok', 'equalto', false)|list %}
+                                {% if heading_issues|length > 0 %}
+                                <span class="badge px-3 py-2" style="background-color: #F79651; color: #000;">
+                                    <i class="bi bi-pencil-square"></i> {{ heading_issues|length }} heading{{ 's' if heading_issues|length > 1 else '' }} to standardize
+                                </span>
+                                {% endif %}
                             {% endif %}
                             {% if results.growth_mindset_analysis.status == 'success' %}
                             <span class="badge bg-info text-dark px-3 py-2">
@@ -304,23 +302,35 @@
             <div class="collapse section-body" id="missingSectionsContent">
 
                 {% if results.section_analysis %}
-                    <!-- Sections that need renaming (content present, non-standard heading) -->
-                    {% if results.section_analysis.suggest_rename %}
+                    {% set needs_heading_change = [] %}
+                    {% set content_ok = [] %}
+                    {% for item in results.section_analysis.present %}
+                        {% if item.heading_ok == false %}
+                            {% set _ = needs_heading_change.append(item) %}
+                        {% else %}
+                            {% set _ = content_ok.append(item) %}
+                        {% endif %}
+                    {% endfor %}
+
+                    <!-- Content present but heading should be standardized -->
+                    {% if needs_heading_change %}
                     <div class="mb-4">
-                        <h6 class="text-warning"><i class="bi bi-pencil-square"></i> Consider Renaming ({{ results.section_analysis.suggest_rename|length }})</h6>
+                        <h6 class="text-warning"><i class="bi bi-pencil-square"></i> Consider Standardizing Headings ({{ needs_heading_change|length }})</h6>
                         <div class="alert alert-warning border-0 mb-2" style="background-color: rgba(255, 193, 7, 0.1);">
-                            <small>These sections have the right content but use non-standard headings. Consider renaming for consistency with UWM syllabus standards.</small>
+                            <small>This content is in your syllabus but would be easier for students to find with a standard heading.</small>
                         </div>
                         <ul class="list-group">
-                            {% for item in results.section_analysis.suggest_rename %}
+                            {% for item in needs_heading_change %}
                             <li class="list-group-item">
                                 <div class="d-flex align-items-start">
                                     <i class="bi bi-arrow-right-circle text-warning me-2 mt-1"></i>
                                     <div>
-                                        <strong>Current:</strong> "{{ item.current_heading }}"<br>
-                                        <strong>Suggested:</strong> "{{ item.required_section }}"
-                                        {% if item.explanation %}
-                                        <br><small class="text-muted">{{ item.explanation }}</small>
+                                        <strong>{{ item.content_type }}</strong><br>
+                                        <small class="text-muted">Found: "{{ item.found[:100] }}{% if item.found|length > 100 %}...{% endif %}"</small><br>
+                                        {% if item.heading_used %}
+                                        <small>Current heading: <strong>{{ item.heading_used }}</strong> → Consider: <strong>{{ item.standard_heading }}</strong></small>
+                                        {% else %}
+                                        <small>Suggestion: Add a <strong>"{{ item.standard_heading }}"</strong> heading</small>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -330,74 +340,58 @@
                     </div>
                     {% endif %}
 
-                    <!-- Content found but needs a heading -->
-                    {% if results.section_analysis.add_heading %}
-                    <div class="mb-4">
-                        <h6 class="text-info"><i class="bi bi-bookmark-plus"></i> Add a Heading ({{ results.section_analysis.add_heading|length }})</h6>
-                        <div class="alert alert-info border-0 mb-2" style="background-color: rgba(13, 202, 240, 0.1);">
-                            <small>This information exists in your syllabus but would be easier to find with a dedicated heading.</small>
-                        </div>
-                        <ul class="list-group">
-                            {% for item in results.section_analysis.add_heading %}
-                            <li class="list-group-item">
-                                <div class="d-flex align-items-start">
-                                    <i class="bi bi-bookmark-plus text-info me-2 mt-1"></i>
-                                    <div>
-                                        <strong>Add heading:</strong> "{{ item.required_section }}"<br>
-                                        <small class="text-muted">{{ item.found_in }}</small>
-                                        {% if item.explanation %}
-                                        <br><small class="text-muted fst-italic">{{ item.explanation }}</small>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-
-                    <!-- Truly missing sections -->
+                    <!-- Missing content -->
                     {% if results.section_analysis.missing %}
                     <div class="mb-4">
-                        <h6 class="text-danger"><i class="bi bi-x-circle"></i> Missing Sections ({{ results.section_analysis.missing|length }})</h6>
+                        <h6 class="text-danger"><i class="bi bi-x-circle"></i> Missing Content ({{ results.section_analysis.missing|length }})</h6>
                         <div class="alert alert-light border mb-2">
                             <i class="bi bi-lightbulb text-warning"></i>
-                            These sections should be added to your syllabus. Most can be copied from department templates or previous syllabi.
+                            Consider adding this content to your syllabus.
                         </div>
                         <ul class="list-group">
-                            {% for section in results.section_analysis.missing %}
-                            <li class="list-group-item d-flex align-items-center">
-                                <i class="bi bi-plus-circle text-danger me-2"></i> {{ section }}
+                            {% for item in results.section_analysis.missing %}
+                            <li class="list-group-item">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-plus-circle text-danger me-2 mt-1"></i>
+                                    <div>
+                                        <strong>{{ item.content_type }}</strong><br>
+                                        <small class="text-muted">{{ item.description }}</small>
+                                        {% if item.recommendation %}
+                                        <br><small class="text-info"><i class="bi bi-arrow-right"></i> {{ item.recommendation }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </li>
                             {% endfor %}
                         </ul>
                     </div>
                     {% endif %}
 
-                    <!-- Found sections (optional - shows what's present) -->
-                    {% if results.section_analysis.found %}
+                    <!-- Content found with good headings -->
+                    {% if content_ok %}
                     <div class="mb-2">
-                        <h6 class="text-success"><i class="bi bi-check-circle"></i> Found Sections ({{ results.section_analysis.found|length }})</h6>
+                        <h6 class="text-success"><i class="bi bi-check-circle"></i> Content Found ({{ content_ok|length }})</h6>
                         <div class="collapse" id="foundSectionsList">
                             <ul class="list-group list-group-flush">
-                                {% for section in results.section_analysis.found %}
-                                <li class="list-group-item py-1 border-0">
-                                    <small><i class="bi bi-check text-success me-1"></i> {{ section }}</small>
+                                {% for item in content_ok %}
+                                <li class="list-group-item py-2 border-0">
+                                    <i class="bi bi-check text-success me-1"></i> <strong>{{ item.content_type }}</strong>
+                                    <br><small class="text-muted">{{ item.found[:80] }}{% if item.found|length > 80 %}...{% endif %}</small>
                                 </li>
                                 {% endfor %}
                             </ul>
                         </div>
                         <button class="btn btn-sm btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#foundSectionsList">
-                            <small>Show/hide found sections</small>
+                            <small>Show/hide found content</small>
                         </button>
                     </div>
                     {% endif %}
 
                     <!-- Show if no issues found -->
-                    {% if not results.section_analysis.missing and not results.section_analysis.suggest_rename and not results.section_analysis.add_heading %}
+                    {% if not results.section_analysis.missing and not needs_heading_change %}
                     <div class="alert alert-success">
                         <i class="bi bi-check-circle-fill me-2"></i>
-                        <strong>All required sections found!</strong> Your syllabus includes all required sections with standard naming.
+                        <strong>All required content found!</strong> Your syllabus includes all required content with clear headings.
                     </div>
                     {% endif %}
 
