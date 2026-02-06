@@ -219,33 +219,123 @@ class SyllabusChecker:
                 missing.append(section)
         return missing
 
+    def _detect_content_patterns(self, full_text: str) -> Dict[str, Dict]:
+        """
+        Use pattern matching to reliably detect content that exists in the document.
+        Returns a dict of content_type -> {found: str, heading_ok: bool} for detected items.
+        """
+        import re
+        detected = {}
+        text_lower = full_text.lower()
+
+        # Instructor Contact Info - look for email addresses, phone numbers
+        email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', full_text)
+        phone_match = re.search(r'\d{3}[-.\s]?\d{4}|\(\d{3}\)\s*\d{3}[-.\s]?\d{4}', full_text)
+        if email_match or phone_match:
+            found_parts = []
+            if email_match:
+                found_parts.append(email_match.group())
+            if phone_match:
+                found_parts.append(phone_match.group())
+            detected['Instructor Name & Contact'] = {
+                'found': ', '.join(found_parts),
+                'heading_ok': 'instructor' in text_lower or 'contact' in text_lower
+            }
+
+        # Office Hours - look for "office hours" followed by times
+        office_hours_match = re.search(r'office\s*hours[:\s]+([^\n]{10,80})', text_lower)
+        if office_hours_match:
+            detected['Office Hours'] = {
+                'found': office_hours_match.group(1).strip()[:80],
+                'heading_ok': True
+            }
+        elif 'office hours' in text_lower or 'student hours' in text_lower:
+            # Find the context around "office hours"
+            idx = text_lower.find('office hours')
+            snippet = full_text[max(0, idx):idx+100]
+            detected['Office Hours'] = {
+                'found': snippet.strip()[:80],
+                'heading_ok': True
+            }
+
+        # Course Materials - look for "materials", "textbook", book titles
+        if any(term in text_lower for term in ['materials', 'textbook', 'required text', 'course pack']):
+            for term in ['materials', 'textbook', 'required text']:
+                if term in text_lower:
+                    idx = text_lower.find(term)
+                    snippet = full_text[max(0, idx):idx+150]
+                    detected['Course Materials'] = {
+                        'found': snippet.strip()[:100],
+                        'heading_ok': 'material' in text_lower[:idx+50]
+                    }
+                    break
+
+        # Grading Scale - look for letter grade patterns (A=93, A-=90, etc.)
+        grade_pattern = re.search(r'[AB][+-]?\s*[=:]\s*\d{2}', full_text)
+        if grade_pattern:
+            idx = grade_pattern.start()
+            snippet = full_text[max(0, idx-20):idx+100]
+            detected['Grading Scale'] = {
+                'found': snippet.strip()[:100],
+                'heading_ok': True
+            }
+
+        # Grading Scheme / Point System - look for point values
+        point_pattern = re.search(r'\d+\s*points?|\d+\s*pts?|worth\s*\d+', text_lower)
+        if point_pattern or 'point system' in text_lower:
+            if 'point system' in text_lower:
+                idx = text_lower.find('point system')
+            elif point_pattern:
+                idx = point_pattern.start()
+            else:
+                idx = 0
+            snippet = full_text[max(0, idx):idx+150]
+            detected['Grading Scheme'] = {
+                'found': snippet.strip()[:100],
+                'heading_ok': True
+            }
+
+        # Calendar/Schedule - look for dates and weekly structure
+        date_pattern = re.search(r'(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}', text_lower)
+        week_pattern = re.search(r'week\s*\d|week\s*one|week\s*two', text_lower)
+        if date_pattern or week_pattern or 'schedule' in text_lower or 'syllabus' in text_lower:
+            detected['Calendar'] = {
+                'found': 'Course schedule/calendar detected',
+                'heading_ok': any(term in text_lower for term in ['schedule', 'calendar', 'syllabus'])
+            }
+
+        # Assignment Policies - look for policy-related content
+        policy_terms = ['late work', 'late assignment', 'revision', 'plagiarism', 'academic dishonesty', 'extension']
+        for term in policy_terms:
+            if term in text_lower:
+                idx = text_lower.find(term)
+                snippet = full_text[max(0, idx):idx+100]
+                detected['Assignment and Grading Policies'] = {
+                    'found': snippet.strip()[:100],
+                    'heading_ok': True
+                }
+                break
+
+        # Course Objectives/Overview
+        if any(term in text_lower for term in ['overview', 'objective', 'this course', 'course is designed']):
+            for term in ['overview', 'objective']:
+                if term in text_lower:
+                    idx = text_lower.find(term)
+                    snippet = full_text[max(0, idx):idx+150]
+                    detected['Course Objectives'] = {
+                        'found': snippet.strip()[:100],
+                        'heading_ok': True
+                    }
+                    break
+
+        return detected
+
     def analyze_sections_with_llm(self) -> Dict:
         """
-        Use LLM to semantically analyze syllabus sections.
-        Returns a dictionary with:
-        - 'found': sections present with standard naming
-        - 'suggest_rename': sections present but with non-standard naming (includes current_name and suggested_name)
-        - 'add_heading': content is present in document but lacks a dedicated heading
-        - 'missing': sections not found at all
+        Hybrid approach: Use pattern matching first for reliable detection,
+        then LLM for nuanced content analysis.
         """
-        # Extract all headings and potential heading text from document
-        headings = []
-
-        # Get formal heading styles
-        for section in self.target_sections:
-            if section['text'].strip():
-                headings.append(section['text'].strip())
-
-        # Also get short paragraphs that might be informal headings
-        for para_info in self.all_paragraphs:
-            text = para_info.paragraph.text.strip()
-            if text and len(text) < 100 and text not in headings:
-                # Check if it looks like a heading (short, possibly bold/styled)
-                runs = para_info.paragraph.runs
-                if runs and (runs[0].bold or para_info.paragraph.style.name.startswith('Heading')):
-                    headings.append(text)
-
-        # Extract full document content for content analysis
+        # Extract full document content
         document_content = []
         for para_info in self.all_paragraphs:
             text = para_info.paragraph.text.strip()
@@ -253,12 +343,44 @@ class SyllabusChecker:
                 document_content.append(text)
         full_text = "\n".join(document_content)
 
-        # Truncate if too long (keep first ~12000 chars to stay within token limits)
-        if len(full_text) > 12000:
-            full_text = full_text[:12000] + "\n[... document continues ...]"
+        # STEP 1: Pattern-based detection (reliable baseline)
+        detected = self._detect_content_patterns(full_text)
+
+        # Build present list from pattern detection
+        present = []
+        for content_type, info in detected.items():
+            present.append({
+                'content_type': content_type,
+                'found': info['found'],
+                'heading_ok': info['heading_ok'],
+                'standard_heading': content_type
+            })
+
+        # Content types that need LLM analysis (subjective/nuanced)
+        llm_content_types = [
+            'Welcome Statement',
+            'Student Learning Outcomes',
+            'Prerequisites',
+            'Resources',
+            'University Policies',
+            'Course Policies',
+            'Meeting Times & Location',
+            'Course Modality and Format',
+            'Time Investment',
+            'Department Policies',
+            'Important Dates',
+            'Instructor Statement of Support',
+            'Assessment'
+        ]
+
+        # Items already detected by pattern matching
+        detected_types = set(detected.keys())
 
         # Get required sections list
         required_sections = list(self.REQUIRED_SECTIONS.keys())
+
+        # Truncate for LLM if needed
+        llm_text = full_text[:12000] if len(full_text) > 12000 else full_text
 
         # Get API key
         api_key = os.environ.get('OPENAI_API_KEY')
@@ -273,104 +395,120 @@ class SyllabusChecker:
                 'error': 'OPENAI_API_KEY not set - using basic keyword matching'
             }
 
+        # STEP 2: LLM analysis for nuanced content (only items not detected by patterns)
+        remaining_to_check = [ct for ct in llm_content_types if ct not in detected_types]
+        llm_present = []
+        llm_missing = []
+
         try:
             client = OpenAI(api_key=api_key)
 
-            prompt = f"""Analyze this syllabus for REQUIRED CONTENT. Focus on whether the content exists, not on heading names.
+            # Only ask LLM about items not already detected
+            if remaining_to_check:
+                content_descriptions = {
+                    'Welcome Statement': 'welcoming language to students, phrases like "welcome to" or expressing care for student success',
+                    'Student Learning Outcomes': 'what students will learn or be able to do by end of course',
+                    'Prerequisites': 'required prior courses, skills, or knowledge',
+                    'Resources': 'support services, tutoring, disability services, counseling',
+                    'University Policies': 'institutional policies like academic integrity, Title IX',
+                    'Course Policies': 'attendance requirements, participation expectations, classroom behavior',
+                    'Meeting Times & Location': 'when and where the class meets (days, times, room)',
+                    'Course Modality and Format': 'whether online, in-person, hybrid; how class is conducted',
+                    'Time Investment': 'expected hours per week, workload expectations',
+                    'Department Policies': 'department-specific policies',
+                    'Important Dates': 'key deadlines, exam dates, holidays',
+                    'Instructor Statement of Support': 'statement about caring for student success',
+                    'Assessment': 'how students will be evaluated, types of assessments'
+                }
 
-SYLLABUS TEXT:
-{full_text}
+                items_to_find = "\n".join([f"- {ct}: {content_descriptions.get(ct, ct)}"
+                                          for ct in remaining_to_check])
 
-REQUIRED CONTENT TO FIND:
+                prompt = f"""Search this syllabus for the following content. Quote what you find.
 
-1. INSTRUCTOR CONTACT INFO: instructor name, email, phone, office location
-2. OFFICE HOURS: when students can meet with instructor (times, days, "by appointment")
-3. MEETING TIMES & LOCATION: when/where class meets (if applicable)
-4. COURSE MATERIALS: textbooks, required readings, supplies needed
-5. COURSE OBJECTIVES: what the course covers, its purpose and goals
-6. LEARNING OUTCOMES: what students will learn or be able to do
-7. ASSESSMENT INFO: how students are evaluated, types of assignments
-8. GRADING SCHEME: point values or weights for assignments
-9. GRADING SCALE: letter grade cutoffs (A=93-100, etc.)
-10. ASSIGNMENT POLICIES: late work, revision, plagiarism policies
-11. COURSE POLICIES: attendance, participation, classroom expectations
-12. CALENDAR/SCHEDULE: weekly topics, assignment due dates
-13. WELCOME STATEMENT: welcoming language to students
-14. PREREQUISITES: required prior courses or knowledge
-15. RESOURCES: support services, tutoring, disability services
-16. UNIVERSITY POLICIES: institutional policies (academic integrity, etc.)
+SYLLABUS:
+{llm_text}
 
-For each content type, determine:
+FIND THESE (quote actual text if found):
+{items_to_find}
 
-"present" - Content IS in the document (regardless of what heading it's under)
-  Quote a brief snippet showing you found it.
+Return JSON:
+{{"found": [{{"type": "X", "quote": "actual text from document"}}], "not_found": ["Y", "Z"]}}
 
-"missing" - Content is NOT in the document anywhere
-  Only use if you genuinely cannot find this information.
+Be generous - if content relates to the topic, include it in "found"."""
 
-OUTPUT FORMAT (JSON):
-{{
-    "present": [
-        {{"content_type": "Instructor Contact Info", "found": "Dave Clark, dclark@uwm.edu, 229-4870, Curtin 582", "heading_used": "INSTRUCTOR", "standard_heading": "Instructor Name & Contact", "heading_ok": true}},
-        {{"content_type": "Office Hours", "found": "4:30-5:30 Tuesday and Thursday", "heading_used": "Office Hours:", "standard_heading": "Office Hours", "heading_ok": true}},
-        {{"content_type": "Grading Scale", "found": "A=93+, A-=90-93, B+=87-89...", "heading_used": "Point System", "standard_heading": "Grading Scale", "heading_ok": false}}
-    ],
-    "missing": [
-        {{"content_type": "Welcome Statement", "description": "No welcoming language to students found", "recommendation": "Add a brief welcome message at the beginning of the syllabus"}}
-    ]
-}}
+                response = client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": "Search the document and quote what you find. Be generous in matching."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=2000,
+                    temperature=0.1
+                )
 
-RULES:
-- If content exists ANYWHERE, it goes in "present" - quote what you found
-- Set "heading_ok": true if the heading reasonably matches the standard, false if it's quite different
-- Only put in "missing" if the content truly does not exist
-- Be thorough - search the entire document before marking something missing"""
+                response_text = response.choices[0].message.content.strip()
+                if response_text.startswith('```'):
+                    response_text = response_text.split('```')[1]
+                    if response_text.startswith('json'):
+                        response_text = response_text[4:]
+                    response_text = response_text.strip()
 
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You analyze syllabi for required content. Your job is to find whether specific CONTENT exists in the document, regardless of what heading it's under. Quote the actual text you find. Only mark content as 'missing' if it truly doesn't exist anywhere. Respond with valid JSON only."
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                max_tokens=3000,
-                temperature=0.1
-            )
+                import json
+                llm_result = json.loads(response_text)
 
-            # Parse response
-            response_text = response.choices[0].message.content.strip()
+                # Process LLM findings
+                for item in llm_result.get('found', []):
+                    llm_present.append({
+                        'content_type': item.get('type', ''),
+                        'found': item.get('quote', 'Found')[:100],
+                        'heading_ok': True,
+                        'standard_heading': item.get('type', '')
+                    })
 
-            # Handle markdown code blocks if present
-            if response_text.startswith('```'):
-                response_text = response_text.split('```')[1]
-                if response_text.startswith('json'):
-                    response_text = response_text[4:]
-                response_text = response_text.strip()
-
-            import json
-            result = json.loads(response_text)
-
-            # Ensure all expected keys exist with new structure
-            result.setdefault('present', [])
-            result.setdefault('missing', [])
-
-            return result
+                for item in llm_result.get('not_found', []):
+                    if isinstance(item, str):
+                        llm_missing.append({
+                            'content_type': item,
+                            'description': f'No {item.lower()} found',
+                            'recommendation': f'Consider adding {item.lower()} to your syllabus'
+                        })
 
         except Exception as e:
-            # Fall back to basic keyword matching on error
-            missing_sections = self.check_missing_sections()
-            return {
-                'present': [{'content_type': s, 'found': 'Detected via keyword matching', 'heading_ok': True}
-                           for s in required_sections if s not in missing_sections],
-                'missing': [{'content_type': s, 'description': 'Not found', 'recommendation': f'Add {s} to your syllabus'}
-                           for s in missing_sections],
-                'error': f'LLM analysis failed: {str(e)} - using basic keyword matching'
-            }
+            # If LLM fails, mark remaining items as needing review
+            for ct in remaining_to_check:
+                llm_missing.append({
+                    'content_type': ct,
+                    'description': f'Could not analyze (LLM error: {str(e)[:50]})',
+                    'recommendation': f'Please review if {ct} is included'
+                })
+
+        # STEP 3: Merge results - pattern detection takes precedence
+        all_present = present + llm_present
+
+        # Determine what's truly missing (not in pattern detection OR LLM found)
+        found_types = {p['content_type'] for p in all_present}
+        missing = []
+        for item in llm_missing:
+            if item['content_type'] not in found_types:
+                missing.append(item)
+
+        # Also check required sections not covered by either
+        all_checked = found_types | {m['content_type'] for m in missing}
+        for section in required_sections:
+            if section not in all_checked and section not in detected_types:
+                # Check if this is a pattern-detectable item that just wasn't found
+                if section not in llm_content_types:
+                    missing.append({
+                        'content_type': section,
+                        'description': f'No {section.lower()} found',
+                        'recommendation': f'Add {section.lower()} to your syllabus'
+                    })
+
+        return {
+            'present': all_present,
+            'missing': missing
+        }
 
     def check_unstyled_headings(self) -> List[AccessibilityIssue]:
         """Detect text that looks like headings but doesn't use heading styles"""
