@@ -162,6 +162,46 @@ class SyllabusChecker:
 
         return all_paras
 
+    def _extract_all_text(self) -> str:
+        """Extract ALL text from document, including nested tables.
+
+        Word documents can have nested tables (tables inside table cells),
+        which aren't captured by iterating through cell.paragraphs.
+        This method extracts text from all XML text elements.
+        """
+        from docx.oxml.ns import qn
+
+        all_texts = []
+
+        # Get text from top-level paragraphs
+        for para in self.target_doc.paragraphs:
+            text = para.text.strip()
+            if text:
+                all_texts.append(text)
+
+        # Get text from all tables (including nested tables via XML)
+        for table in self.target_doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    # Get direct paragraph text
+                    for para in cell.paragraphs:
+                        text = para.text.strip()
+                        if text:
+                            all_texts.append(text)
+
+                    # Check for nested tables using XML
+                    nested_tables = cell._tc.findall('.//w:tbl',
+                        {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'})
+                    for nested_tbl in nested_tables:
+                        # Extract all text nodes from nested table
+                        text_nodes = nested_tbl.findall('.//w:t',
+                            {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'})
+                        nested_text = ' '.join([t.text for t in text_nodes if t.text])
+                        if nested_text.strip():
+                            all_texts.append(nested_text.strip())
+
+        return "\n".join(all_texts)
+
     def _extract_sections(self, doc: Document) -> List[Dict]:
         """Extract headings and their content from document (including tables)"""
         sections = []
@@ -328,6 +368,68 @@ class SyllabusChecker:
                     }
                     break
 
+        # Course Title & Credits - look for credit patterns (avoid "extra credit", "creative", etc.)
+        # Match patterns like "3 credits", "4 credit hours", "(3 cr.)" but not "extra credit"
+        credit_pattern = re.search(r'(?<![a-z])(\d)\s*(credits?|cr\.?|credit\s*hours?)(?![a-z])', text_lower)
+        if credit_pattern:
+            # Verify it's not "extra credit" or similar
+            idx = credit_pattern.start()
+            context_before = text_lower[max(0, idx-10):idx].strip()
+            if not context_before.endswith('extra') and not context_before.endswith('xtra'):
+                snippet = full_text[max(0, idx-50):idx+50]
+                detected['Course Title & Credits'] = {
+                    'found': snippet.strip()[:100],
+                    'heading_ok': True
+                }
+
+        # Meeting Times & Location - look for days/times
+        time_pattern = re.search(r'(monday|tuesday|wednesday|thursday|friday|m[wf]|t[r]?h?|mwf)[,\s]*(and)?[,\s]*(monday|tuesday|wednesday|thursday|friday|m[wf]|t[r]?h?)?\s*[\d:]+', text_lower)
+        if not time_pattern:
+            time_pattern = re.search(r'\d{1,2}:\d{2}\s*(am|pm|a\.m\.|p\.m\.)', text_lower)
+        if time_pattern:
+            idx = time_pattern.start()
+            snippet = full_text[max(0, idx):idx+80]
+            detected['Meeting Times & Location'] = {
+                'found': snippet.strip()[:80],
+                'heading_ok': True
+            }
+
+        # Student Learning Outcomes - look for outcome language
+        outcome_terms = ['students will be able', 'learning outcomes', 'course outcomes', 'by the end of this course', 'will learn to', 'will understand']
+        for term in outcome_terms:
+            if term in text_lower:
+                idx = text_lower.find(term)
+                snippet = full_text[max(0, idx):idx+150]
+                detected['Student Learning Outcomes'] = {
+                    'found': snippet.strip()[:100],
+                    'heading_ok': 'outcome' in text_lower or 'objective' in text_lower
+                }
+                break
+
+        # Prerequisites - look for prerequisite mentions
+        prereq_terms = ['prerequisite', 'prereq', 'prior course', 'required course', 'must have completed']
+        for term in prereq_terms:
+            if term in text_lower:
+                idx = text_lower.find(term)
+                snippet = full_text[max(0, idx):idx+150]
+                detected['Prerequisites'] = {
+                    'found': snippet.strip()[:100],
+                    'heading_ok': 'prereq' in text_lower
+                }
+                break
+
+        # University Policies - look for policy references
+        uni_policy_terms = ['academic integrity', 'academic honesty', 'academic misconduct', 'title ix', 'ada', 'disability', 'accommodation', 'ferpa']
+        for term in uni_policy_terms:
+            if term in text_lower:
+                idx = text_lower.find(term)
+                snippet = full_text[max(0, idx):idx+150]
+                detected['University Policies'] = {
+                    'found': snippet.strip()[:100],
+                    'heading_ok': 'polic' in text_lower
+                }
+                break
+
         return detected
 
     def analyze_sections_with_llm(self) -> Dict:
@@ -335,13 +437,8 @@ class SyllabusChecker:
         Hybrid approach: Use pattern matching first for reliable detection,
         then LLM for nuanced content analysis.
         """
-        # Extract full document content
-        document_content = []
-        for para_info in self.all_paragraphs:
-            text = para_info.paragraph.text.strip()
-            if text:
-                document_content.append(text)
-        full_text = "\n".join(document_content)
+        # Extract full document content (including nested tables)
+        full_text = self._extract_all_text()
 
         # STEP 1: Pattern-based detection (reliable baseline)
         detected = self._detect_content_patterns(full_text)
@@ -385,14 +482,31 @@ class SyllabusChecker:
         # Get API key
         api_key = os.environ.get('OPENAI_API_KEY')
         if not api_key:
-            # Fall back to basic keyword matching if no API key
+            # Use pattern-detected results, plus basic keyword matching for the rest
             missing_sections = self.check_missing_sections()
+
+            # Start with pattern-detected items
+            result_present = list(present)  # From our pattern detection
+            pattern_detected_types = detected_types
+
+            # Add any other sections found via keyword matching (that weren't already detected)
+            for s in required_sections:
+                if s not in missing_sections and s not in pattern_detected_types:
+                    result_present.append({
+                        'content_type': s,
+                        'found': 'Detected via keyword matching',
+                        'heading_ok': True,
+                        'standard_heading': s
+                    })
+
+            # Determine what's actually missing (not detected by patterns AND not found by keyword matching)
+            actually_missing = [s for s in required_sections if s in missing_sections and s not in pattern_detected_types]
+
             return {
-                'present': [{'content_type': s, 'found': 'Detected via keyword matching', 'heading_ok': True}
-                           for s in required_sections if s not in missing_sections],
+                'present': result_present,
                 'missing': [{'content_type': s, 'description': 'Not found', 'recommendation': f'Add {s} to your syllabus'}
-                           for s in missing_sections],
-                'error': 'OPENAI_API_KEY not set - using basic keyword matching'
+                           for s in actually_missing],
+                'error': 'OPENAI_API_KEY not set - using pattern matching + basic keyword matching'
             }
 
         # STEP 2: LLM analysis for nuanced content (only items not detected by patterns)
