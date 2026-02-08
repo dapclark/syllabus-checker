@@ -128,6 +128,55 @@ class SyllabusChecker:
         self.target_sections = self._extract_sections(self.target_doc)
         self.all_paragraphs = self._get_all_paragraphs()  # NEW: Get all paragraphs including from tables
         self.issues = []  # Store all detected issues
+        self.standard_headings = self._extract_standard_headings()  # Extract from template
+
+    def _extract_standard_headings(self) -> Dict[str, Dict]:
+        """Extract standard section headings and their descriptions from the template.
+
+        Returns a dict mapping heading text to {level, description, keywords}
+        """
+        standard = {}
+
+        # Get all headings from the template
+        current_heading = None
+        current_content = []
+
+        for para in self.template_doc.paragraphs:
+            if para.style.name.startswith('Heading'):
+                # Save previous heading with its content
+                if current_heading:
+                    description = ' '.join(current_content)[:200]
+                    # Extract keywords from heading and content
+                    heading_lower = current_heading['text'].lower()
+                    keywords = [w for w in heading_lower.split() if len(w) > 3]
+                    standard[current_heading['text']] = {
+                        'level': current_heading['level'],
+                        'description': description,
+                        'keywords': keywords
+                    }
+
+                # Start new heading
+                level = int(para.style.name.split()[-1]) if para.style.name[-1].isdigit() else 1
+                current_heading = {
+                    'text': para.text.strip(),
+                    'level': level
+                }
+                current_content = []
+            elif current_heading and para.text.strip():
+                current_content.append(para.text.strip())
+
+        # Don't forget the last heading
+        if current_heading:
+            description = ' '.join(current_content)[:200]
+            heading_lower = current_heading['text'].lower()
+            keywords = [w for w in heading_lower.split() if len(w) > 3]
+            standard[current_heading['text']] = {
+                'level': current_heading['level'],
+                'description': description,
+                'keywords': keywords
+            }
+
+        return standard
 
     def _get_all_paragraphs(self) -> List[ParagraphInfo]:
         """Extract ALL paragraphs from document, including those inside table cells"""
@@ -202,6 +251,102 @@ class SyllabusChecker:
 
         return "\n".join(all_texts)
 
+    def _extract_headings_with_positions(self, full_text: str) -> List[Dict]:
+        """Extract headings with their positions in the full text.
+
+        Uses actual Word heading styles from the document plus recognizable heading patterns.
+        Returns list of {text: str, position: int, standard_name: str or None}
+        """
+        headings = []
+        text_lower = full_text.lower()
+
+        # Build heading patterns from template's standard headings
+        # Each standard heading has keywords we can match against
+        heading_patterns = []
+        for heading_name, info in self.standard_headings.items():
+            keywords = info.get('keywords', [])
+            # Add the heading name words as keywords too
+            heading_words = [w.lower() for w in heading_name.split() if len(w) > 3]
+            all_keywords = list(set(keywords + heading_words))
+            if all_keywords:
+                heading_patterns.append((all_keywords, heading_name))
+
+        # First, get headings from Word styles (most reliable)
+        for section in self.target_sections:
+            heading_text = section['text']
+            # Find position in full_text
+            pos = full_text.find(heading_text)
+            if pos >= 0:
+                heading_lower = heading_text.lower()
+                matched_standard = None
+
+                # Check for exact match with template headings first
+                for std_heading in self.standard_headings.keys():
+                    if std_heading.lower() == heading_lower or std_heading.lower() in heading_lower:
+                        matched_standard = std_heading
+                        break
+
+                # If no exact match, try keyword matching
+                if not matched_standard:
+                    for patterns, standard_name in heading_patterns:
+                        if any(p in heading_lower for p in patterns):
+                            matched_standard = standard_name
+                            break
+
+                headings.append({
+                    'text': heading_text,
+                    'position': pos,
+                    'standard_name': matched_standard,
+                    'is_word_heading': True
+                })
+
+        # Also look for table cell headings (single words followed by content in tables)
+        # These are often used as labels like "Instructor", "Materials", etc.
+        lines = full_text.split('\n')
+        current_pos = 0
+
+        for line in lines:
+            line_stripped = line.strip()
+            line_lower = line_stripped.lower()
+
+            # Only consider very short lines (< 40 chars) that look like headings
+            # and aren't already captured as Word headings
+            if line_stripped and len(line_stripped) < 40:
+                # Check if this matches a standard heading pattern
+                matched_standard = None
+                for patterns, standard_name in heading_patterns:
+                    if any(p in line_lower for p in patterns):
+                        matched_standard = standard_name
+                        break
+
+                # Only add if it matches a pattern or ends with colon
+                # and isn't already in our headings list
+                if matched_standard or (line_stripped.endswith(':') and len(line_stripped) < 30):
+                    # Check if we already have this heading
+                    already_exists = any(h['text'] == line_stripped for h in headings)
+                    if not already_exists:
+                        headings.append({
+                            'text': line_stripped,
+                            'position': current_pos,
+                            'standard_name': matched_standard,
+                            'is_word_heading': False
+                        })
+
+            current_pos += len(line) + 1  # +1 for newline
+
+        # Sort by position
+        headings.sort(key=lambda h: h['position'])
+        return headings
+
+    def _find_heading_for_content(self, content_position: int, headings: List[Dict]) -> Dict:
+        """Find the nearest heading that precedes the content position."""
+        nearest_heading = None
+        for heading in headings:
+            if heading['position'] < content_position:
+                if nearest_heading is None or heading['position'] > nearest_heading['position']:
+                    nearest_heading = heading
+        return nearest_heading
+
     def _extract_sections(self, doc: Document) -> List[Dict]:
         """Extract headings and their content from document (including tables)"""
         sections = []
@@ -262,40 +407,128 @@ class SyllabusChecker:
     def _detect_content_patterns(self, full_text: str) -> Dict[str, Dict]:
         """
         Use pattern matching to reliably detect content that exists in the document.
-        Returns a dict of content_type -> {found: str, heading_ok: bool} for detected items.
+        Returns a dict of content_type -> {found: str, heading_ok: bool, current_heading: str} for detected items.
         """
         import re
         detected = {}
         text_lower = full_text.lower()
+
+        # Extract headings with positions for heading detection
+        headings = self._extract_headings_with_positions(full_text)
+
+        def get_heading_info(content_position: int, standard_name: str) -> tuple:
+            """Get the current heading and whether it matches the standard.
+
+            Returns (current_heading, heading_ok) tuple.
+            """
+            heading = self._find_heading_for_content(content_position, headings)
+            if heading:
+                current_heading = heading['text']
+                heading_lower = current_heading.lower()
+
+                # Find the best matching template heading for this standard_name
+                best_match = get_standard_heading(standard_name)
+
+                # Check if the current heading matches the expected standard
+                heading_ok = False
+                best_match_lower = best_match.lower()
+
+                # Exact or partial match with template heading
+                if best_match_lower == heading_lower or best_match_lower in heading_lower or heading_lower in best_match_lower:
+                    heading_ok = True
+                else:
+                    # Check keywords from template
+                    template_info = self.standard_headings.get(best_match, {})
+                    keywords = template_info.get('keywords', [])
+                    if any(kw in heading_lower for kw in keywords if len(kw) > 3):
+                        heading_ok = True
+                    else:
+                        # Fallback: check if heading contains key words from standard_name
+                        standard_words = [w.lower() for w in standard_name.split() if len(w) > 3]
+                        heading_ok = any(word in heading_lower for word in standard_words) if standard_words else False
+
+                return current_heading, heading_ok
+            return None, False
+
+        def get_standard_heading(content_type: str) -> str:
+            """Find the template's standard heading that matches this content type."""
+            content_lower = content_type.lower()
+            content_words = set(w for w in content_lower.split() if len(w) > 3)
+
+            best_match = None
+            best_score = 0
+
+            for template_heading in self.standard_headings.keys():
+                template_lower = template_heading.lower()
+                template_words = set(w for w in template_lower.split() if len(w) > 3)
+
+                # Exact match
+                if content_lower == template_lower:
+                    return template_heading
+
+                # Calculate word overlap score
+                if content_words and template_words:
+                    overlap = content_words & template_words
+                    score = len(overlap) / max(len(content_words), 1)
+                    if score > best_score:
+                        best_score = score
+                        best_match = template_heading
+
+                # Check if content_type is substring of template heading (but not too short)
+                if len(content_lower) > 5 and content_lower in template_lower:
+                    return template_heading
+
+            # Only return best match if score is reasonable (at least one word match)
+            if best_match and best_score >= 0.5:
+                return best_match
+
+            return content_type
 
         # Instructor Contact Info - look for email addresses, phone numbers
         email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', full_text)
         phone_match = re.search(r'\d{3}[-.\s]?\d{4}|\(\d{3}\)\s*\d{3}[-.\s]?\d{4}', full_text)
         if email_match or phone_match:
             found_parts = []
+            content_pos = email_match.start() if email_match else phone_match.start()
             if email_match:
                 found_parts.append(email_match.group())
             if phone_match:
                 found_parts.append(phone_match.group())
-            detected['Instructor Name & Contact'] = {
+            content_type = 'Instructor'
+            current_heading, heading_ok = get_heading_info(content_pos, content_type)
+            detected[content_type] = {
                 'found': ', '.join(found_parts),
-                'heading_ok': 'instructor' in text_lower or 'contact' in text_lower
+                'heading_ok': heading_ok,
+                'current_heading': current_heading,
+                'standard_heading': get_standard_heading(content_type)
             }
 
         # Office Hours - look for "office hours" followed by times
+        # Note: Office hours is typically part of the Instructor section in the template
         office_hours_match = re.search(r'office\s*hours[:\s]+([^\n]{10,80})', text_lower)
         if office_hours_match:
-            detected['Office Hours'] = {
+            idx = office_hours_match.start()
+            content_type = 'Office Hours'
+            current_heading, heading_ok = get_heading_info(idx, content_type)
+            # Office hours is OK if under Instructor heading or has "office hours" label
+            heading_ok = heading_ok or 'office hours' in (current_heading or '').lower() or 'instructor' in (current_heading or '').lower()
+            detected[content_type] = {
                 'found': office_hours_match.group(1).strip()[:80],
-                'heading_ok': True
+                'heading_ok': heading_ok,
+                'current_heading': current_heading,
+                'standard_heading': 'Instructor'  # Per template, office hours goes under Instructor
             }
         elif 'office hours' in text_lower or 'student hours' in text_lower:
-            # Find the context around "office hours"
             idx = text_lower.find('office hours')
             snippet = full_text[max(0, idx):idx+100]
-            detected['Office Hours'] = {
+            content_type = 'Office Hours'
+            current_heading, heading_ok = get_heading_info(idx, content_type)
+            heading_ok = heading_ok or 'office hours' in (current_heading or '').lower() or 'instructor' in (current_heading or '').lower()
+            detected[content_type] = {
                 'found': snippet.strip()[:80],
-                'heading_ok': True
+                'heading_ok': heading_ok,
+                'current_heading': current_heading,
+                'standard_heading': 'Instructor'
             }
 
         # Course Materials - look for "materials", "textbook", book titles
@@ -304,9 +537,13 @@ class SyllabusChecker:
                 if term in text_lower:
                     idx = text_lower.find(term)
                     snippet = full_text[max(0, idx):idx+150]
-                    detected['Course Materials'] = {
+                    content_type = 'Course Materials'
+                    current_heading, heading_ok = get_heading_info(idx, content_type)
+                    detected[content_type] = {
                         'found': snippet.strip()[:100],
-                        'heading_ok': 'material' in text_lower[:idx+50]
+                        'heading_ok': heading_ok,
+                        'current_heading': current_heading,
+                        'standard_heading': get_standard_heading(content_type)
                     }
                     break
 
@@ -315,9 +552,13 @@ class SyllabusChecker:
         if grade_pattern:
             idx = grade_pattern.start()
             snippet = full_text[max(0, idx-20):idx+100]
-            detected['Grading Scale'] = {
+            content_type = 'Grading Scale'
+            current_heading, heading_ok = get_heading_info(idx, content_type)
+            detected[content_type] = {
                 'found': snippet.strip()[:100],
-                'heading_ok': True
+                'heading_ok': heading_ok,
+                'current_heading': current_heading,
+                'standard_heading': get_standard_heading(content_type)
             }
 
         # Grading Scheme / Point System - look for point values
@@ -330,18 +571,27 @@ class SyllabusChecker:
             else:
                 idx = 0
             snippet = full_text[max(0, idx):idx+150]
-            detected['Grading Scheme'] = {
+            content_type = 'Grading Scheme'
+            current_heading, heading_ok = get_heading_info(idx, content_type)
+            detected[content_type] = {
                 'found': snippet.strip()[:100],
-                'heading_ok': True
+                'heading_ok': heading_ok,
+                'current_heading': current_heading,
+                'standard_heading': get_standard_heading(content_type)
             }
 
         # Calendar/Schedule - look for dates and weekly structure
         date_pattern = re.search(r'(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}', text_lower)
         week_pattern = re.search(r'week\s*\d|week\s*one|week\s*two', text_lower)
-        if date_pattern or week_pattern or 'schedule' in text_lower or 'syllabus' in text_lower:
-            detected['Calendar'] = {
+        if date_pattern or week_pattern or 'schedule' in text_lower:
+            idx = date_pattern.start() if date_pattern else (week_pattern.start() if week_pattern else text_lower.find('schedule'))
+            content_type = 'Calendar'
+            current_heading, heading_ok = get_heading_info(idx, content_type)
+            detected[content_type] = {
                 'found': 'Course schedule/calendar detected',
-                'heading_ok': any(term in text_lower for term in ['schedule', 'calendar', 'syllabus'])
+                'heading_ok': heading_ok,
+                'current_heading': current_heading,
+                'standard_heading': get_standard_heading(content_type)
             }
 
         # Assignment Policies - look for policy-related content
@@ -350,9 +600,13 @@ class SyllabusChecker:
             if term in text_lower:
                 idx = text_lower.find(term)
                 snippet = full_text[max(0, idx):idx+100]
-                detected['Assignment and Grading Policies'] = {
+                content_type = 'Assignment and Grading Policies'
+                current_heading, heading_ok = get_heading_info(idx, content_type)
+                detected[content_type] = {
                     'found': snippet.strip()[:100],
-                    'heading_ok': True
+                    'heading_ok': heading_ok,
+                    'current_heading': current_heading,
+                    'standard_heading': get_standard_heading(content_type)
                 }
                 break
 
@@ -362,36 +616,47 @@ class SyllabusChecker:
                 if term in text_lower:
                     idx = text_lower.find(term)
                     snippet = full_text[max(0, idx):idx+150]
-                    detected['Course Objectives'] = {
+                    content_type = 'Course Objectives'
+                    current_heading, heading_ok = get_heading_info(idx, content_type)
+                    detected[content_type] = {
                         'found': snippet.strip()[:100],
-                        'heading_ok': True
+                        'heading_ok': heading_ok,
+                        'current_heading': current_heading,
+                        'standard_heading': get_standard_heading(content_type)
                     }
                     break
 
         # Course Title & Credits - look for credit patterns (avoid "extra credit", "creative", etc.)
-        # Match patterns like "3 credits", "4 credit hours", "(3 cr.)" but not "extra credit"
         credit_pattern = re.search(r'(?<![a-z])(\d)\s*(credits?|cr\.?|credit\s*hours?)(?![a-z])', text_lower)
         if credit_pattern:
-            # Verify it's not "extra credit" or similar
             idx = credit_pattern.start()
             context_before = text_lower[max(0, idx-10):idx].strip()
             if not context_before.endswith('extra') and not context_before.endswith('xtra'):
                 snippet = full_text[max(0, idx-50):idx+50]
-                detected['Course Title & Credits'] = {
+                content_type = 'Course Title'
+                current_heading, heading_ok = get_heading_info(idx, content_type)
+                detected[content_type] = {
                     'found': snippet.strip()[:100],
-                    'heading_ok': True
+                    'heading_ok': heading_ok,
+                    'current_heading': current_heading,
+                    'standard_heading': get_standard_heading(content_type)
                 }
 
         # Meeting Times & Location - look for days/times
+        # Note: This is typically part of Instructor section in the template
         time_pattern = re.search(r'(monday|tuesday|wednesday|thursday|friday|m[wf]|t[r]?h?|mwf)[,\s]*(and)?[,\s]*(monday|tuesday|wednesday|thursday|friday|m[wf]|t[r]?h?)?\s*[\d:]+', text_lower)
         if not time_pattern:
             time_pattern = re.search(r'\d{1,2}:\d{2}\s*(am|pm|a\.m\.|p\.m\.)', text_lower)
         if time_pattern:
             idx = time_pattern.start()
             snippet = full_text[max(0, idx):idx+80]
-            detected['Meeting Times & Location'] = {
+            content_type = 'Meeting Times'
+            current_heading, heading_ok = get_heading_info(idx, content_type)
+            detected[content_type] = {
                 'found': snippet.strip()[:80],
-                'heading_ok': True
+                'heading_ok': heading_ok,
+                'current_heading': current_heading,
+                'standard_heading': 'Instructor'  # Per template
             }
 
         # Student Learning Outcomes - look for outcome language
@@ -400,9 +665,13 @@ class SyllabusChecker:
             if term in text_lower:
                 idx = text_lower.find(term)
                 snippet = full_text[max(0, idx):idx+150]
-                detected['Student Learning Outcomes'] = {
+                content_type = 'Student Learning Outcomes'
+                current_heading, heading_ok = get_heading_info(idx, content_type)
+                detected[content_type] = {
                     'found': snippet.strip()[:100],
-                    'heading_ok': 'outcome' in text_lower or 'objective' in text_lower
+                    'heading_ok': heading_ok,
+                    'current_heading': current_heading,
+                    'standard_heading': get_standard_heading(content_type)
                 }
                 break
 
@@ -412,9 +681,13 @@ class SyllabusChecker:
             if term in text_lower:
                 idx = text_lower.find(term)
                 snippet = full_text[max(0, idx):idx+150]
-                detected['Prerequisites'] = {
+                content_type = 'Prerequisites'
+                current_heading, heading_ok = get_heading_info(idx, content_type)
+                detected[content_type] = {
                     'found': snippet.strip()[:100],
-                    'heading_ok': 'prereq' in text_lower
+                    'heading_ok': heading_ok,
+                    'current_heading': current_heading,
+                    'standard_heading': get_standard_heading(content_type)
                 }
                 break
 
@@ -424,9 +697,13 @@ class SyllabusChecker:
             if term in text_lower:
                 idx = text_lower.find(term)
                 snippet = full_text[max(0, idx):idx+150]
-                detected['University Policies'] = {
+                content_type = 'University Policies'
+                current_heading, heading_ok = get_heading_info(idx, content_type)
+                detected[content_type] = {
                     'found': snippet.strip()[:100],
-                    'heading_ok': 'polic' in text_lower
+                    'heading_ok': heading_ok,
+                    'current_heading': current_heading,
+                    'standard_heading': get_standard_heading(content_type)
                 }
                 break
 
@@ -449,8 +726,9 @@ class SyllabusChecker:
             present.append({
                 'content_type': content_type,
                 'found': info['found'],
-                'heading_ok': info['heading_ok'],
-                'standard_heading': content_type
+                'heading_ok': info.get('heading_ok', True),
+                'current_heading': info.get('current_heading'),
+                'standard_heading': info.get('standard_heading', content_type)
             })
 
         # Content types that need LLM analysis (subjective/nuanced)

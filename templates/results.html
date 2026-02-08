@@ -327,10 +327,10 @@
                                     <div>
                                         <strong>{{ item.content_type }}</strong><br>
                                         <small class="text-muted">Found: "{{ item.found[:100] }}{% if item.found|length > 100 %}...{% endif %}"</small><br>
-                                        {% if item.heading_used %}
-                                        <small>Current heading: <strong>{{ item.heading_used }}</strong> → Consider: <strong>{{ item.standard_heading }}</strong></small>
+                                        {% if item.current_heading %}
+                                        <small>Current heading: "<strong>{{ item.current_heading }}</strong>" → Consider renaming to: "<strong>{{ item.standard_heading }}</strong>"</small>
                                         {% else %}
-                                        <small>Suggestion: Add a <strong>"{{ item.standard_heading }}"</strong> heading</small>
+                                        <small>Suggestion: Add a "<strong>{{ item.standard_heading }}</strong>" heading for this content</small>
                                         {% endif %}
                                     </div>
                                 </div>
