@@ -178,6 +178,37 @@ class SyllabusChecker:
 
         return standard
 
+    def _get_section_description(self, section_name: str) -> str:
+        """Get the template's description for a section to help users understand what to include.
+
+        Returns a cleaned-up description from the template, or a generic message if not found.
+        """
+        section_lower = section_name.lower()
+
+        # Try exact match first
+        for heading, info in self.standard_headings.items():
+            if heading.lower() == section_lower:
+                desc = info.get('description', '')
+                if desc:
+                    # Clean up the description - remove placeholder markers
+                    desc = desc.replace('< - -', '').replace('- - >', '').strip()
+                    return desc
+
+        # Try partial match
+        for heading, info in self.standard_headings.items():
+            heading_lower = heading.lower()
+            # Check if significant words match
+            section_words = set(w for w in section_lower.split() if len(w) > 3)
+            heading_words = set(w for w in heading_lower.split() if len(w) > 3)
+            if section_words & heading_words:  # If there's overlap
+                desc = info.get('description', '')
+                if desc:
+                    desc = desc.replace('< - -', '').replace('- - >', '').strip()
+                    return desc
+
+        # Generic fallback
+        return f"This section helps students understand {section_name.lower()}."
+
     def _get_all_paragraphs(self) -> List[ParagraphInfo]:
         """Extract ALL paragraphs from document, including those inside table cells"""
         all_paras = []
@@ -782,7 +813,9 @@ class SyllabusChecker:
 
             return {
                 'present': result_present,
-                'missing': [{'content_type': s, 'description': 'Not found', 'recommendation': f'Add {s} to your syllabus'}
+                'missing': [{'content_type': s,
+                            'description': self._get_section_description(s),
+                            'recommendation': f'Add a "{s}" section to your syllabus'}
                            for s in actually_missing],
                 'error': 'OPENAI_API_KEY not set - using pattern matching + basic keyword matching'
             }
@@ -862,8 +895,8 @@ Be generous - if content relates to the topic, include it in "found"."""
                     if isinstance(item, str):
                         llm_missing.append({
                             'content_type': item,
-                            'description': f'No {item.lower()} found',
-                            'recommendation': f'Consider adding {item.lower()} to your syllabus'
+                            'description': self._get_section_description(item),
+                            'recommendation': f'Add a "{item}" section to your syllabus'
                         })
 
         except Exception as e:
@@ -893,8 +926,8 @@ Be generous - if content relates to the topic, include it in "found"."""
                 if section not in llm_content_types:
                     missing.append({
                         'content_type': section,
-                        'description': f'No {section.lower()} found',
-                        'recommendation': f'Add {section.lower()} to your syllabus'
+                        'description': self._get_section_description(section),
+                        'recommendation': f'Add a "{section}" section to your syllabus'
                     })
 
         return {
