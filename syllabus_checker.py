@@ -145,7 +145,7 @@ class SyllabusChecker:
             if para.style.name.startswith('Heading'):
                 # Save previous heading with its content
                 if current_heading:
-                    description = ' '.join(current_content)[:200]
+                    description = ' '.join(current_content)
                     # Extract keywords from heading and content
                     heading_lower = current_heading['text'].lower()
                     keywords = [w for w in heading_lower.split() if len(w) > 3]
@@ -167,7 +167,7 @@ class SyllabusChecker:
 
         # Don't forget the last heading
         if current_heading:
-            description = ' '.join(current_content)[:200]
+            description = ' '.join(current_content)
             heading_lower = current_heading['text'].lower()
             keywords = [w for w in heading_lower.split() if len(w) > 3]
             standard[current_heading['text']] = {
