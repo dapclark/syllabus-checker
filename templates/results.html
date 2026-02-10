@@ -355,7 +355,7 @@
                                     <i class="bi bi-plus-circle text-danger me-2 mt-1"></i>
                                     <div>
                                         <strong>{{ item.content_type }}</strong><br>
-                                        <small class="text-muted">{{ item.description }}</small>
+                                        <small class="text-muted">{{ item.description|safe }}</small>
                                         {% if item.recommendation %}
                                         <br><small class="text-info"><i class="bi bi-arrow-right"></i> {{ item.recommendation }}</small>
                                         {% endif %}

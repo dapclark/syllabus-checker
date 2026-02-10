@@ -8,6 +8,7 @@ Generates both a text report and a marked-up Word document with tracked issues
 """
 
 import argparse
+import html
 import re
 import os
 from typing import List, Dict, Tuple, Optional
@@ -130,6 +131,31 @@ class SyllabusChecker:
         self.issues = []  # Store all detected issues
         self.standard_headings = self._extract_standard_headings()  # Extract from template
 
+    def _para_to_html(self, para) -> str:
+        """Extract paragraph content as HTML, preserving hyperlinks as <a> tags."""
+        ns = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+        parts = []
+        for child in para._element:
+            tag = child.tag
+            if tag == f'{ns}r':
+                # Regular text run
+                text = ''.join(t.text or '' for t in child.findall(f'{ns}t'))
+                parts.append(html.escape(text))
+            elif tag == f'{ns}hyperlink':
+                link_text = html.escape(''.join(child.itertext()))
+                r_id = child.get(qn('r:id'))
+                url = None
+                if r_id:
+                    try:
+                        url = para.part.rels[r_id].target_ref
+                    except (KeyError, AttributeError):
+                        pass
+                if url:
+                    parts.append(f'<a href="{html.escape(url)}" target="_blank">{link_text}</a>')
+                else:
+                    parts.append(link_text)
+        return ''.join(parts).strip()
+
     def _extract_standard_headings(self) -> Dict[str, Dict]:
         """Extract standard section headings and their descriptions from the template.
 
@@ -163,7 +189,7 @@ class SyllabusChecker:
                 }
                 current_content = []
             elif current_heading and para.text.strip():
-                current_content.append(para.text.strip())
+                current_content.append(self._para_to_html(para))
 
         # Don't forget the last heading
         if current_heading:
