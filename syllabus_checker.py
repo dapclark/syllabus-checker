@@ -131,6 +131,28 @@ class SyllabusChecker:
         self.issues = []  # Store all detected issues
         self.standard_headings = self._extract_standard_headings()  # Extract from template
 
+    @staticmethod
+    def _wrap_list_items(content_parts: List[str]) -> str:
+        """Join content parts, wrapping consecutive <li> items in <ul> tags."""
+        result = []
+        in_list = False
+        for part in content_parts:
+            if part.startswith('<li>'):
+                if not in_list:
+                    result.append('<ul>')
+                    in_list = True
+                result.append(part)
+            else:
+                if in_list:
+                    result.append('</ul>')
+                    in_list = False
+                if result:
+                    result.append('<br>')
+                result.append(part)
+        if in_list:
+            result.append('</ul>')
+        return ''.join(result)
+
     def _para_to_html(self, para) -> str:
         """Extract paragraph content as HTML, preserving hyperlinks as <a> tags."""
         ns = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
@@ -142,7 +164,10 @@ class SyllabusChecker:
                 text = ''.join(t.text or '' for t in child.findall(f'{ns}t'))
                 parts.append(html.escape(text))
             elif tag == f'{ns}hyperlink':
-                link_text = html.escape(''.join(child.itertext()))
+                # Extract text only from <w:t> elements to avoid lxml itertext() duplication
+                link_text = html.escape(''.join(
+                    t.text or '' for t in child.findall(f'.//{ns}t')
+                ))
                 r_id = child.get(qn('r:id'))
                 url = None
                 if r_id:
@@ -171,7 +196,7 @@ class SyllabusChecker:
             if para.style.name.startswith('Heading'):
                 # Save previous heading with its content
                 if current_heading:
-                    description = '<br>'.join(current_content)
+                    description = self._wrap_list_items(current_content)
                     # Extract keywords from heading and content
                     heading_lower = current_heading['text'].lower()
                     keywords = [w for w in heading_lower.split() if len(w) > 3]
@@ -189,11 +214,15 @@ class SyllabusChecker:
                 }
                 current_content = []
             elif current_heading and para.text.strip():
-                current_content.append(self._para_to_html(para))
+                is_list = para.style.name == 'List Paragraph'
+                para_html = self._para_to_html(para)
+                if is_list:
+                    para_html = f'<li>{para_html}</li>'
+                current_content.append(para_html)
 
         # Don't forget the last heading
         if current_heading:
-            description = '<br>'.join(current_content)
+            description = self._wrap_list_items(current_content)
             heading_lower = current_heading['text'].lower()
             keywords = [w for w in heading_lower.split() if len(w) > 3]
             standard[current_heading['text']] = {
