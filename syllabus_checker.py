@@ -171,7 +171,7 @@ class SyllabusChecker:
             if para.style.name.startswith('Heading'):
                 # Save previous heading with its content
                 if current_heading:
-                    description = ' '.join(current_content)
+                    description = '<br>'.join(current_content)
                     # Extract keywords from heading and content
                     heading_lower = current_heading['text'].lower()
                     keywords = [w for w in heading_lower.split() if len(w) > 3]
@@ -193,7 +193,7 @@ class SyllabusChecker:
 
         # Don't forget the last heading
         if current_heading:
-            description = ' '.join(current_content)
+            description = '<br>'.join(current_content)
             heading_lower = current_heading['text'].lower()
             keywords = [w for w in heading_lower.split() if len(w) > 3]
             standard[current_heading['text']] = {
@@ -217,7 +217,11 @@ class SyllabusChecker:
                 desc = info.get('description', '')
                 if desc:
                     # Clean up the description - remove placeholder markers
-                    desc = desc.replace('< - -', '').replace('- - >', '').strip()
+                    desc = re.sub(r'&lt;[\s-]*-', '', desc)
+                    desc = re.sub(r'-[\s-]*&gt;', '', desc)
+                    desc = desc.replace('< - -', '').replace('- - >', '')
+                    desc = desc.replace('<--', '').replace('-->', '')
+                    desc = desc.strip()
                     return desc
 
         # Try partial match
@@ -229,7 +233,11 @@ class SyllabusChecker:
             if section_words & heading_words:  # If there's overlap
                 desc = info.get('description', '')
                 if desc:
-                    desc = desc.replace('< - -', '').replace('- - >', '').strip()
+                    desc = re.sub(r'&lt;[\s-]*-', '', desc)
+                    desc = re.sub(r'-[\s-]*&gt;', '', desc)
+                    desc = desc.replace('< - -', '').replace('- - >', '')
+                    desc = desc.replace('<--', '').replace('-->', '')
+                    desc = desc.strip()
                     return desc
 
         # Generic fallback
