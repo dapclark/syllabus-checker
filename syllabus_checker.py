@@ -345,6 +345,71 @@ class SyllabusChecker:
 
         return "\n".join(all_texts)
 
+    def _table_to_markdown(self, table) -> str:
+        """Convert a docx Table to markdown pipe-delimited format, including nested tables."""
+        w_ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+        rows_md = []
+        for row in table.rows:
+            cells_text = []
+            for cell in row.cells:
+                # Check for nested tables in this cell
+                nested_tbls = cell._tc.findall(f'./{{{w_ns}}}tbl')
+                if nested_tbls:
+                    # Collect paragraph text and nested table text in document order
+                    parts = []
+                    for child in cell._tc:
+                        tag = child.tag.split('}')[-1]
+                        if tag == 'p':
+                            t = ''.join(
+                                node.text for node in child.findall(f'.//{{{w_ns}}}t') if node.text
+                            ).strip()
+                            if t:
+                                parts.append(t)
+                        elif tag == 'tbl':
+                            from docx.table import Table as DocxTable
+                            nested = DocxTable(child, table._parent)
+                            parts.append(self._table_to_markdown(nested))
+                    cells_text.append(' / '.join(parts))
+                else:
+                    # Join multi-paragraph cells with " / "
+                    cell_text = ' / '.join(
+                        p.text.strip() for p in cell.paragraphs if p.text.strip()
+                    )
+                    cells_text.append(cell_text)
+            rows_md.append('| ' + ' | '.join(cells_text) + ' |')
+        if len(rows_md) >= 1:
+            # Insert separator after first row (header)
+            num_cols = len(table.rows[0].cells) if table.rows else 0
+            separator = '| ' + ' | '.join(['---'] * num_cols) + ' |'
+            rows_md.insert(1, separator)
+        return '\n'.join(rows_md)
+
+    def _document_to_structured_text(self) -> str:
+        """Extract document text preserving table structure as markdown tables.
+
+        Walks through document body elements in order, rendering paragraphs
+        as plain text and tables as markdown pipe-delimited tables. This
+        preserves row/column relationships so the LLM can understand context
+        like calendar entries and grading breakdowns.
+        """
+        from docx.table import Table as DocxTable
+        w_ns = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+        parts = []
+
+        for child in self.target_doc.element.body:
+            tag = child.tag
+            if tag == f'{w_ns}p':
+                text = ''.join(
+                    node.text for node in child.findall(f'.//{w_ns}t') if node.text
+                ).strip()
+                if text:
+                    parts.append(text)
+            elif tag == f'{w_ns}tbl':
+                table = DocxTable(child, self.target_doc)
+                parts.append(self._table_to_markdown(table))
+
+        return '\n\n'.join(parts)
+
     def _extract_headings_with_positions(self, full_text: str) -> List[Dict]:
         """Extract headings with their positions in the full text.
 
@@ -4548,14 +4613,8 @@ Please provide a thorough, evidence-based analysis that will help the instructor
         - Policies that may violate accessibility guidance or confuse students
         - Inconsistent formatting across repeated elements
         """
-        # Extract full syllabus text
-        syllabus_text = []
-        for para_info in self.all_paragraphs:
-            text = para_info.paragraph.text.strip()
-            if text:
-                syllabus_text.append(text)
-
-        full_text = "\n\n".join(syllabus_text)
+        # Extract full syllabus text with table structure preserved
+        full_text = self._document_to_structured_text()
 
         # Get API key from environment
         api_key = os.environ.get('OPENAI_API_KEY')
