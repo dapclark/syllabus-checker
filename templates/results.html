@@ -703,61 +703,34 @@
                         </h2>
                         <div id="collapse{{ loop.index }}" class="accordion-collapse collapse"
                              aria-labelledby="heading{{ loop.index }}" data-bs-parent="#issuesAccordion">
-                            <div class="accordion-body">
+                            <div class="accordion-body" style="font-size: 0.93em;">
                                 {% if category in results.category_help %}
                                 {% set help = results.category_help[category] %}
 
-                                <!-- Plain-language summary -->
-                                <div class="alert alert-light border-start border-4 border-warning mb-3">
-                                    <p class="mb-0"><i class="bi bi-info-circle text-warning"></i> <strong>What this means:</strong> {{ help.summary }}</p>
-                                </div>
+                                <p class="mb-2">{{ help.summary }}</p>
 
-                                <!-- Why it matters -->
-                                <div class="mb-3">
-                                    <p class="mb-2"><i class="bi bi-people text-primary"></i> <strong>Why it matters for students:</strong></p>
-                                    <p class="text-muted small mb-0">{{ help.why_matters }}</p>
-                                </div>
-
-                                <!-- Definition if available -->
                                 {% if help.what_is_it %}
-                                <div class="mb-3 p-2 bg-light rounded">
-                                    <p class="mb-0 small"><i class="bi bi-lightbulb text-warning"></i> {{ help.what_is_it | safe }}</p>
-                                </div>
+                                <p class="mb-2">{{ help.what_is_it | safe }}</p>
                                 {% endif %}
 
-                                <!-- How to fix with video link -->
-                                <div class="alert alert-success border-0 mb-3" style="background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);">
-                                    <p class="mb-2"><i class="bi bi-tools text-success"></i> <strong>How to fix it:</strong></p>
-                                    <p class="mb-2">{{ help.how_to_fix | safe }}</p>
-                                    <a href="{{ help.help_link }}" target="_blank" class="btn btn-sm btn-outline-success">
-                                        <i class="bi bi-play-circle"></i> {{ help.help_text }}
-                                    </a>
-                                </div>
+                                <p class="mb-2"><strong>Why this matters:</strong> {{ help.why_matters }}</p>
 
-                                <!-- Technical details (collapsible) -->
+                                <p class="mb-2"><strong>How to fix:</strong> {{ help.how_to_fix | safe }}
+                                    <a href="{{ help.help_link }}" target="_blank" class="text-decoration-none ms-1"><i class="bi bi-play-circle"></i> {{ help.help_text }}</a>
+                                </p>
+
                                 {% if category in results.category_details %}
-                                <div class="mt-3">
-                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
-                                            data-bs-target="#details{{ loop.index }}" aria-expanded="false">
-                                        <i class="bi bi-code"></i> Show specific locations found
-                                    </button>
-                                    <div class="collapse mt-2" id="details{{ loop.index }}">
-                                        <div class="card card-body bg-light small">
-                                            <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; font-size: 0.85em;">{{ results.category_details[category] }}</pre>
-                                        </div>
-                                    </div>
-                                </div>
+                                <hr class="my-2">
+                                <p class="mb-1 text-muted"><strong>Found in your document:</strong></p>
+                                <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; font-size: 0.92em; color: #555;">{{ results.category_details[category] }}</pre>
                                 {% endif %}
 
                                 {% else %}
-                                <!-- Fallback for categories without help info -->
-                                <div class="issue-details">
-                                    {% if category in results.category_details %}
-                                        <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">{{ results.category_details[category] }}</pre>
-                                    {% else %}
-                                        <p class="text-muted">Details not available for this category.</p>
-                                    {% endif %}
-                                </div>
+                                {% if category in results.category_details %}
+                                    <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">{{ results.category_details[category] }}</pre>
+                                {% else %}
+                                    <p class="text-muted">Details not available for this category.</p>
+                                {% endif %}
                                 {% endif %}
                             </div>
                         </div>
