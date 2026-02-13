@@ -108,10 +108,17 @@ def upload_file():
         # Define categories that group related issue types
         category_mapping = {
             'Font Usage': ['SMALL_FONT', 'DECORATIVE_FONT', 'INCONSISTENT_FONTS'],
-            'Table Structure': ['EMPTY_TABLE_ROW', 'EMPTY_TABLE_COLUMN', 'LAYOUT_TABLE', 'TABLE_NO_HEADER',
-                               'TABLE_MISSING_SCOPE', 'TABLE_MISSING_CAPTION', 'MERGED_CELLS', 'NUMERIC_ALIGNMENT',
-                               'TABLE_READING_ORDER', 'EMBEDDED_TABLE_IMAGE'],
-            'Color & Contrast': ['LOW_CONTRAST', 'COLOR_ONLY_MEANING', 'TEXT_OVER_BACKGROUND', 'COLOR_CODED_TABLE'],
+            'Table Headers': ['TABLE_NO_HEADER'],
+            'Table Scope (Repeat Header Rows)': ['TABLE_MISSING_SCOPE'],
+            'Table Captions': ['TABLE_MISSING_CAPTION'],
+            'Layout Tables': ['LAYOUT_TABLE'],
+            'Table Empty Rows/Columns': ['EMPTY_TABLE_ROW', 'EMPTY_TABLE_COLUMN'],
+            'Table Merged Cells': ['TABLE_MERGED_CELLS'],
+            'Table Reading Order': ['TABLE_COMPLEX_READING_ORDER'],
+            'Table Color Coding': ['COLOR_CODED_TABLE', 'TABLE_COLOR_CODED_MEANING'],
+            'Table Embedded Images': ['TABLE_EMBEDDED_IMAGES'],
+            'Table Numeric Alignment': ['TABLE_INCONSISTENT_NUMERIC_ALIGNMENT'],
+            'Color & Contrast': ['LOW_CONTRAST', 'COLOR_ONLY_MEANING', 'TEXT_OVER_BACKGROUND'],
             'Links & Navigation': ['NON_DESCRIPTIVE_LINK', 'UNSTYLED_LINK', 'LONG_URL',
                                    'MISSING_TOC', 'MISSING_BOOKMARKS'],
             'Lists': ['INCONSISTENT_LIST_HIERARCHY', 'LAYOUT_LIST'],
@@ -135,13 +142,78 @@ def upload_file():
                 'help_link': 'https://support.microsoft.com/en-us/office/change-the-font-size-dc5b3f47-9e78-4af6-9734-ffc69175811c',
                 'help_text': 'How to change fonts'
             },
-            'Table Structure': {
-                'summary': 'Tables need proper structure so screen readers can navigate them.',
-                'why_matters': 'Screen readers announce table contents cell-by-cell. Without proper headers, students using assistive technology can\'t understand what each cell means.',
-                'what_is_it': '<strong>Table header</strong> = the top row that labels each column (e.g., "Week", "Topic", "Reading"). This tells screen readers what each column contains.',
-                'how_to_fix': 'Click anywhere in your table → Table Design tab → Check "Header Row" box. This marks the first row as the header.',
+            'Table Headers': {
+                'summary': 'Your table is missing a designated header row — the top row that labels each column (e.g., "Week", "Topic", "Reading").',
+                'why_matters': 'Screen readers announce table contents cell-by-cell. Without a header row, students using assistive technology hear raw data with no context for what each column means.',
+                'what_is_it': '<strong>Table header</strong> = the top row that labels each column. When marked correctly, a screen reader says "Week: 1, Topic: Introduction" instead of just "1, Introduction."',
+                'how_to_fix': 'Click anywhere in your table &rarr; go to the <strong>Table Design</strong> tab &rarr; check the <strong>"Header Row"</strong> box. This tells Word (and screen readers) that the first row contains column labels.',
                 'help_link': 'https://support.microsoft.com/en-us/office/video-create-accessible-tables-in-word-cb464015-59dc-46a0-ac01-6217c62210e5',
-                'help_text': 'Video: Fix table headers'
+                'help_text': 'Video: Create accessible tables'
+            },
+            'Table Scope (Repeat Header Rows)': {
+                'summary': 'Your table\'s header row isn\'t marked as a repeating header. This means screen readers can\'t associate column labels with cell data.',
+                'why_matters': 'When a table spans multiple pages, sighted readers see headers repeated at the top of each page. Screen reader users need the "Repeat Header Rows" setting so their software knows which row contains the column labels.',
+                'what_is_it': '<strong>Repeat Header Rows</strong> = a Word setting that marks the first row as the official header and repeats it on every printed page. This is how Word communicates table structure to assistive technology.',
+                'how_to_fix': '<strong>Windows:</strong> Click in the header row &rarr; Table Tools &gt; Layout tab &rarr; click <strong>"Repeat Header Rows"</strong>.<br><strong>Mac:</strong> Click in the header row &rarr; Table menu &rarr; <strong>"Repeat Header Row"</strong>.',
+                'help_link': 'https://support.microsoft.com/en-us/office/video-create-accessible-tables-in-word-cb464015-59dc-46a0-ac01-6217c62210e5',
+                'help_text': 'Video: Create accessible tables'
+            },
+            'Table Captions': {
+                'summary': 'Your table doesn\'t have a caption or description, so screen reader users won\'t know what the table is about before they start reading it.',
+                'why_matters': 'Screen readers announce the caption before reading table contents. Without one, users must listen to several rows of data before they can figure out what the table shows — imagine listening to "Week 1, Monday, Room 101..." with no idea what the table is for.',
+                'what_is_it': '<strong>Table caption</strong> = a short title and description stored in the table\'s properties (Alt Text). Example: Title "Assignment Schedule", Description "Lists all assignments with due dates and point values for the semester."',
+                'how_to_fix': 'Right-click anywhere in the table &rarr; select <strong>"Table Properties"</strong> &rarr; go to the <strong>"Alt Text"</strong> tab &rarr; fill in the <strong>Title</strong> (brief name) and <strong>Description</strong> (what the table shows).',
+                'help_link': 'https://support.microsoft.com/en-us/office/add-alternative-text-to-a-shape-picture-chart-smartart-graphic-or-other-object-44989b2a-903c-4d9a-b742-6a75b451c669',
+                'help_text': 'How to add alt text'
+            },
+            'Layout Tables': {
+                'summary': 'This table is being used for page layout rather than to present data. Screen readers will try to read it as a data table, which confuses students.',
+                'why_matters': 'When a screen reader encounters a table, it announces "Table with X rows and Y columns" and reads cell-by-cell. If the table is just arranging text on the page, this forces students to listen to disjointed content in a confusing order.',
+                'how_to_fix': 'Replace the layout table with <strong>headings and paragraphs</strong>. Select the content inside the table, cut it, delete the table, then paste the content back and apply proper heading styles (Heading 2, Heading 3) to organize it.',
+                'help_link': 'https://support.microsoft.com/en-us/office/make-your-word-documents-accessible-d9bf3683-87ac-47ea-b91a-78dcacb3c66d',
+                'help_text': 'Accessibility best practices'
+            },
+            'Table Empty Rows/Columns': {
+                'summary': 'Your table has empty rows or columns that are being used for visual spacing. Screen readers read these as blank cells, which is confusing.',
+                'why_matters': 'A screen reader user navigating through a table will hear "blank" for every empty cell, making them think the table has missing data. Empty rows also break the logical flow of the table.',
+                'how_to_fix': 'Delete the empty rows/columns. For spacing, right-click the table &rarr; <strong>"Table Properties"</strong> &rarr; <strong>"Cell"</strong> tab &rarr; adjust cell <strong>margins/padding</strong> instead of using empty rows.',
+                'help_link': 'https://support.microsoft.com/en-us/office/video-create-accessible-tables-in-word-cb464015-59dc-46a0-ac01-6217c62210e5',
+                'help_text': 'Video: Create accessible tables'
+            },
+            'Table Merged Cells': {
+                'summary': 'Your table has merged cells, which can make it difficult for screen readers to navigate correctly.',
+                'why_matters': 'Screen readers navigate tables by moving between cells using arrow keys. Merged cells break the expected grid structure, causing the reader to skip cells or announce the wrong column header for a cell.',
+                'how_to_fix': 'Simplify the table structure — split merged cells back into individual cells, or reorganize the table so merging isn\'t needed. If you need a section header spanning the table, use a heading above the table instead of a merged row.',
+                'help_link': 'https://support.microsoft.com/en-us/office/video-create-accessible-tables-in-word-cb464015-59dc-46a0-ac01-6217c62210e5',
+                'help_text': 'Video: Create accessible tables'
+            },
+            'Table Reading Order': {
+                'summary': 'Your table has a complex structure (merged cells combined with multiple header-like rows) that may create a confusing reading order.',
+                'why_matters': 'Screen readers read tables left-to-right, top-to-bottom. Complex structures with nested headers and merged cells can cause the reader to announce cells in an unexpected order, making the data incomprehensible.',
+                'how_to_fix': 'Simplify the table — use a single header row, avoid merged cells, and consider splitting complex tables into multiple simpler tables. Each table should have one clear, simple structure.',
+                'help_link': 'https://support.microsoft.com/en-us/office/video-create-accessible-tables-in-word-cb464015-59dc-46a0-ac01-6217c62210e5',
+                'help_text': 'Video: Create accessible tables'
+            },
+            'Table Color Coding': {
+                'summary': 'Your table uses multiple background colors which may be conveying meaning that isn\'t available to colorblind or screen reader users.',
+                'why_matters': 'About 8% of men have some form of color blindness, and screen readers don\'t announce cell background colors at all. If color indicates something (like "green = complete, red = overdue"), those students will miss that information entirely.',
+                'how_to_fix': 'Add a <strong>text label</strong> or <strong>icon description</strong> alongside any color coding. For example, instead of just coloring a cell red, also add the text "Overdue" or a column with status labels.',
+                'help_link': 'https://webaim.org/resources/contrastchecker/',
+                'help_text': 'Check your colors'
+            },
+            'Table Embedded Images': {
+                'summary': 'Your table contains images inside cells with little or no accompanying text.',
+                'why_matters': 'Screen readers may not properly read alt text for images embedded in table cells, and the image-to-cell association can be lost. Students using assistive technology may miss important visual information.',
+                'how_to_fix': 'Replace images with text where possible. If images are necessary (logos, icons), ensure each has descriptive alt text: right-click the image &rarr; <strong>"Edit Alt Text"</strong> &rarr; describe what the image conveys.',
+                'help_link': 'https://support.microsoft.com/en-us/office/add-alternative-text-to-a-shape-picture-chart-smartart-graphic-or-other-object-44989b2a-903c-4d9a-b742-6a75b451c669',
+                'help_text': 'How to add alt text'
+            },
+            'Table Numeric Alignment': {
+                'summary': 'A column of numbers in your table has inconsistent alignment, making it harder to scan and compare values.',
+                'why_matters': 'Inconsistent alignment of numeric data (some left-aligned, some centered, some right-aligned) makes it harder for all students — especially those with cognitive or visual disabilities — to quickly compare values in a column.',
+                'how_to_fix': 'Select the numeric column &rarr; right-click &rarr; <strong>"Cell Alignment"</strong> &rarr; choose a consistent alignment (right-aligned is standard for numbers). Apply the same alignment to all data cells in the column.',
+                'help_link': 'https://support.microsoft.com/en-us/office/video-create-accessible-tables-in-word-cb464015-59dc-46a0-ac01-6217c62210e5',
+                'help_text': 'Video: Create accessible tables'
             },
             'Color & Contrast': {
                 'summary': 'Some colors may be hard to see or distinguish.',
@@ -221,10 +293,11 @@ def upload_file():
             'TABLE_NO_HEADER': 'ACCESSIBILITY: TABLE HEADERS',
             'TABLE_MISSING_SCOPE': 'ACCESSIBILITY: TABLE SCOPE DECLARATIONS',
             'TABLE_MISSING_CAPTION': 'ACCESSIBILITY: TABLE CAPTIONS/DESCRIPTIONS',
-            'MERGED_CELLS': 'ACCESSIBILITY: TABLE MERGED CELLS',
-            'NUMERIC_ALIGNMENT': 'ACCESSIBILITY: TABLE NUMERIC ALIGNMENT',
-            'TABLE_READING_ORDER': 'ACCESSIBILITY: TABLE READING ORDER',
-            'EMBEDDED_TABLE_IMAGE': 'ACCESSIBILITY: TABLE EMBEDDED IMAGES',
+            'TABLE_MERGED_CELLS': 'ACCESSIBILITY: TABLE MERGED CELLS',
+            'TABLE_INCONSISTENT_NUMERIC_ALIGNMENT': 'ACCESSIBILITY: TABLE NUMERIC ALIGNMENT',
+            'TABLE_COMPLEX_READING_ORDER': 'ACCESSIBILITY: TABLE READING ORDER',
+            'TABLE_EMBEDDED_IMAGES': 'ACCESSIBILITY: TABLE EMBEDDED IMAGES',
+            'TABLE_COLOR_CODED_MEANING': 'ACCESSIBILITY: COLOR AS SOLE INDICATOR',
             'LOW_CONTRAST': 'ACCESSIBILITY: COLOR CONTRAST',
             'COLOR_ONLY_MEANING': 'ACCESSIBILITY: COLOR AS SOLE INDICATOR',
             'TEXT_OVER_BACKGROUND': 'ACCESSIBILITY: TEXT OVER COLORED BACKGROUNDS',
@@ -395,14 +468,14 @@ def upload_file():
         # Add structural issues to appropriate categories
         # These come from heading_check, table_check, and list_check which return plain strings
         if table_check.get('issues'):
-            # Add table structure issues to the Table Structure category
-            if 'Table Structure' not in category_counts:
-                category_counts['Table Structure'] = 0
-            category_counts['Table Structure'] += len(table_check.get('issues', []))
+            # Add table usage issues to the Layout Tables category
+            if 'Layout Tables' not in category_counts:
+                category_counts['Layout Tables'] = 0
+            category_counts['Layout Tables'] += len(table_check.get('issues', []))
 
             # Extract table usage section from report for category details
-            if 'Table Structure' not in category_details:
-                category_details['Table Structure'] = ''
+            if 'Layout Tables' not in category_details:
+                category_details['Layout Tables'] = ''
 
             # Add table usage issues to the details
             table_usage_section = []
@@ -422,9 +495,9 @@ def upload_file():
                         table_usage_section.append(line)
 
             if table_usage_section:
-                # Prepend to existing Table Structure details
-                existing = category_details.get('Table Structure', '')
-                category_details['Table Structure'] = '\n'.join(table_usage_section) + '\n\n' + existing
+                # Prepend to existing Layout Tables details
+                existing = category_details.get('Layout Tables', '')
+                category_details['Layout Tables'] = '\n'.join(table_usage_section) + '\n\n' + existing
 
         if heading_check.get('issues'):
             # Add heading structure issues - create a new category for document structure

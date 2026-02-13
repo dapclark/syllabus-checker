@@ -1368,7 +1368,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                 issue = AccessibilityIssue(
                     issue_type="TABLE_NO_HEADER",
-                    description=f"Table {i+1} appears to lack header row. First row: \"{preview}...\"",
+                    description=f"Table {i+1} ({preview}) — no header row designated",
                     location=f"Table {i+1}",
                     table_index=i
                 )
@@ -1460,8 +1460,7 @@ Be generous - if content relates to the topic, include it in "found"."""
             if is_layout_table:
                 issue = AccessibilityIssue(
                     issue_type="LAYOUT_TABLE",
-                    description=f"Table {i+1} appears to be used for layout ({'; '.join(reasons)}). "
-                                f"Size: {rows} rows × {cols} cols. Use headings and paragraphs instead.",
+                    description=f"Table {i+1} ({rows} rows × {cols} cols) — used for layout, not data ({'; '.join(reasons)})",
                     location=f"Table {i+1}",
                     table_index=i
                 )
@@ -2194,7 +2193,7 @@ Be generous - if content relates to the topic, include it in "found"."""
             if len(cell_colors) > 1:
                 issue = AccessibilityIssue(
                     issue_type="COLOR_CODED_TABLE",
-                    description=f"Table {table_idx + 1} uses {len(cell_colors)} different background colors. Ensure color is not the only way to convey meaning (use icons, text labels, or patterns).",
+                    description=f"Table {table_idx + 1} — uses {len(cell_colors)} background colors to convey meaning",
                     location=f"Table {table_idx + 1}",
                     table_index=table_idx
                 )
@@ -2361,7 +2360,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                 if all_empty:
                     issue = AccessibilityIssue(
                         issue_type="EMPTY_TABLE_ROW",
-                        description=f"Table {table_idx + 1}, Row {row_idx + 1} is completely empty (likely used for spacing)",
+                        description=f"Table {table_idx + 1}, Row {row_idx + 1} — empty row used for spacing",
                         location=f"Table {table_idx + 1}, Row {row_idx + 1}",
                         table_index=table_idx
                     )
@@ -2384,7 +2383,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                     if all_empty:
                         issue = AccessibilityIssue(
                             issue_type="EMPTY_TABLE_COLUMN",
-                            description=f"Table {table_idx + 1}, Column {col_idx + 1} is completely empty (likely used for spacing)",
+                            description=f"Table {table_idx + 1}, Column {col_idx + 1} — empty column used for spacing",
                             location=f"Table {table_idx + 1}, Column {col_idx + 1}",
                             table_index=table_idx
                         )
@@ -2420,13 +2419,11 @@ Be generous - if content relates to the topic, include it in "found"."""
 
             # If table has a header row but "repeat header row" is not enabled
             if not has_repeat_header:
+                # Get preview of header content for context
+                header_preview = " | ".join([cell.text.strip()[:20] for cell in table.rows[0].cells[:4]])
                 issue = AccessibilityIssue(
                     issue_type="TABLE_MISSING_SCOPE",
-                    description=f"Table {table_idx + 1} has header row but may lack proper scope declarations for screen readers. "
-                               f"HOW TO FIX: 1) Click anywhere in the table's first row (the header row). "
-                               f"2) On Windows: Go to Table Tools > Layout tab > click 'Repeat Header Rows'. On Mac: Go to Table > Header Rows > select 'Repeat Header Row'. "
-                               f"3) This tells screen readers which row contains column labels, allowing users to understand the table structure as they navigate through cells. "
-                               f"WHY IT MATTERS: Without proper header row designation, screen reader users cannot tell what data each column represents.",
+                    description=f"Table {table_idx + 1} ({header_preview}) — header row not marked as repeating",
                     location=f"Table {table_idx + 1}",
                     table_index=table_idx
                 )
@@ -2475,13 +2472,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                 issue = AccessibilityIssue(
                     issue_type="TABLE_MISSING_CAPTION",
-                    description=f"Table {table_idx + 1} is missing a caption or description. Preview: \"{preview}...\" "
-                               f"HOW TO FIX: 1) Right-click anywhere in the table. "
-                               f"2) On Windows: Select 'Table Properties' > go to 'Alt Text' tab. On Mac: Select 'Table Properties...' > click 'Alternative Text'. "
-                               f"3) In the 'Title' field, enter a brief table name (e.g., 'Assignment Schedule'). "
-                               f"4) In the 'Description' field, write what the table shows (e.g., 'Lists all assignments with due dates and submission locations for the semester'). "
-                               f"WHY IT MATTERS: Screen readers announce the caption before reading table contents, giving users context about what data they're about to hear. "
-                               f"Without a caption, users must listen to multiple rows before understanding the table's purpose.",
+                    description=f"Table {table_idx + 1} ({preview}) — missing caption/description in Alt Text",
                     location=f"Table {table_idx + 1}",
                     table_index=table_idx
                 )
@@ -2528,7 +2519,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                 issue = AccessibilityIssue(
                     issue_type="TABLE_MERGED_CELLS",
-                    description=f"Table {table_idx + 1} contains merged cells which may impact screen reader navigation. Locations: {locations_str}",
+                    description=f"Table {table_idx + 1} — merged cells at {locations_str}",
                     location=f"Table {table_idx + 1}",
                     table_index=table_idx
                 )
@@ -2591,7 +2582,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                     if len(set(alignments)) > 1:
                         issue = AccessibilityIssue(
                             issue_type="TABLE_INCONSISTENT_NUMERIC_ALIGNMENT",
-                            description=f"Table {table_idx + 1}, Column {col_idx + 1} contains numeric data with inconsistent alignment (found {len(set(alignments))} different alignments)",
+                            description=f"Table {table_idx + 1}, Column {col_idx + 1} — numbers have {len(set(alignments))} different alignments",
                             location=f"Table {table_idx + 1}, Column {col_idx + 1}",
                             table_index=table_idx
                         )
@@ -2642,7 +2633,7 @@ Be generous - if content relates to the topic, include it in "found"."""
             if has_merged and len(header_like_rows) > 1:
                 issue = AccessibilityIssue(
                     issue_type="TABLE_COMPLEX_READING_ORDER",
-                    description=f"Table {table_idx + 1} has complex structure (merged cells + multiple header-like rows at positions {header_like_rows}) which may create confusing reading order",
+                    description=f"Table {table_idx + 1} — complex structure with merged cells and multiple header-like rows (rows {', '.join(str(r+1) for r in header_like_rows)})",
                     location=f"Table {table_idx + 1}",
                     table_index=table_idx
                 )
@@ -2696,7 +2687,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                 if len(potentially_meaningful_colors) >= 2:
                     issue = AccessibilityIssue(
                         issue_type="TABLE_COLOR_CODED_MEANING",
-                        description=f"Table {table_idx + 1} uses {len(potentially_meaningful_colors)} different background colors which may convey meaning. Ensure there's a legend or textual explanation.",
+                        description=f"Table {table_idx + 1} — {len(potentially_meaningful_colors)} background colors may convey meaning without text labels",
                         location=f"Table {table_idx + 1}",
                         table_index=table_idx
                     )
@@ -2747,7 +2738,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                 issue = AccessibilityIssue(
                     issue_type="TABLE_EMBEDDED_IMAGES",
-                    description=f"Table {table_idx + 1} contains images in cells with minimal text. Consider using text instead or ensure images have alt text. Locations: {locations_str}",
+                    description=f"Table {table_idx + 1} — images in cells with minimal text at {locations_str}",
                     location=f"Table {table_idx + 1}",
                     table_index=table_idx
                 )
