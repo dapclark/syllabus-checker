@@ -282,66 +282,11 @@ def upload_file():
             },
         }
 
-        # Map each issue type to its report section header
-        issue_section_map = {
-            'SMALL_FONT': 'ACCESSIBILITY: FONT SIZES',
-            'DECORATIVE_FONT': 'ACCESSIBILITY: DECORATIVE/INACCESSIBLE FONTS',
-            'INCONSISTENT_FONTS': 'ACCESSIBILITY: FONT CONSISTENCY',
-            'EMPTY_TABLE_ROW': 'ACCESSIBILITY: EMPTY TABLE ROWS/COLUMNS',
-            'EMPTY_TABLE_COLUMN': 'ACCESSIBILITY: EMPTY TABLE ROWS/COLUMNS',
-            'LAYOUT_TABLE': 'ACCESSIBILITY: LAYOUT vs. DATA TABLES',
-            'TABLE_NO_HEADER': 'ACCESSIBILITY: TABLE HEADERS',
-            'TABLE_MISSING_SCOPE': 'ACCESSIBILITY: TABLE SCOPE DECLARATIONS',
-            'TABLE_MISSING_CAPTION': 'ACCESSIBILITY: TABLE CAPTIONS/DESCRIPTIONS',
-            'TABLE_MERGED_CELLS': 'ACCESSIBILITY: TABLE MERGED CELLS',
-            'TABLE_INCONSISTENT_NUMERIC_ALIGNMENT': 'ACCESSIBILITY: TABLE NUMERIC ALIGNMENT',
-            'TABLE_COMPLEX_READING_ORDER': 'ACCESSIBILITY: TABLE READING ORDER',
-            'TABLE_EMBEDDED_IMAGES': 'ACCESSIBILITY: TABLE EMBEDDED IMAGES',
-            'TABLE_COLOR_CODED_MEANING': 'ACCESSIBILITY: COLOR AS SOLE INDICATOR',
-            'LOW_CONTRAST': 'ACCESSIBILITY: COLOR CONTRAST',
-            'COLOR_ONLY_MEANING': 'ACCESSIBILITY: COLOR AS SOLE INDICATOR',
-            'TEXT_OVER_BACKGROUND': 'ACCESSIBILITY: TEXT OVER COLORED BACKGROUNDS',
-            'COLOR_CODED_TABLE': 'ACCESSIBILITY: COLOR AS SOLE INDICATOR',
-            'NON_DESCRIPTIVE_LINK': 'ACCESSIBILITY: NON-DESCRIPTIVE LINKS',
-            'UNSTYLED_LINK': 'ACCESSIBILITY: UNSTYLED LINKS',
-            'LONG_URL': 'ACCESSIBILITY: LONG URLs',
-            'MISSING_TOC': 'ACCESSIBILITY: TABLE OF CONTENTS',
-            'MISSING_BOOKMARKS': 'ACCESSIBILITY: INTERNAL NAVIGATION/BOOKMARKS',
-            'INCONSISTENT_LIST_HIERARCHY': 'ACCESSIBILITY: NESTED LIST HIERARCHY',
-            'LAYOUT_LIST': 'ACCESSIBILITY: LISTS USED FOR LAYOUT',
-            'PSEUDO_TABLE': 'ACCESSIBILITY: MANUAL ALIGNMENT (PSEUDO-TABLES)',
-            'UNDERLINE_NON_LINK': 'ACCESSIBILITY: UNDERLINED TEXT',
-            'INSUFFICIENT_LINE_SPACING': 'ACCESSIBILITY: LINE SPACING',
-            'FULL_JUSTIFICATION': 'ACCESSIBILITY: TEXT JUSTIFICATION',
-            'ALL_CAPS_BLOCK': 'ACCESSIBILITY: ALL CAPS TEXT BLOCKS',
-            'EXCESSIVE_BOLD': 'ACCESSIBILITY: EXCESSIVE/INCONSISTENT FORMATTING',
-            'EXCESSIVE_ITALIC': 'ACCESSIBILITY: EXCESSIVE/INCONSISTENT FORMATTING',
-            'EXCESSIVE_UNDERLINE': 'ACCESSIBILITY: EXCESSIVE/INCONSISTENT FORMATTING',
-            'INCONSISTENT_FORMATTING': 'ACCESSIBILITY: EXCESSIVE/INCONSISTENT FORMATTING',
-            'LONG_SENTENCE': 'ACCESSIBILITY: SENTENCE LENGTH',
-            'IMAGE_MISSING_ALT': 'ACCESSIBILITY: IMAGE ALT TEXT',
-            'DECORATIVE_IMAGE_QUESTIONABLE': 'ACCESSIBILITY: DECORATIVE IMAGE MARKING',
-            'IMAGE_TEXT_CONTENT': 'ACCESSIBILITY: IMAGES CONTAINING TEXT/SCHEDULES',
-            'NUMERIC_DATE_FORMAT': 'ACCESSIBILITY: DATE FORMATS',
-            'MISSING_TITLE': 'ACCESSIBILITY: DOCUMENT METADATA',
-            'MISSING_LANGUAGE': 'ACCESSIBILITY: DOCUMENT LANGUAGE SETTING',
-            'MULTIPLE_LANGUAGES': 'ACCESSIBILITY: MULTILINGUAL CONTENT',
-            'BROKEN_STYLE_COPIED_CONTENT': 'ACCESSIBILITY: COPIED CONTENT WITH INCONSISTENT STYLES',
-            'FOOTNOTE_USAGE': 'ACCESSIBILITY: FOOTNOTE USAGE',
-            'VISUAL_INDICATOR_NO_TEXT': 'ACCESSIBILITY: VISUAL INDICATORS WITHOUT TEXT',
-            'MATH_NO_ACCESSIBLE_MARKUP': 'ACCESSIBILITY: MATHEMATICAL EXPRESSIONS',
-        }
-
-        # Count issues by category
+        # Count issues by category and collect structured issue data
         category_counts = {}
-        issues_by_category = {}
-
-        # Debug: track all issue types found
-        all_issue_types = set()
+        category_issues = {}
 
         for issue in checker.issues:
-            all_issue_types.add(issue.issue_type)
-
             # Find which category this issue belongs to
             issue_category = None
             for category, issue_types in category_mapping.items():
@@ -352,60 +297,12 @@ def upload_file():
             if issue_category:
                 if issue_category not in category_counts:
                     category_counts[issue_category] = 0
-                    issues_by_category[issue_category] = set()
+                    category_issues[issue_category] = []
                 category_counts[issue_category] += 1
-                issues_by_category[issue_category].add(issue.issue_type)
-            # else:
-                # Issue type not mapped to any category (uncomment for debugging)
-                # print(f"WARNING: Issue type '{issue.issue_type}' not mapped to any category")
-
-        # Extract content for each category by combining relevant sections
-        category_details = {}
-        report_lines = report_text.split('\n')
-
-        for category, issue_types in category_mapping.items():
-            if category not in issues_by_category:
-                continue  # Skip categories with no issues
-
-            # Get all unique section headers for this category
-            section_headers = set()
-            for issue_type in issues_by_category[category]:
-                if issue_type in issue_section_map:
-                    section_headers.add(issue_section_map[issue_type])
-
-            # Extract content from all relevant sections
-            combined_content = []
-            for section_header in sorted(section_headers):
-                section_content = []
-                in_section = False
-
-                for line in report_lines:
-                    if section_header in line:
-                        in_section = True
-                        # Add the section header (without "ACCESSIBILITY: " prefix)
-                        section_title = section_header.replace('ACCESSIBILITY: ', '')
-                        section_content.append(f"── {section_title} ──")
-                        continue
-                    elif in_section:
-                        # Stop at next section
-                        if line.startswith('ACCESSIBILITY:') and section_header not in line:
-                            break
-                        # Skip the dashes line
-                        if line.startswith('-' * 20):
-                            continue
-                        # Collect content lines
-                        if line.strip():
-                            section_content.append(line)
-                        # Stop after a blank line following content
-                        elif section_content:
-                            break
-
-                if section_content:
-                    combined_content.extend(section_content)
-                    combined_content.append('')  # Add spacing between sections
-
-            if combined_content:
-                category_details[category] = '\n'.join(combined_content)
+                category_issues[issue_category].append({
+                    'location': issue.location,
+                    'description': issue.description
+                })
 
         # Extract the SUMMARY section from the report
         summary_section = ""
@@ -471,62 +368,25 @@ def upload_file():
             # Add table usage issues to the Layout Tables category
             if 'Layout Tables' not in category_counts:
                 category_counts['Layout Tables'] = 0
+                category_issues['Layout Tables'] = []
             category_counts['Layout Tables'] += len(table_check.get('issues', []))
-
-            # Extract table usage section from report for category details
-            if 'Layout Tables' not in category_details:
-                category_details['Layout Tables'] = ''
-
-            # Add table usage issues to the details
-            table_usage_section = []
-            report_lines = report_text.split('\n')
-            in_table_usage = False
-            for line in report_lines:
-                if 'ACCESSIBILITY: TABLE USAGE' in line:
-                    in_table_usage = True
-                    table_usage_section.append('── TABLE USAGE ──')
-                    continue
-                elif in_table_usage:
-                    if line.startswith('ACCESSIBILITY:') or line.startswith('=' * 40):
-                        break
-                    if line.startswith('-' * 40):
-                        continue
-                    if line.strip():
-                        table_usage_section.append(line)
-
-            if table_usage_section:
-                # Prepend to existing Layout Tables details
-                existing = category_details.get('Layout Tables', '')
-                category_details['Layout Tables'] = '\n'.join(table_usage_section) + '\n\n' + existing
+            for issue_text in table_check['issues']:
+                category_issues['Layout Tables'].append({
+                    'location': 'Document',
+                    'description': issue_text.replace('WARNING: ', '')
+                })
 
         if heading_check.get('issues'):
             # Add heading structure issues - create a new category for document structure
             if 'Document Structure' not in category_counts:
                 category_counts['Document Structure'] = 0
+                category_issues['Document Structure'] = []
             category_counts['Document Structure'] += len(heading_check.get('issues', []))
-
-            # Extract heading sections from report
-            heading_sections = []
-            report_lines = report_text.split('\n')
-            for section_name in ['ACCESSIBILITY: HEADING STRUCTURE', 'ACCESSIBILITY: HEADING LEVEL RECOMMENDATIONS']:
-                in_section = False
-                for line in report_lines:
-                    if section_name in line:
-                        in_section = True
-                        heading_sections.append(f"── {section_name.replace('ACCESSIBILITY: ', '')} ──")
-                        continue
-                    elif in_section:
-                        if line.startswith('ACCESSIBILITY:') or line.startswith('=' * 40):
-                            break
-                        if line.startswith('-' * 40):
-                            continue
-                        if line.strip():
-                            heading_sections.append(line)
-                if in_section:
-                    heading_sections.append('')  # Add spacing
-
-            if heading_sections:
-                category_details['Document Structure'] = '\n'.join(heading_sections)
+            for issue_text in heading_check['issues']:
+                category_issues['Document Structure'].append({
+                    'location': 'Document',
+                    'description': issue_text.replace('WARNING: ', '')
+                })
 
         if list_check.get('issues'):
             # Add list issues to the Lists category
@@ -562,7 +422,7 @@ def upload_file():
             'missing_sections': missing_sections,
             'section_analysis': section_analysis,  # Detailed analysis with found/suggest_rename/missing
             'category_counts': category_counts,
-            'category_details': category_details,
+            'category_issues': category_issues,
             'category_help': category_help,  # Faculty-friendly explanations
             'report_text': report_text,
             'summary_section': summary_section,

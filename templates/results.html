@@ -719,15 +719,29 @@
                                     <a href="{{ help.help_link }}" target="_blank" class="text-decoration-none ms-1"><i class="bi bi-play-circle"></i> {{ help.help_text }}</a>
                                 </p>
 
-                                {% if category in results.category_details %}
+                                {% if category in results.category_issues %}
                                 <hr class="my-2">
-                                <p class="mb-1 text-muted"><strong>Found in your document:</strong></p>
-                                <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; font-size: 0.92em; color: #555;">{{ results.category_details[category] }}</pre>
+                                <p class="mb-2 text-muted"><strong>Found in your document:</strong></p>
+                                <ul class="list-unstyled mb-0">
+                                    {% for issue in results.category_issues[category] %}
+                                    <li class="mb-2">
+                                        <i class="bi bi-geo-alt text-secondary"></i>
+                                        <strong>{{ issue.location }}</strong> &mdash; {{ issue.description }}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
                                 {% endif %}
 
                                 {% else %}
-                                {% if category in results.category_details %}
-                                    <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">{{ results.category_details[category] }}</pre>
+                                {% if category in results.category_issues %}
+                                <ul class="list-unstyled mb-0">
+                                    {% for issue in results.category_issues[category] %}
+                                    <li class="mb-2">
+                                        <i class="bi bi-geo-alt text-secondary"></i>
+                                        <strong>{{ issue.location }}</strong> &mdash; {{ issue.description }}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
                                 {% else %}
                                     <p class="text-muted">Details not available for this category.</p>
                                 {% endif %}
