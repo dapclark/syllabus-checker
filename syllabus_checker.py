@@ -4682,10 +4682,12 @@ Examples of TRUE inconsistencies to flag:
 - Assignment names using inconsistent capitalization (some Title Case, some lowercase)
 - Times formatted differently: "2pm" vs "2:00 PM" vs "14:00"
 
-Examples that are NOT inconsistencies (do NOT flag these):
+Examples that are NOT inconsistencies (do NOT flag these, and do NOT mention them at all — not even to say they are not an inconsistency):
 - "September 6" and "September 28" - same format, just different dates
 - "Assignment 1" and "Assignment 2" - same format, just different numbers
 - Multiple headings all using the same bold style
+
+If you are unsure whether something is a true format inconsistency, omit it entirely. Only include items that are unambiguously inconsistent.
 
 For each TRUE formatting inconsistency, use this NESTED bullet format:
 - **Element type**: [e.g., "dates", "headings", "assignment names"]
@@ -4712,7 +4714,7 @@ If no issues found, state: "✓ Formatting appears consistent throughout the syl
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=3000,
-                temperature=0.7
+                temperature=0.2
             )
 
             analysis_text = response.choices[0].message.content
