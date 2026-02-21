@@ -4149,7 +4149,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
         # Color coding by area — matches the web UI color scheme
         COLOR_ACCESSIBILITY = WD_COLOR_INDEX.TEAL          # #035056 in UI
-        COLOR_MISSING       = WD_COLOR_INDEX.LIGHT_ORANGE  # #F79651 in UI
+        COLOR_MISSING       = WD_COLOR_INDEX.PINK           # closest to #F79651 orange in UI
         COLOR_TONE          = WD_COLOR_INDEX.TURQUOISE     # #14364D in UI
         COLOR_QUALITY       = WD_COLOR_INDEX.YELLOW        # #CFD25B in UI
 
