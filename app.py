@@ -103,7 +103,7 @@ def upload_file():
         # Create marked document with missing sections and growth mindset recommendations
         marked_filename = f"{os.path.splitext(filename)[0]}_marked.docx"
         marked_path = os.path.join(app.config['UPLOAD_FOLDER'], marked_filename)
-        checker.create_marked_document(marked_path, missing_sections, growth_mindset_analysis)
+        checker.create_marked_document(marked_path, missing_sections, growth_mindset_analysis, quality_analysis)
 
         # Define categories that group related issue types
         category_mapping = {

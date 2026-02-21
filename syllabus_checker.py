@@ -4141,10 +4141,17 @@ Be generous - if content relates to the topic, include it in "found"."""
         self.issues.extend(self.check_math_expressions())
 
     def create_marked_document(self, output_path: str, missing_sections: List[str] = None,
-                               growth_mindset_analysis: Dict[str, str] = None):
+                               growth_mindset_analysis: Dict[str, str] = None,
+                               quality_analysis: Dict[str, str] = None):
         """Create a copy of the document with issues marked via comments and highlighting,
         plus sections for missing required content and growth mindset recommendations"""
         marked_doc = Document(self.target_path)
+
+        # Color coding by area — matches the web UI color scheme
+        COLOR_ACCESSIBILITY = WD_COLOR_INDEX.TEAL          # #035056 in UI
+        COLOR_MISSING       = WD_COLOR_INDEX.LIGHT_ORANGE  # #F79651 in UI
+        COLOR_TONE          = WD_COLOR_INDEX.TURQUOISE     # #14364D in UI
+        COLOR_QUALITY       = WD_COLOR_INDEX.YELLOW        # #CFD25B in UI
 
         # Store parameters for later use
         self._missing_sections = missing_sections or []
@@ -4184,11 +4191,11 @@ Be generous - if content relates to the topic, include it in "found"."""
                             marker_run.font.color.rgb = RGBColor(255, 0, 0)
                             marker_run.bold = True
                             marker_run.font.size = Pt(9)
-                            marker_run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                            marker_run.font.highlight_color = COLOR_ACCESSIBILITY
 
                             # Highlight the paragraph content
                             for run in para.runs[:-1]:  # Skip the marker we just added
-                                run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                                run.font.highlight_color = COLOR_ACCESSIBILITY
 
                             break
 
@@ -4215,11 +4222,11 @@ Be generous - if content relates to the topic, include it in "found"."""
                                 marker_run.font.color.rgb = RGBColor(255, 0, 0)
                                 marker_run.bold = True
                                 marker_run.font.size = Pt(9)
-                                marker_run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                                marker_run.font.highlight_color = COLOR_ACCESSIBILITY
 
                                 # Highlight the paragraph content
                                 for run in para.runs[:-1]:  # Skip the marker we just added
-                                    run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                                    run.font.highlight_color = COLOR_ACCESSIBILITY
 
                                 break  # Found and marked this issue, move to next
 
@@ -4267,7 +4274,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                         run.font.color.rgb = RGBColor(255, 0, 0)
                         run.bold = True
                         run.font.size = Pt(11)
-                        run.font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
+                        run.font.highlight_color = COLOR_ACCESSIBILITY
 
         # Helper function to find a section in the document by heading keywords
         def find_section_by_keywords(keywords):
@@ -4293,7 +4300,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                 heading_run.bold = True
                 heading_run.font.size = Pt(14)
                 heading_run.font.color.rgb = RGBColor(255, 0, 0)
-                heading_run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                heading_run.font.highlight_color = COLOR_MISSING
 
                 # Add placeholder text
                 placeholder_para = marked_doc.add_paragraph()
@@ -4389,7 +4396,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                         text_para = next_para.insert_paragraph_before(rec['text'])
                         text_run = text_para.runs[0]
                         text_run.font.size = Pt(11)
-                        text_run.font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
+                        text_run.font.highlight_color = COLOR_TONE
 
                         # Insert placement guidance
                         where_para = next_para.insert_paragraph_before(f"Recommended placement: {rec['where']}")
@@ -4404,7 +4411,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                         marker_run.bold = True
                         marker_run.font.size = Pt(11)
                         marker_run.font.color.rgb = RGBColor(13, 110, 253)
-                        marker_run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                        marker_run.font.highlight_color = COLOR_TONE
 
                         # Insert blank line after all the inserted content
                         next_para.insert_paragraph_before("")
@@ -4421,7 +4428,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                 marker_run.bold = True
                 marker_run.font.size = Pt(11)
                 marker_run.font.color.rgb = RGBColor(13, 110, 253)
-                marker_run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                marker_run.font.highlight_color = COLOR_TONE
 
                 # Add placement guidance
                 where_para = marked_doc.add_paragraph()
@@ -4434,10 +4441,66 @@ Be generous - if content relates to the topic, include it in "found"."""
                 text_para = marked_doc.add_paragraph()
                 text_run = text_para.add_run(rec['text'])
                 text_run.font.size = Pt(11)
-                text_run.font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
+                text_run.font.highlight_color = COLOR_TONE
 
                 # Blank line
                 marked_doc.add_paragraph()
+
+        # Add Clarity & Quality analysis as an appendix
+        if quality_analysis and quality_analysis.get('status') == 'success':
+            analysis_text = quality_analysis.get('analysis', '').strip()
+            if analysis_text:
+                marked_doc.add_paragraph()
+
+                # Section header
+                header_para = marked_doc.add_paragraph()
+                header_run = header_para.add_run("[CLARITY & QUALITY SUGGESTIONS]")
+                header_run.bold = True
+                header_run.font.size = Pt(14)
+                header_run.font.color.rgb = RGBColor(90, 80, 0)
+                header_run.font.highlight_color = COLOR_QUALITY
+
+                subtitle_para = marked_doc.add_paragraph()
+                sub_run = subtitle_para.add_run(
+                    "AI-identified clarity and quality issues. Review each item and revise as appropriate."
+                )
+                sub_run.italic = True
+                sub_run.font.size = Pt(10)
+                sub_run.font.color.rgb = RGBColor(80, 80, 80)
+
+                marked_doc.add_paragraph()
+
+                for line in analysis_text.split('\n'):
+                    line = line.rstrip()
+                    if not line:
+                        continue
+
+                    para = marked_doc.add_paragraph()
+
+                    if line.startswith('## '):
+                        # Sub-section heading
+                        run = para.add_run(line[3:].strip())
+                        run.bold = True
+                        run.font.size = Pt(12)
+                        run.font.highlight_color = COLOR_QUALITY
+                        run.font.color.rgb = RGBColor(80, 70, 0)
+                    elif line.startswith('✓'):
+                        # All-clear line — no highlight, green text
+                        run = para.add_run(line)
+                        run.font.size = Pt(11)
+                        run.font.color.rgb = RGBColor(0, 120, 0)
+                    else:
+                        # Content line — strip leading markdown bullets, preserve indentation
+                        if line.startswith('    - '):
+                            text = '    • ' + line[6:]
+                            para.paragraph_format.left_indent = Pt(18)
+                        elif line.startswith('- '):
+                            text = '• ' + line[2:]
+                        else:
+                            text = line
+                        run = para.add_run(text)
+                        run.font.size = Pt(11)
+                        run.font.highlight_color = COLOR_QUALITY
 
         marked_doc.save(output_path)
 
