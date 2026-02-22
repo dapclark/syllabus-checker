@@ -4737,24 +4737,31 @@ If no issues found, state: "✓ All policies appear clear and inclusive."
 
 ## 4. INCONSISTENT FORMATTING
 
-Look for inconsistencies in how repeated elements are formatted. IMPORTANT: Only flag TRUE format inconsistencies, not merely different values using the same format.
+A FORMAT is the template or pattern used to express something — NOT the specific values filled in.
+A FORMAT INCONSISTENCY exists only when the TEMPLATE differs, not when the values differ.
+
+To test whether something is a format inconsistency, ask: "If I replaced the specific values with placeholders, would the two examples use a different template?" If no — it is NOT an inconsistency.
+
+CRITICAL RULE FOR DATES: Dates like "September 6", "September 13", and "September 28" all use the template [Month Name] [Day Number]. They are NOT inconsistent. The day number having 1 or 2 digits is NOT a format difference — numbers naturally vary in length. Only flag dates if the template itself differs, e.g., "September 6" vs "9/6" vs "Sept. 6th" (different templates).
 
 Examples of TRUE inconsistencies to flag:
-- Date FORMATS differ: "Jan 15" vs "1/15" vs "January 15th" (mixing abbreviated, numeric, and ordinal styles)
+- Date FORMATS differ: "Jan 15" vs "1/15" vs "January 15th" (different templates: abbreviated-name vs numeric vs ordinal)
 - Headings at the same level using different styles (some bold, some underlined, different sizes)
 - Assignment names using inconsistent capitalization (some Title Case, some lowercase)
 - Times formatted differently: "2pm" vs "2:00 PM" vs "14:00"
 
-Examples that are NOT inconsistencies (do NOT flag these, and do NOT mention them at all — not even to say they are not an inconsistency):
-- "September 6" and "September 28" - same format, just different dates
-- "Assignment 1" and "Assignment 2" - same format, just different numbers
+Examples that are NOT inconsistencies (do NOT flag these, and do NOT mention them at all):
+- "September 6" and "September 28" — same template [Month Day], different values
+- "September 6" and "September 13" — same template [Month Day], different values
+- "September 6" appearing in multiple places in the document — same template, same value
+- "Assignment 1" and "Assignment 2" — same template, different numbers
 - Multiple headings all using the same bold style
 
 If you are unsure whether something is a true format inconsistency, omit it entirely. Only include items that are unambiguously inconsistent.
 
 For each TRUE formatting inconsistency, use this NESTED bullet format:
 - **Element type**: [e.g., "dates", "headings", "assignment names"]
-    - **Inconsistency**: [describe the actual format variation, showing contrasting examples]
+    - **Inconsistency**: [describe the actual template variation, showing contrasting examples]
     - **Recommendation**: [suggest a consistent format to use throughout]
 
 If no issues found, state: "✓ Formatting appears consistent throughout the syllabus."
