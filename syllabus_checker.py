@@ -48,6 +48,86 @@ def calculate_contrast_ratio(color1: Tuple[int, int, int], color2: Tuple[int, in
     return (lighter + 0.05) / (darker + 0.05)
 
 
+# ---------------------------------------------------------------------------
+# Word comment helpers (XML-level, no high-level python-docx support exists)
+# ---------------------------------------------------------------------------
+
+def _ensure_comments_part(doc):
+    """Get or create the comments.xml part of a docx document."""
+    from docx.opc.part import Part
+    from docx.opc.packuri import PackURI
+
+    COMMENTS_URI      = '/word/comments.xml'
+    COMMENTS_CT       = 'application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml'
+    COMMENTS_REL_TYPE = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments'
+
+    try:
+        return doc.part.part_related_by(COMMENTS_REL_TYPE)
+    except KeyError:
+        pass
+
+    empty_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<w:comments xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>'
+    ).encode('utf-8')
+    part = Part(PackURI(COMMENTS_URI), COMMENTS_CT, empty_xml, doc.part.package)
+    doc.part.relate_to(part, COMMENTS_REL_TYPE)
+    return part
+
+
+def _add_word_comment(doc, para, comment_id, comment_text, author='Syllabus Checker'):
+    """Attach a Word review comment to *para* (a python-docx Paragraph)."""
+    from lxml import etree
+    from datetime import datetime, timezone
+
+    W   = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+    XML = 'http://www.w3.org/XML/1998/namespace'
+
+    comments_part = _ensure_comments_part(doc)
+    root = etree.fromstring(comments_part._blob)
+
+    # Build the <w:comment> element
+    dt = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    comment_el = etree.SubElement(root, f'{{{W}}}comment')
+    comment_el.set(f'{{{W}}}id',       str(comment_id))
+    comment_el.set(f'{{{W}}}author',   author)
+    comment_el.set(f'{{{W}}}date',     dt)
+    comment_el.set(f'{{{W}}}initials', 'SC')
+
+    for line in comment_text.split('\n'):
+        p_el = etree.SubElement(comment_el, f'{{{W}}}p')
+        r_el = etree.SubElement(p_el, f'{{{W}}}r')
+        t_el = etree.SubElement(r_el, f'{{{W}}}t')
+        t_el.text = line
+        if line != line.strip():
+            t_el.set(f'{{{XML}}}space', 'preserve')
+
+    comments_part._blob = etree.tostring(
+        root, xml_declaration=True, encoding='UTF-8', standalone=True
+    )
+
+    # Wire the comment into the paragraph XML
+    p = para._p
+    cs = OxmlElement('w:commentRangeStart')
+    cs.set(qn('w:id'), str(comment_id))
+    p.insert(0, cs)
+
+    ce = OxmlElement('w:commentRangeEnd')
+    ce.set(qn('w:id'), str(comment_id))
+    p.append(ce)
+
+    cr_run = OxmlElement('w:r')
+    cr_rpr = OxmlElement('w:rPr')
+    cr_style = OxmlElement('w:rStyle')
+    cr_style.set(qn('w:val'), 'CommentReference')
+    cr_rpr.append(cr_style)
+    cr_run.append(cr_rpr)
+    cr_ref = OxmlElement('w:commentReference')
+    cr_ref.set(qn('w:id'), str(comment_id))
+    cr_run.append(cr_ref)
+    p.append(cr_run)
+
+
 class ParagraphInfo:
     """Stores information about a paragraph and its location"""
     def __init__(self, paragraph, index: int, location: str,
@@ -4157,6 +4237,14 @@ Be generous - if content relates to the topic, include it in "found"."""
         self._missing_sections = missing_sections or []
         self._growth_mindset_analysis = growth_mindset_analysis or {}
 
+        # Running counter for Word comment IDs (must be unique integers)
+        comment_id_counter = [0]
+
+        def next_comment_id():
+            cid = comment_id_counter[0]
+            comment_id_counter[0] += 1
+            return cid
+
         # Group issues by location
         para_issues_by_location = {}
         table_issues = {}
@@ -4174,107 +4262,73 @@ Be generous - if content relates to the topic, include it in "found"."""
                     table_issues[issue.table_index] = []
                 table_issues[issue.table_index].append(issue)
 
-        # Mark top-level paragraphs (not in tables) - use inline markers like table cells
+        # Mark top-level paragraphs (not in tables) — highlight + Word comment
         for (table_idx, row_idx, cell_idx), issues_list in para_issues_by_location.items():
             if table_idx is None:
-                # This is a top-level paragraph - find and mark it
                 for issue in issues_list:
                     original_text = issue.para_info.paragraph.text.strip()
 
-                    # Find the matching top-level paragraph
                     for para in marked_doc.paragraphs:
                         para_text = para.text.strip()
 
                         if para_text and (para_text in original_text or original_text in para_text):
-                            # Add inline marker at the end
-                            marker_run = para.add_run(f"  [← {issue.issue_type}]")
-                            marker_run.font.color.rgb = RGBColor(255, 0, 0)
-                            marker_run.bold = True
-                            marker_run.font.size = Pt(9)
-                            marker_run.font.highlight_color = COLOR_ACCESSIBILITY
-
-                            # Highlight the paragraph content
-                            for run in para.runs[:-1]:  # Skip the marker we just added
+                            # Highlight the paragraph
+                            for run in para.runs:
                                 run.font.highlight_color = COLOR_ACCESSIBILITY
 
+                            # Add a Word comment with full issue details
+                            comment_text = f"{issue.issue_type}\n{issue.description}"
+                            _add_word_comment(marked_doc, para, next_comment_id(), comment_text)
                             break
 
-        # Mark paragraphs in table cells - mark each issue inline where it appears
+        # Mark paragraphs in table cells — highlight + Word comment
         for (table_idx, row_idx, cell_idx), issues_list in para_issues_by_location.items():
             if table_idx is not None and table_idx < len(marked_doc.tables):
                 table = marked_doc.tables[table_idx]
                 if row_idx < len(table.rows) and cell_idx < len(table.rows[row_idx].cells):
                     cell = table.rows[row_idx].cells[cell_idx]
 
-                    # For each issue, try to find and mark the specific text
                     for issue in issues_list:
-                        # Get the original text from the issue
                         original_text = issue.para_info.paragraph.text.strip()
 
-                        # Search through cell paragraphs for matching text
                         for para in cell.paragraphs:
                             para_text = para.text.strip()
 
-                            # If this paragraph matches the issue text, mark it
-                            if para_text and para_text in original_text or original_text in para_text:
-                                # Add inline marker at the end of the paragraph
-                                marker_run = para.add_run(f"  [← {issue.issue_type}]")
-                                marker_run.font.color.rgb = RGBColor(255, 0, 0)
-                                marker_run.bold = True
-                                marker_run.font.size = Pt(9)
-                                marker_run.font.highlight_color = COLOR_ACCESSIBILITY
-
-                                # Highlight the paragraph content
-                                for run in para.runs[:-1]:  # Skip the marker we just added
+                            if para_text and (para_text in original_text or original_text in para_text):
+                                # Highlight the paragraph
+                                for run in para.runs:
                                     run.font.highlight_color = COLOR_ACCESSIBILITY
 
-                                break  # Found and marked this issue, move to next
+                                # Add a Word comment with full issue details
+                                comment_text = f"{issue.issue_type}\n{issue.description}"
+                                _add_word_comment(marked_doc, para, next_comment_id(), comment_text)
+                                break
 
-        # Mark tables with issues - GROUP BY TABLE for conciseness
+        # Mark tables with issues — one comment on the first cell per table
         for table_idx, issues_list in table_issues.items():
             if table_idx < len(marked_doc.tables):
                 table = marked_doc.tables[table_idx]
 
-                # Add marker in the first cell
                 if table.rows and table.rows[0].cells:
                     first_cell = table.rows[0].cells[0]
 
-                    # Group issues by type to avoid repetition
+                    # Group by type to build a concise comment
                     issue_summary = {}
                     for issue in issues_list:
-                        issue_type = issue.issue_type
-                        if issue_type not in issue_summary:
-                            issue_summary[issue_type] = []
-                        issue_summary[issue_type].append(issue.description)
+                        issue_summary.setdefault(issue.issue_type, []).append(issue.description)
 
-                    # Create a single concise marker for all table issues
                     issue_count = len(issues_list)
-                    issue_types_str = ", ".join(issue_summary.keys())
-
-                    # Create summary text
                     if issue_count == 1:
-                        summary_text = f"*** TABLE ISSUE: {issues_list[0].description} ***"
+                        comment_text = f"TABLE ISSUE\n{issues_list[0].issue_type}: {issues_list[0].description}"
                     else:
-                        summary_text = f"*** TABLE HAS {issue_count} ISSUES ({issue_types_str}) ***"
-                        # Add details for unique issue types
-                        for issue_type, descriptions in issue_summary.items():
-                            # Only show first description for each type to avoid repetition
-                            summary_text += f"\n  • {issue_type}: {descriptions[0]}"
-                            if len(descriptions) > 1:
-                                summary_text += f" (+{len(descriptions)-1} more)"
+                        lines = [f"TABLE HAS {issue_count} ISSUES:"]
+                        for itype, descs in issue_summary.items():
+                            extra = f" (+{len(descs)-1} more)" if len(descs) > 1 else ""
+                            lines.append(f"{itype}: {descs[0]}{extra}")
+                        comment_text = '\n'.join(lines)
 
-                    if first_cell.paragraphs:
-                        first_para = first_cell.paragraphs[0]
-                        marker_para = first_para.insert_paragraph_before(summary_text)
-                    else:
-                        marker_para = first_cell.add_paragraph(summary_text)
-
-                    # Format the marker
-                    for run in marker_para.runs:
-                        run.font.color.rgb = RGBColor(255, 0, 0)
-                        run.bold = True
-                        run.font.size = Pt(11)
-                        run.font.highlight_color = COLOR_ACCESSIBILITY
+                    anchor_para = first_cell.paragraphs[0] if first_cell.paragraphs else first_cell.add_paragraph()
+                    _add_word_comment(marked_doc, anchor_para, next_comment_id(), comment_text)
 
         # Helper function to find a section in the document by heading keywords
         def find_section_by_keywords(keywords):
