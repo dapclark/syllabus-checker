@@ -353,7 +353,7 @@ class SyllabusChecker:
         return f"This section helps students understand {section_name.lower()}."
 
     def _get_all_paragraphs(self) -> List[ParagraphInfo]:
-        """Extract ALL paragraphs from document, including those inside table cells"""
+        """Extract ALL paragraphs from document, including those inside table cells and nested tables"""
         all_paras = []
         global_index = 0
 
@@ -367,21 +367,35 @@ class SyllabusChecker:
             all_paras.append(para_info)
             global_index += 1
 
-        # Get paragraphs from within tables
-        for table_idx, table in enumerate(self.target_doc.tables):
+        # Get paragraphs from within tables (including nested tables)
+        w_ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+
+        def process_table(table, table_idx, depth=0):
+            nonlocal global_index
             for row_idx, row in enumerate(table.rows):
                 for cell_idx, cell in enumerate(row.cells):
                     for para in cell.paragraphs:
+                        location = f"Table {table_idx + 1}, Row {row_idx + 1}, Cell {cell_idx + 1}"
+                        if depth > 0:
+                            location = f"Nested {location}"
                         para_info = ParagraphInfo(
                             paragraph=para,
                             index=global_index,
-                            location=f"Table {table_idx + 1}, Row {row_idx + 1}, Cell {cell_idx + 1}",
+                            location=location,
                             table_idx=table_idx,
                             row_idx=row_idx,
                             cell_idx=cell_idx
                         )
                         all_paras.append(para_info)
                         global_index += 1
+                    # Recurse into any nested tables within this cell
+                    for nested_tbl_xml in cell._tc.findall(f'./{{{w_ns}}}tbl'):
+                        from docx.table import Table as DocxTable
+                        nested = DocxTable(nested_tbl_xml, table._parent)
+                        process_table(nested, table_idx, depth + 1)
+
+        for table_idx, table in enumerate(self.target_doc.tables):
+            process_table(table, table_idx)
 
         return all_paras
 
@@ -587,7 +601,7 @@ class SyllabusChecker:
         return nearest_heading
 
     def _extract_sections(self, doc: Document) -> List[Dict]:
-        """Extract headings and their content from document (including tables)"""
+        """Extract headings and their content from document (including tables and nested tables)"""
         sections = []
 
         # Check top-level paragraphs
@@ -601,19 +615,32 @@ class SyllabusChecker:
                     'location': 'top-level'
                 })
 
-        # Check paragraphs in tables
-        for table_idx, table in enumerate(doc.tables):
+        # Check paragraphs in tables (including nested tables)
+        w_ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+
+        def process_table(table, table_idx, depth=0):
             for row_idx, row in enumerate(table.rows):
                 for cell_idx, cell in enumerate(row.cells):
                     for para in cell.paragraphs:
                         if para.style.name.startswith('Heading'):
                             level = int(para.style.name.split()[-1])
+                            location = f'Table {table_idx + 1}, Row {row_idx + 1}, Cell {cell_idx + 1}'
+                            if depth > 0:
+                                location = f'Nested {location}'
                             sections.append({
                                 'text': para.text.strip(),
                                 'level': level,
                                 'style': para.style.name,
-                                'location': f'Table {table_idx + 1}, Row {row_idx + 1}, Cell {cell_idx + 1}'
+                                'location': location
                             })
+                    # Recurse into any nested tables within this cell
+                    for nested_tbl_xml in cell._tc.findall(f'./{{{w_ns}}}tbl'):
+                        from docx.table import Table as DocxTable
+                        nested = DocxTable(nested_tbl_xml, table._parent)
+                        process_table(nested, table_idx, depth + 1)
+
+        for table_idx, table in enumerate(doc.tables):
+            process_table(table, table_idx)
 
         return sections
 
@@ -1132,11 +1159,24 @@ Be generous - if content relates to the topic, include it in "found"."""
             if section not in all_checked and section not in detected_types:
                 # Check if this is a pattern-detectable item that just wasn't found
                 if section not in llm_content_types:
-                    missing.append({
-                        'content_type': section,
-                        'description': self._get_section_description(section),
-                        'recommendation': f'Add a "{section}" section to your syllabus'
-                    })
+                    # Fall back to keyword matching before declaring missing — prevents false
+                    # positives when pattern detection uses a different key name (e.g.
+                    # 'Instructor' vs 'Instructor Name & Contact') or the content lives in
+                    # a nested table that pattern detection already handled via XML.
+                    search_terms = self.REQUIRED_SECTIONS.get(section, [])
+                    if self._find_section(section, search_terms, self.target_sections):
+                        all_present.append({
+                            'content_type': section,
+                            'found': 'Detected via keyword matching',
+                            'heading_ok': True,
+                            'standard_heading': section
+                        })
+                    else:
+                        missing.append({
+                            'content_type': section,
+                            'description': self._get_section_description(section),
+                            'recommendation': f'Add a "{section}" section to your syllabus'
+                        })
 
         return {
             'present': all_present,
