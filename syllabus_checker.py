@@ -3740,16 +3740,23 @@ Be generous - if content relates to the topic, include it in "found"."""
                     )
                     issues.append(issue)
 
-                # Flag excessive italic (>50%)
+                # Flag excessive italic (>50%), but skip paragraphs where every
+                # italic run is short (≤50 chars) — those are almost certainly
+                # inline titles (books, journals) rather than problematic emphasis.
                 if italic_ratio > 0.5:
-                    preview = text[:60] + "..." if len(text) > 60 else text
-                    issue = AccessibilityIssue(
-                        issue_type="EXCESSIVE_ITALIC",
-                        description=f"Paragraph has {int(italic_ratio*100)}% italic text. If this is a heading or section title, use a Heading style instead. If intended for emphasis, use italics more selectively (large blocks of italic text are harder to read): \"{preview}\"",
-                        location=para_info.location,
-                        para_info=para_info
+                    longest_italic_run = max(
+                        (len(r.text) for r in para.runs if r.italic and r.text),
+                        default=0
                     )
-                    issues.append(issue)
+                    if longest_italic_run > 50:
+                        preview = text[:60] + "..." if len(text) > 60 else text
+                        issue = AccessibilityIssue(
+                            issue_type="EXCESSIVE_ITALIC",
+                            description=f"Paragraph has {int(italic_ratio*100)}% italic text. If this is a heading or section title, use a Heading style instead. If intended for emphasis, use italics more selectively (large blocks of italic text are harder to read): \"{preview}\"",
+                            location=para_info.location,
+                            para_info=para_info
+                        )
+                        issues.append(issue)
 
                 # Flag excessive underline (>30%) - lower threshold since underline should be rare
                 if underline_ratio > 0.3:
