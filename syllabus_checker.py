@@ -813,8 +813,11 @@ class SyllabusChecker:
                     }
                     break
 
-        # Grading Scale - look for letter grade patterns (A=93, A-=90, etc.)
-        grade_pattern = re.search(r'[AB][+-]?\s*[=:]\s*\d{2}', full_text)
+        # Grading Scale - look for letter grade patterns.
+        # Matches inline format (A=93, A-:90) or table-cell format where the letter
+        # grade and number land in separate cells and are joined by whitespace (A 93).
+        # Restrict table-format match to 60-99 to avoid false positives with point values.
+        grade_pattern = re.search(r'[A-F][+-]?\s*[=:]\s*\d{2}|[A-F][+-]?\s+[6-9]\d\b', full_text)
         if grade_pattern:
             idx = grade_pattern.start()
             snippet = full_text[max(0, idx-20):idx+100]
