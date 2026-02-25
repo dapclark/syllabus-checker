@@ -3763,7 +3763,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                     preview = text[:60] + "..." if len(text) > 60 else text
                     issue = AccessibilityIssue(
                         issue_type="EXCESSIVE_UNDERLINE",
-                        description=f"Paragraph has {int(underline_ratio*100)}% underlined text (reserve underline for links): \"{preview}\"",
+                        description=f"Paragraph has {int(underline_ratio*100)}% underlined text. In digital documents, underlining signals a hyperlink — readers may try to click it. Use bold or italic for emphasis instead: \"{preview}\"",
                         location=para_info.location,
                         para_info=para_info
                     )
