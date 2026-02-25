@@ -1323,7 +1323,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                 issue = AccessibilityIssue(
                     issue_type=f"SHOULD BE HEADING {recommended_level}",
-                    description=f"Text appears to be a heading ({', '.join(reasons)}): \"{text[:60]}...\"",
+                    description=f"Text appears to be a heading ({', '.join(reasons)}) but uses manual formatting instead of a Heading style. Apply Heading {recommended_level} from the Styles panel (Home tab) so screen readers and navigation tools can recognize it: \"{text[:60]}...\"",
                     location=para_info.location,
                     para_info=para_info
                 )
@@ -1491,7 +1491,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                 issue = AccessibilityIssue(
                     issue_type="TABLE_NO_HEADER",
-                    description=f"Table {i+1} ({preview}) — no header row designated",
+                    description=f"Table {i+1} ({preview}) — no header row designated. Select the first row, then check 'Repeat Header Rows' under Table Layout > Properties so assistive technology knows which row is the header.",
                     location=f"Table {i+1}",
                     table_index=i
                 )
@@ -1663,7 +1663,7 @@ Be generous - if content relates to the topic, include it in "found"."""
         if first_h1_index is not None and first_h1_index > 10:
             issue = AccessibilityIssue(
                 issue_type="H1_NOT_AT_TOP",
-                description=f"First Heading 1 appears at paragraph {first_h1_index + 1}. The main title should appear near the top of the document.",
+                description=f"First Heading 1 appears at paragraph {first_h1_index + 1}. Move it or add a Heading 1 near the top so readers and screen readers immediately recognize the document title.",
                 location="Document start",
                 para_info=None
             )
@@ -1673,7 +1673,7 @@ Be generous - if content relates to the topic, include it in "found"."""
         if h1_count > 1:
             issue = AccessibilityIssue(
                 issue_type="MULTIPLE_H1",
-                description=f"Document has {h1_count} Heading 1 elements. Best practice is to have a single H1 as the main title, with H2s for major sections.",
+                description=f"Document has {h1_count} Heading 1 elements. Keep one Heading 1 as the main title and convert the rest to Heading 2 (for major sections) or lower.",
                 location="Throughout document",
                 para_info=None
             )
@@ -1953,7 +1953,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                 issue = AccessibilityIssue(
                     issue_type="PSEUDO_TABLE",
-                    description=f"Uses {' and '.join(reasons)}: \"{preview}\"",
+                    description=f"Uses {' and '.join(reasons)} to simulate a table. Replace with an actual Word table (Insert > Table) so screen readers can navigate rows and columns properly: \"{preview}\"",
                     location=para_info.location,
                     para_info=para_info
                 )
@@ -1983,7 +1983,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                         issue = AccessibilityIssue(
                             issue_type="SMALL_FONT",
-                            description=f"Font size {run.font.size.pt}pt (minimum 11pt): \"{preview}\"",
+                            description=f"Font size {run.font.size.pt}pt is below the 11pt minimum. Increase it to at least 11pt for readability: \"{preview}\"",
                             location=para_info.location,
                             para_info=para_info
                         )
@@ -2483,7 +2483,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                 if all_empty:
                     issue = AccessibilityIssue(
                         issue_type="EMPTY_TABLE_ROW",
-                        description=f"Table {table_idx + 1}, Row {row_idx + 1} — empty row used for spacing",
+                        description=f"Table {table_idx + 1}, Row {row_idx + 1} — empty row used for spacing. Delete the row and use cell padding or paragraph spacing for visual spacing instead (Table Properties > Cell > Options).",
                         location=f"Table {table_idx + 1}, Row {row_idx + 1}",
                         table_index=table_idx
                     )
@@ -2506,7 +2506,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                     if all_empty:
                         issue = AccessibilityIssue(
                             issue_type="EMPTY_TABLE_COLUMN",
-                            description=f"Table {table_idx + 1}, Column {col_idx + 1} — empty column used for spacing",
+                            description=f"Table {table_idx + 1}, Column {col_idx + 1} — empty column used for spacing. Delete the column and use cell padding for visual spacing instead (Table Properties > Cell > Options).",
                             location=f"Table {table_idx + 1}, Column {col_idx + 1}",
                             table_index=table_idx
                         )
@@ -2546,7 +2546,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                 header_preview = " | ".join([cell.text.strip()[:20] for cell in table.rows[0].cells[:4]])
                 issue = AccessibilityIssue(
                     issue_type="TABLE_MISSING_SCOPE",
-                    description=f"Table {table_idx + 1} ({header_preview}) — header row not marked as repeating",
+                    description=f"Table {table_idx + 1} ({header_preview}) — header row not marked as repeating. Select the header row, then enable 'Repeat Header Rows' under Table Layout > Properties so it repeats across pages and assistive technology identifies it correctly.",
                     location=f"Table {table_idx + 1}",
                     table_index=table_idx
                 )
@@ -2595,7 +2595,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                 issue = AccessibilityIssue(
                     issue_type="TABLE_MISSING_CAPTION",
-                    description=f"Table {table_idx + 1} ({preview}) — missing caption/description in Alt Text",
+                    description=f"Table {table_idx + 1} ({preview}) — missing Alt Text description. Right-click the table, choose Table Properties > Alt Text, and add a brief description of what the table shows.",
                     location=f"Table {table_idx + 1}",
                     table_index=table_idx
                 )
@@ -2642,7 +2642,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                 issue = AccessibilityIssue(
                     issue_type="TABLE_MERGED_CELLS",
-                    description=f"Table {table_idx + 1} — merged cells at {locations_str}",
+                    description=f"Table {table_idx + 1} — merged cells at {locations_str}. Merged cells disrupt screen reader reading order. Unmerge where possible and restructure the table so each row and column has a consistent number of cells.",
                     location=f"Table {table_idx + 1}",
                     table_index=table_idx
                 )
@@ -2705,7 +2705,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                     if len(set(alignments)) > 1:
                         issue = AccessibilityIssue(
                             issue_type="TABLE_INCONSISTENT_NUMERIC_ALIGNMENT",
-                            description=f"Table {table_idx + 1}, Column {col_idx + 1} — numbers have {len(set(alignments))} different alignments",
+                            description=f"Table {table_idx + 1}, Column {col_idx + 1} — numbers have {len(set(alignments))} different alignments. Align all numeric cells consistently (right-align is standard for numbers) by selecting the column and setting alignment in the Home tab.",
                             location=f"Table {table_idx + 1}, Column {col_idx + 1}",
                             table_index=table_idx
                         )
@@ -3129,7 +3129,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                         issue = AccessibilityIssue(
                             issue_type="UNDERLINE_NON_LINK",
-                            description=f"Underlined text that is not a hyperlink: \"{preview}\"",
+                            description=f"Underlined text that is not a hyperlink — readers may try to click it. Use bold or italic for emphasis instead, and reserve underline for actual links: \"{preview}\"",
                             location=para_info.location,
                             para_info=para_info
                         )
@@ -3165,7 +3165,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                         issue = AccessibilityIssue(
                             issue_type="LOW_LINE_SPACING",
-                            description=f"Line spacing {spacing_value:.2f} (minimum 1.15): \"{preview}\"",
+                            description=f"Line spacing {spacing_value:.2f} is below the 1.15 minimum for readability. Increase it via Home > Line and Paragraph Spacing (or Paragraph Settings > Line Spacing): \"{preview}\"",
                             location=para_info.location,
                             para_info=para_info
                         )
@@ -3191,7 +3191,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                 issue = AccessibilityIssue(
                     issue_type="FULL_JUSTIFICATION",
-                    description=f"Text is fully justified (harder to read): \"{preview}\"",
+                    description=f"Text is fully justified, which creates uneven word spacing that is harder to read. Change alignment to left-aligned (Home > Align Left or Ctrl+L): \"{preview}\"",
                     location=para_info.location,
                     para_info=para_info
                 )
@@ -3229,7 +3229,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                     issue = AccessibilityIssue(
                         issue_type="ALL_CAPS_BLOCK",
-                        description=f"Large block of ALL CAPS text (hard to read): \"{preview}\"",
+                        description=f"Large block of ALL CAPS text, which is harder to read and can be misread by some screen readers. Convert to sentence or title case and use bold for emphasis if needed: \"{preview}\"",
                         location=para_info.location,
                         para_info=para_info
                     )
@@ -3282,7 +3282,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                         issue = AccessibilityIssue(
                             issue_type="NON_DESCRIPTIVE_LINK",
-                            description=f"Link text '{run_text}' is not descriptive: \"{preview}\"",
+                            description=f"Link text '{run_text}' is not descriptive — screen reader users who navigate by links won't know where it goes. Replace with text that describes the destination, e.g. 'Course Schedule (PDF)' or 'UWM Writing Center': \"{preview}\"",
                             location=para_info.location,
                             para_info=para_info
                         )
@@ -3345,7 +3345,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                         issue = AccessibilityIssue(
                             issue_type="UNSTYLED_LINK",
-                            description=f"Link styled as normal text (no underline or color): \"{preview}\"",
+                            description=f"Link is styled as normal text with no underline or color, so readers can't tell it's clickable. Apply the built-in 'Hyperlink' character style, or manually add underline and a blue color: \"{preview}\"",
                             location=para_info.location,
                             para_info=para_info
                         )
@@ -3486,7 +3486,7 @@ Be generous - if content relates to the topic, include it in "found"."""
             if not has_toc:
                 issue = AccessibilityIssue(
                     issue_type="MISSING_TOC",
-                    description=f"Long document (~{int(num_pages_estimate)} pages, {num_paragraphs} paragraphs) is missing a Table of Contents for navigation",
+                    description=f"Long document (~{int(num_pages_estimate)} pages, {num_paragraphs} paragraphs) is missing a Table of Contents. Add one via References > Table of Contents so readers can jump directly to sections.",
                     location="Document structure"
                 )
                 issues.append(issue)
@@ -3535,7 +3535,7 @@ Be generous - if content relates to the topic, include it in "found"."""
         if is_long_document and named_bookmarks == 0 and internal_link_count == 0:
             issue = AccessibilityIssue(
                 issue_type="MISSING_BOOKMARKS",
-                description=f"Long document ({num_paragraphs} paragraphs) lacks internal bookmarks or navigation links (consider adding bookmarks for major sections)",
+                description=f"Long document ({num_paragraphs} paragraphs) lacks internal bookmarks or navigation links. Add bookmarks to major sections (Insert > Bookmark) and link to them so readers can jump around without scrolling.",
                 location="Document structure"
             )
             issues.append(issue)
@@ -3573,7 +3573,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                 if list_started and level > prev_level + 1:
                     issue = AccessibilityIssue(
                         issue_type="INCONSISTENT_LIST_HIERARCHY",
-                        description=f"List skips from level {prev_level} to level {level} (should increment by 1). Text: \"{para.text[:50]}...\"",
+                        description=f"List jumps from level {prev_level} to level {level}, skipping a level. Change the indentation to increment by one level at a time using the Increase Indent button or Tab key within the list. Text: \"{para.text[:50]}...\"",
                         location=para_info.location,
                         para_info=para_info
                     )
@@ -3628,7 +3628,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                 if avg_length > 0 and std_dev / avg_length > 2 and max(lengths) > 300:
                     issue = AccessibilityIssue(
                         issue_type="LAYOUT_LIST",
-                        description=f"List with inconsistent item lengths (may be used for layout). Items: {len(list_group)}",
+                        description=f"List with highly inconsistent item lengths — this may be using a list style for visual layout rather than actual list content. If it's a list, edit items for consistent length. If it's layout, replace with a table or paragraph spacing instead.",
                         location=list_group[0].location,
                         para_info=list_group[0]
                     )
@@ -3668,7 +3668,7 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                     issue = AccessibilityIssue(
                         issue_type="LONG_SENTENCE",
-                        description=f"Sentence has {word_count} words (>50 recommended): \"{preview}\"",
+                        description=f"Sentence has {word_count} words, which is harder to follow. Break it into two or more shorter sentences: \"{preview}\"",
                         location=para_info.location,
                         para_info=para_info
                     )
@@ -3775,7 +3775,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                     preview = text[:60] + "..." if len(text) > 60 else text
                     issue = AccessibilityIssue(
                         issue_type="INCONSISTENT_FORMATTING",
-                        description=f"Paragraph has inconsistent formatting ({formatting_switches} format changes): \"{preview}\"",
+                        description=f"Paragraph has inconsistent formatting ({formatting_switches} format changes). Pick one emphasis style (bold or italic) and apply it consistently — avoid switching between multiple styles within the same paragraph: \"{preview}\"",
                         location=para_info.location,
                         para_info=para_info
                     )
