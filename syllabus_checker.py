@@ -4173,6 +4173,10 @@ Be generous - if content relates to the topic, include it in "found"."""
             if re.search(r'\b(chapter|page|pp?\.?)\s*\d+\s*[-–]\s*\d+\b', text, re.IGNORECASE):
                 continue
 
+            # Remove phone numbers before checking math patterns so that
+            # NXX-NXX-XXXX formats don't look like arithmetic chains.
+            text = re.sub(r'\(?\d{3}\)?[\s.\-]\d{3}[\s.\-]\d{4}', '', text)
+
             is_math = False
 
             # Check for variable equations: x = 2 + 3
