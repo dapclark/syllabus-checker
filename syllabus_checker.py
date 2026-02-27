@@ -4281,12 +4281,12 @@ Be generous - if content relates to the topic, include it in "found"."""
         plus sections for missing required content and growth mindset recommendations"""
         marked_doc = Document(self.target_path)
 
-        # Color coding by area — matches the web UI color scheme as closely as
-        # Word's limited highlight palette allows.
-        COLOR_ACCESSIBILITY = WD_COLOR_INDEX.TEAL          # UI: #035056 dark teal
-        COLOR_MISSING       = WD_COLOR_INDEX.DARK_YELLOW   # UI: #F79651 orange (amber is closest)
-        COLOR_TONE          = WD_COLOR_INDEX.DARK_BLUE     # UI: #14364D dark navy
-        COLOR_QUALITY       = WD_COLOR_INDEX.YELLOW        # UI: #CFD25B yellow-green
+        # Color coding by area — all chosen for readability with black text using
+        # UWM brand palette approximations within Word's limited highlight set.
+        COLOR_ACCESSIBILITY = WD_COLOR_INDEX.TURQUOISE     # UI: #035056 → approx UWM Aqua #4CC0B0
+        COLOR_MISSING       = WD_COLOR_INDEX.YELLOW        # UI: #F79651 → UWM Gold family, most visible
+        COLOR_TONE          = WD_COLOR_INDEX.PINK          # UI: #14364D → no light blue in Word; PINK is readable
+        COLOR_QUALITY       = WD_COLOR_INDEX.BRIGHT_GREEN  # UI: #CFD25B → UWM Lime family
 
         # Store parameters for later use
         self._missing_sections = missing_sections or []
