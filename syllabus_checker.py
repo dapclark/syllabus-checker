@@ -14,7 +14,6 @@ import os
 from typing import List, Dict, Tuple, Optional
 from docx import Document
 from docx.shared import RGBColor, Pt
-from docx.enum.text import WD_COLOR_INDEX
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from openai import OpenAI
@@ -4281,12 +4280,32 @@ Be generous - if content relates to the topic, include it in "found"."""
         plus sections for missing required content and growth mindset recommendations"""
         marked_doc = Document(self.target_path)
 
-        # Color coding by area — all chosen for readability with black text using
-        # UWM brand palette approximations within Word's limited highlight set.
-        COLOR_ACCESSIBILITY = WD_COLOR_INDEX.TURQUOISE     # UI: #035056 → approx UWM Aqua #4CC0B0
-        COLOR_MISSING       = WD_COLOR_INDEX.YELLOW        # UI: #F79651 → UWM Gold family, most visible
-        COLOR_TONE          = WD_COLOR_INDEX.PINK          # UI: #14364D → no light blue in Word; PINK is readable
-        COLOR_QUALITY       = WD_COLOR_INDEX.BRIGHT_GREEN  # UI: #CFD25B → UWM Lime family
+        # UWM brand colors for each area — used as paragraph background shading
+        # on section headings, so we can use the exact brand hex values without
+        # worrying about Word's limited highlight palette.
+        COLOR_ACCESSIBILITY_HEX  = '035056'   # dark teal  — white text
+        COLOR_MISSING_HEX        = 'F79651'   # orange     — black text
+        COLOR_TONE_HEX           = '14364D'   # dark navy  — white text
+        COLOR_QUALITY_HEX        = 'CFD25B'   # lime       — black text
+
+        COLOR_ACCESSIBILITY_TEXT = RGBColor(255, 255, 255)
+        COLOR_MISSING_TEXT       = RGBColor(0,   0,   0)
+        COLOR_TONE_TEXT          = RGBColor(255, 255, 255)
+        COLOR_QUALITY_TEXT       = RGBColor(0,   0,   0)
+
+        def shade_paragraph(para, hex_color):
+            """Apply a solid background fill to a paragraph using XML shading."""
+            from docx.oxml.ns import qn as _qn
+            from docx.oxml import OxmlElement
+            pPr = para._p.get_or_add_pPr()
+            existing = pPr.find(_qn('w:shd'))
+            if existing is not None:
+                pPr.remove(existing)
+            shd = OxmlElement('w:shd')
+            shd.set(_qn('w:val'),   'clear')
+            shd.set(_qn('w:color'), 'auto')
+            shd.set(_qn('w:fill'),  hex_color.upper())
+            pPr.append(shd)
 
         # Store parameters for later use
         self._missing_sections = missing_sections or []
@@ -4327,16 +4346,13 @@ Be generous - if content relates to the topic, include it in "found"."""
                         para_text = para.text.strip()
 
                         if para_text and (para_text in original_text or original_text in para_text):
-                            # Highlight the paragraph
-                            for run in para.runs:
-                                run.font.highlight_color = COLOR_ACCESSIBILITY
-
-                            # Add a Word comment with full issue details
+                            # Add a Word comment — the speech-bubble annotation is
+                            # sufficient to mark the issue; no body-text highlight needed.
                             comment_text = f"{issue.issue_type}\n{issue.description}"
                             _add_word_comment(marked_doc, para, next_comment_id(), comment_text)
                             break
 
-        # Mark paragraphs in table cells — highlight + Word comment
+        # Mark paragraphs in table cells — Word comment only
         for (table_idx, row_idx, cell_idx), issues_list in para_issues_by_location.items():
             if table_idx is not None and table_idx < len(marked_doc.tables):
                 table = marked_doc.tables[table_idx]
@@ -4350,11 +4366,6 @@ Be generous - if content relates to the topic, include it in "found"."""
                             para_text = para.text.strip()
 
                             if para_text and (para_text in original_text or original_text in para_text):
-                                # Highlight the paragraph
-                                for run in para.runs:
-                                    run.font.highlight_color = COLOR_ACCESSIBILITY
-
-                                # Add a Word comment with full issue details
                                 comment_text = f"{issue.issue_type}\n{issue.description}"
                                 _add_word_comment(marked_doc, para, next_comment_id(), comment_text)
                                 break
@@ -4403,13 +4414,13 @@ Be generous - if content relates to the topic, include it in "found"."""
             for section in self._missing_sections:
                 marked_doc.add_paragraph()  # Blank line
 
-                # Add section heading in red
+                # Add section heading with UWM orange background
                 heading_para = marked_doc.add_paragraph()
-                heading_run = heading_para.add_run(f"[MISSING SECTION] {section}")
+                heading_run = heading_para.add_run(f"  MISSING SECTION: {section}  ")
                 heading_run.bold = True
                 heading_run.font.size = Pt(14)
-                heading_run.font.color.rgb = RGBColor(255, 0, 0)
-                heading_run.font.highlight_color = COLOR_MISSING
+                heading_run.font.color.rgb = COLOR_MISSING_TEXT
+                shade_paragraph(heading_para, COLOR_MISSING_HEX)
 
                 # Add placeholder text
                 placeholder_para = marked_doc.add_paragraph()
@@ -4419,7 +4430,6 @@ Be generous - if content relates to the topic, include it in "found"."""
                 )
                 placeholder_run.font.size = Pt(11)
                 placeholder_run.italic = True
-                placeholder_run.font.color.rgb = RGBColor(150, 0, 0)
 
         # Insert growth mindset recommendations directly into relevant sections
         if self._growth_mindset_analysis.get('status') == 'success' and 'analysis' in self._growth_mindset_analysis:
@@ -4505,7 +4515,6 @@ Be generous - if content relates to the topic, include it in "found"."""
                         text_para = next_para.insert_paragraph_before(rec['text'])
                         text_run = text_para.runs[0]
                         text_run.font.size = Pt(11)
-                        text_run.font.highlight_color = COLOR_TONE
 
                         # Insert placement guidance
                         where_para = next_para.insert_paragraph_before(f"Recommended placement: {rec['where']}")
@@ -4514,13 +4523,13 @@ Be generous - if content relates to the topic, include it in "found"."""
                         where_run.italic = True
                         where_run.font.color.rgb = RGBColor(100, 100, 100)
 
-                        # Insert marker
-                        marker_para = next_para.insert_paragraph_before(f"[SUGGESTED TEXT - {rec['title']}]")
+                        # Insert marker with UWM navy background
+                        marker_para = next_para.insert_paragraph_before(f"  SUGGESTED TEXT — {rec['title']}  ")
                         marker_run = marker_para.runs[0]
                         marker_run.bold = True
                         marker_run.font.size = Pt(11)
-                        marker_run.font.color.rgb = RGBColor(13, 110, 253)
-                        marker_run.font.highlight_color = COLOR_TONE
+                        marker_run.font.color.rgb = COLOR_TONE_TEXT
+                        shade_paragraph(marker_para, COLOR_TONE_HEX)
 
                         # Insert blank line after all the inserted content
                         next_para.insert_paragraph_before("")
@@ -4531,13 +4540,13 @@ Be generous - if content relates to the topic, include it in "found"."""
                 # Add a blank line
                 marked_doc.add_paragraph()
 
-                # Add marker
+                # Add marker with UWM navy background
                 marker_para = marked_doc.add_paragraph()
-                marker_run = marker_para.add_run(f"[SUGGESTED TEXT - {rec['title']}]")
+                marker_run = marker_para.add_run(f"  SUGGESTED TEXT — {rec['title']}  ")
                 marker_run.bold = True
                 marker_run.font.size = Pt(11)
-                marker_run.font.color.rgb = RGBColor(13, 110, 253)
-                marker_run.font.highlight_color = COLOR_TONE
+                marker_run.font.color.rgb = COLOR_TONE_TEXT
+                shade_paragraph(marker_para, COLOR_TONE_HEX)
 
                 # Add placement guidance
                 where_para = marked_doc.add_paragraph()
@@ -4550,7 +4559,6 @@ Be generous - if content relates to the topic, include it in "found"."""
                 text_para = marked_doc.add_paragraph()
                 text_run = text_para.add_run(rec['text'])
                 text_run.font.size = Pt(11)
-                text_run.font.highlight_color = COLOR_TONE
 
                 # Blank line
                 marked_doc.add_paragraph()
@@ -4561,13 +4569,13 @@ Be generous - if content relates to the topic, include it in "found"."""
             if analysis_text:
                 marked_doc.add_paragraph()
 
-                # Section header
+                # Section header with UWM lime background
                 header_para = marked_doc.add_paragraph()
-                header_run = header_para.add_run("[CLARITY & QUALITY SUGGESTIONS]")
+                header_run = header_para.add_run("  CLARITY & QUALITY SUGGESTIONS  ")
                 header_run.bold = True
                 header_run.font.size = Pt(14)
-                header_run.font.color.rgb = RGBColor(90, 80, 0)
-                header_run.font.highlight_color = COLOR_QUALITY
+                header_run.font.color.rgb = COLOR_QUALITY_TEXT
+                shade_paragraph(header_para, COLOR_QUALITY_HEX)
 
                 subtitle_para = marked_doc.add_paragraph()
                 sub_run = subtitle_para.add_run(
@@ -4587,14 +4595,14 @@ Be generous - if content relates to the topic, include it in "found"."""
                     para = marked_doc.add_paragraph()
 
                     if line.startswith('## '):
-                        # Sub-section heading
-                        run = para.add_run(line[3:].strip())
+                        # Sub-section heading with UWM lime background
+                        run = para.add_run(f"  {line[3:].strip()}  ")
                         run.bold = True
                         run.font.size = Pt(12)
-                        run.font.highlight_color = COLOR_QUALITY
-                        run.font.color.rgb = RGBColor(80, 70, 0)
+                        run.font.color.rgb = COLOR_QUALITY_TEXT
+                        shade_paragraph(para, COLOR_QUALITY_HEX)
                     elif line.startswith('✓'):
-                        # All-clear line — no highlight, green text
+                        # All-clear line — green text, no background
                         run = para.add_run(line)
                         run.font.size = Pt(11)
                         run.font.color.rgb = RGBColor(0, 120, 0)
@@ -4609,7 +4617,6 @@ Be generous - if content relates to the topic, include it in "found"."""
                             text = line
                         run = para.add_run(text)
                         run.font.size = Pt(11)
-                        run.font.highlight_color = COLOR_QUALITY
 
         marked_doc.save(output_path)
 
