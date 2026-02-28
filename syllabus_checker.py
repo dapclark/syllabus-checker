@@ -4293,6 +4293,20 @@ Be generous - if content relates to the topic, include it in "found"."""
         COLOR_TONE_TEXT          = RGBColor(255, 255, 255)
         COLOR_QUALITY_TEXT       = RGBColor(0,   0,   0)
 
+        def add_markdown_runs(para, text, font_size=11, base_color=None):
+            """Split text on **...** markers and add runs with proper bold formatting."""
+            import re
+            parts = re.split(r'\*\*', text)
+            for i, part in enumerate(parts):
+                if not part:
+                    continue
+                run = para.add_run(part)
+                run.font.size = Pt(font_size)
+                if i % 2 == 1:   # odd index → inside ** ** → bold
+                    run.bold = True
+                if base_color:
+                    run.font.color.rgb = base_color
+
         def shade_paragraph(para, hex_color):
             """Apply a solid background fill to a paragraph using XML shading."""
             from docx.oxml.ns import qn as _qn
@@ -4603,20 +4617,18 @@ Be generous - if content relates to the topic, include it in "found"."""
                         shade_paragraph(para, COLOR_QUALITY_HEX)
                     elif line.startswith('✓'):
                         # All-clear line — green text, no background
-                        run = para.add_run(line)
-                        run.font.size = Pt(11)
-                        run.font.color.rgb = RGBColor(0, 120, 0)
+                        add_markdown_runs(para, line, base_color=RGBColor(0, 120, 0))
                     else:
-                        # Content line — strip leading markdown bullets, preserve indentation
-                        if line.startswith('    - '):
-                            text = '    • ' + line[6:]
+                        # Content line — convert markdown bullets to Word indented bullets
+                        if line.startswith('    - ') or line.startswith('    • '):
+                            prefix = '    \u2022 '
+                            text = prefix + line[6:]
                             para.paragraph_format.left_indent = Pt(18)
-                        elif line.startswith('- '):
-                            text = '• ' + line[2:]
+                        elif line.startswith('- ') or line.startswith('• '):
+                            text = '\u2022 ' + line[2:]
                         else:
                             text = line
-                        run = para.add_run(text)
-                        run.font.size = Pt(11)
+                        add_markdown_runs(para, text)
 
         marked_doc.save(output_path)
 
