@@ -4634,13 +4634,22 @@ Be generous - if content relates to the topic, include it in "found"."""
                         # All-clear line — green text, no background
                         add_markdown_runs(para, line, base_color=RGBColor(0, 120, 0))
                     else:
-                        # Content line — use Word list styles for proper bullet alignment
+                        # Content line — use Word list styles for proper bullet alignment,
+                        # falling back to manual indent if the style isn't in this document.
                         if line.startswith('    - ') or line.startswith('    • '):
-                            para.style = marked_doc.styles['List Bullet 2']
-                            text = line[6:]
+                            try:
+                                para.style = marked_doc.styles['List Bullet 2']
+                            except KeyError:
+                                para.paragraph_format.left_indent = Pt(36)
+                                para.paragraph_format.first_line_indent = Pt(-18)
+                            text = '\u2022 ' + line[6:]
                         elif line.startswith('- ') or line.startswith('• '):
-                            para.style = marked_doc.styles['List Bullet']
-                            text = line[2:]
+                            try:
+                                para.style = marked_doc.styles['List Bullet']
+                            except KeyError:
+                                para.paragraph_format.left_indent = Pt(18)
+                                para.paragraph_format.first_line_indent = Pt(-18)
+                            text = '\u2022 ' + line[2:]
                         else:
                             text = line
                         add_markdown_runs(para, text)
