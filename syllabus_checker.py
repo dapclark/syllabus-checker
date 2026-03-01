@@ -4477,6 +4477,9 @@ Be generous - if content relates to the topic, include it in "found"."""
                             'text': insert_text
                         })
 
+            # Track whether we've written the end-of-doc section header yet
+            tone_header_written = False
+
             # Process each recommendation and try to insert it in the right place
             for rec in recommendations:
                 # Extract keywords from the placement guidance
@@ -4522,22 +4525,12 @@ Be generous - if content relates to the topic, include it in "found"."""
                     if target_index + 1 < len(para_list):
                         next_para = para_list[target_index + 1]
 
-                        # Insert blank line
-                        blank_para = next_para.insert_paragraph_before("")
+                        # insert_paragraph_before(next_para) appends sequentially,
+                        # so call order == document order.  We want:
+                        #   blank | marker (header) | placement | text | blank
+                        next_para.insert_paragraph_before("")
 
-                        # Insert text paragraph
-                        text_para = next_para.insert_paragraph_before(rec['text'])
-                        text_run = text_para.runs[0]
-                        text_run.font.size = Pt(11)
-
-                        # Insert placement guidance
-                        where_para = next_para.insert_paragraph_before(f"Recommended placement: {rec['where']}")
-                        where_run = where_para.runs[0]
-                        where_run.font.size = Pt(9)
-                        where_run.italic = True
-                        where_run.font.color.rgb = RGBColor(100, 100, 100)
-
-                        # Insert marker with UWM navy background
+                        # Marker / section header
                         marker_para = next_para.insert_paragraph_before(f"  SUGGESTED TEXT — {rec['title']}  ")
                         marker_run = marker_para.runs[0]
                         marker_run.bold = True
@@ -4545,13 +4538,35 @@ Be generous - if content relates to the topic, include it in "found"."""
                         marker_run.font.color.rgb = COLOR_TONE_TEXT
                         shade_paragraph(marker_para, COLOR_TONE_HEX)
 
-                        # Insert blank line after all the inserted content
+                        # Placement guidance
+                        where_para = next_para.insert_paragraph_before(f"Recommended placement: {rec['where']}")
+                        where_run = where_para.runs[0]
+                        where_run.font.size = Pt(9)
+                        where_run.italic = True
+                        where_run.font.color.rgb = RGBColor(100, 100, 100)
+
+                        # Suggested text body
+                        text_para = next_para.insert_paragraph_before(rec['text'])
+                        text_run = text_para.runs[0]
+                        text_run.font.size = Pt(11)
+
                         next_para.insert_paragraph_before("")
                         continue  # Move to next recommendation
 
                 # If we get here, either section not found or it's the last paragraph
                 # Add at the end of document
-                # Add a blank line
+
+                # Write the section header once before the first end-of-doc entry
+                if not tone_header_written:
+                    marked_doc.add_paragraph()
+                    tone_header_para = marked_doc.add_paragraph()
+                    tone_header_run = tone_header_para.add_run("  TONE & GROWTH MINDSET SUGGESTIONS  ")
+                    tone_header_run.bold = True
+                    tone_header_run.font.size = Pt(14)
+                    tone_header_run.font.color.rgb = COLOR_TONE_TEXT
+                    shade_paragraph(tone_header_para, COLOR_TONE_HEX)
+                    tone_header_written = True
+
                 marked_doc.add_paragraph()
 
                 # Add marker with UWM navy background
