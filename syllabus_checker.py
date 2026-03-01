@@ -4619,13 +4619,13 @@ Be generous - if content relates to the topic, include it in "found"."""
                         # All-clear line — green text, no background
                         add_markdown_runs(para, line, base_color=RGBColor(0, 120, 0))
                     else:
-                        # Content line — convert markdown bullets to Word indented bullets
+                        # Content line — use Word list styles for proper bullet alignment
                         if line.startswith('    - ') or line.startswith('    • '):
-                            prefix = '    \u2022 '
-                            text = prefix + line[6:]
-                            para.paragraph_format.left_indent = Pt(18)
+                            para.style = marked_doc.styles['List Bullet 2']
+                            text = line[6:]
                         elif line.startswith('- ') or line.startswith('• '):
-                            text = '\u2022 ' + line[2:]
+                            para.style = marked_doc.styles['List Bullet']
+                            text = line[2:]
                         else:
                             text = line
                         add_markdown_runs(para, text)
