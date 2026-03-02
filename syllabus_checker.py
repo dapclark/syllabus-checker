@@ -4434,8 +4434,7 @@ Be generous - if content relates to the topic, include it in "found"."""
                 )
                 # Strip remaining HTML tags and clean up whitespace
                 plain_desc = re.sub(r'<[^>]+>', ' ', plain_desc)
-                import html as _html
-                plain_desc = _html.unescape(plain_desc)
+                plain_desc = html.unescape(plain_desc)
                 plain_desc = re.sub(r'\s+', ' ', plain_desc).strip()
 
                 placeholder_para = marked_doc.add_paragraph()
@@ -4449,7 +4448,6 @@ Be generous - if content relates to the topic, include it in "found"."""
             analysis_text = self._growth_mindset_analysis.get('analysis', '')
 
             # Split by question sections
-            import re
             question_pattern = r'## QUESTION \d+:([^\n]+)\n'
             questions = re.split(question_pattern, analysis_text)
 
