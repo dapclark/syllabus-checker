@@ -4410,18 +4410,6 @@ Be generous - if content relates to the topic, include it in "found"."""
                     anchor_para = first_cell.paragraphs[0] if first_cell.paragraphs else first_cell.add_paragraph()
                     _add_word_comment(marked_doc, anchor_para, next_comment_id(), comment_text)
 
-        # Helper function to find a section in the document by heading keywords
-        def find_section_by_keywords(keywords):
-            """Find the index of a paragraph that looks like a heading matching the keywords"""
-            for idx, para in enumerate(marked_doc.paragraphs):
-                para_text = para.text.strip().lower()
-                # Check if this paragraph looks like a heading (short, possibly styled)
-                if len(para_text) < 100 and any(keyword.lower() in para_text for keyword in keywords):
-                    # Check if it's styled as a heading or is short/bold
-                    if para.style.name.startswith('Heading') or len(para_text) < 50:
-                        return idx
-            return None
-
         # Add missing sections as new headings in the document
         if self._missing_sections:
             # Add at the end of the document
@@ -4436,12 +4424,22 @@ Be generous - if content relates to the topic, include it in "found"."""
                 heading_run.font.color.rgb = COLOR_MISSING_TEXT
                 shade_paragraph(heading_para, COLOR_MISSING_HEX)
 
-                # Add placeholder text
-                placeholder_para = marked_doc.add_paragraph()
-                placeholder_run = placeholder_para.add_run(
-                    f"This required section was not found in your syllabus. Please add the necessary "
-                    f"information about {section.lower()} here."
+                # Add description from template (strip HTML tags, preserve link text)
+                raw_desc = self._get_section_description(section)
+                # Convert <a href="url">text</a> to "text (url)"
+                plain_desc = re.sub(
+                    r'<a\s+href="([^"]+)"[^>]*>([^<]+)</a>',
+                    lambda m: f"{m.group(2)} ({m.group(1)})",
+                    raw_desc
                 )
+                # Strip remaining HTML tags and clean up whitespace
+                plain_desc = re.sub(r'<[^>]+>', ' ', plain_desc)
+                import html as _html
+                plain_desc = _html.unescape(plain_desc)
+                plain_desc = re.sub(r'\s+', ' ', plain_desc).strip()
+
+                placeholder_para = marked_doc.add_paragraph()
+                placeholder_run = placeholder_para.add_run(plain_desc)
                 placeholder_run.font.size = Pt(11)
                 placeholder_run.italic = True
 
@@ -4480,87 +4478,13 @@ Be generous - if content relates to the topic, include it in "found"."""
             # Track whether we've written the end-of-doc section header yet
             tone_header_written = False
 
-            # Process each recommendation and try to insert it in the right place
+            # Add all recommendations to the end-of-doc section
             for rec in recommendations:
-                # Extract keywords from the placement guidance
-                where_lower = rec['where'].lower()
-
-                # Common section name patterns to look for
-                section_keywords = []
-                if 'grading' in where_lower or 'assignment' in where_lower or 'assessment' in where_lower:
-                    section_keywords = ['grading', 'assignment', 'assessment', 'evaluation']
-                elif 'course description' in where_lower or 'overview' in where_lower:
-                    section_keywords = ['course description', 'overview', 'introduction']
-                elif 'office hour' in where_lower or 'contact' in where_lower:
-                    section_keywords = ['office hour', 'contact', 'instructor information']
-                elif 'resource' in where_lower or 'support' in where_lower:
-                    section_keywords = ['resource', 'support', 'services']
-                elif 'conduct' in where_lower or 'expectation' in where_lower or 'policy' in where_lower:
-                    section_keywords = ['conduct', 'expectation', 'policy', 'policies']
-                elif 'prerequisite' in where_lower:
-                    section_keywords = ['prerequisite', 'requirements']
-                else:
-                    # Try to extract section name from guidance
-                    # Look for quoted section names or capitalized phrases
-                    quote_match = re.search(r'"([^"]+)"', rec['where'])
-                    if quote_match:
-                        section_keywords = [quote_match.group(1)]
-
-                # Try to find the section
-                target_index = None
-                if section_keywords:
-                    target_index = find_section_by_keywords(section_keywords)
-                    # Debug: print what we're looking for and what we found
-                    print(f"DEBUG: Looking for section with keywords {section_keywords}")
-                    print(f"DEBUG: Found section at index: {target_index}")
-                    if target_index is not None:
-                        print(f"DEBUG: Section heading text: {list(marked_doc.paragraphs)[target_index].text}")
-
-                # If we found the section, insert after it; otherwise add at the end
-                if target_index is not None:
-                    # Find the next paragraph after the target section
-                    para_list = list(marked_doc.paragraphs)
-
-                    # Find the next paragraph (to insert before it)
-                    if target_index + 1 < len(para_list):
-                        next_para = para_list[target_index + 1]
-
-                        # insert_paragraph_before(next_para) appends sequentially,
-                        # so call order == document order.  We want:
-                        #   blank | marker (header) | placement | text | blank
-                        next_para.insert_paragraph_before("")
-
-                        # Marker / section header
-                        marker_para = next_para.insert_paragraph_before(f"  SUGGESTED TEXT — {rec['title']}  ")
-                        marker_run = marker_para.runs[0]
-                        marker_run.bold = True
-                        marker_run.font.size = Pt(11)
-                        marker_run.font.color.rgb = COLOR_TONE_TEXT
-                        shade_paragraph(marker_para, COLOR_TONE_HEX)
-
-                        # Placement guidance
-                        where_para = next_para.insert_paragraph_before(f"Recommended placement: {rec['where']}")
-                        where_run = where_para.runs[0]
-                        where_run.font.size = Pt(9)
-                        where_run.italic = True
-                        where_run.font.color.rgb = RGBColor(100, 100, 100)
-
-                        # Suggested text body
-                        text_para = next_para.insert_paragraph_before(rec['text'])
-                        text_run = text_para.runs[0]
-                        text_run.font.size = Pt(11)
-
-                        next_para.insert_paragraph_before("")
-                        continue  # Move to next recommendation
-
-                # If we get here, either section not found or it's the last paragraph
-                # Add at the end of document
-
-                # Write the section header once before the first end-of-doc entry
+                # Write the section header once before the first entry
                 if not tone_header_written:
                     marked_doc.add_paragraph()
                     tone_header_para = marked_doc.add_paragraph()
-                    tone_header_run = tone_header_para.add_run("  TONE & GROWTH MINDSET SUGGESTIONS  ")
+                    tone_header_run = tone_header_para.add_run("  BELONGING & GROWTH MINDSET SUGGESTIONS  ")
                     tone_header_run.bold = True
                     tone_header_run.font.size = Pt(14)
                     tone_header_run.font.color.rgb = COLOR_TONE_TEXT
