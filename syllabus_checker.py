@@ -4410,37 +4410,54 @@ Be generous - if content relates to the topic, include it in "found"."""
                     anchor_para = first_cell.paragraphs[0] if first_cell.paragraphs else first_cell.add_paragraph()
                     _add_word_comment(marked_doc, anchor_para, next_comment_id(), comment_text)
 
-        # Add missing sections as new headings in the document
+        # Add missing sections block at the end of the document
         if self._missing_sections:
-            # Add at the end of the document
-            for section in self._missing_sections:
-                marked_doc.add_paragraph()  # Blank line
+            # Primary "MISSING SECTIONS" banner
+            marked_doc.add_paragraph()
+            banner_para = marked_doc.add_paragraph()
+            banner_run = banner_para.add_run("  MISSING SECTIONS  ")
+            banner_run.bold = True
+            banner_run.font.size = Pt(14)
+            banner_run.font.color.rgb = COLOR_MISSING_TEXT
+            shade_paragraph(banner_para, COLOR_MISSING_HEX)
 
-                # Add section heading with UWM orange background
+            for section in self._missing_sections:
+                marked_doc.add_paragraph()
+
+                # Section name as subheading (smaller, same orange background)
                 heading_para = marked_doc.add_paragraph()
-                heading_run = heading_para.add_run(f"  MISSING SECTION: {section}  ")
+                heading_run = heading_para.add_run(f"  {section}  ")
                 heading_run.bold = True
-                heading_run.font.size = Pt(14)
+                heading_run.font.size = Pt(11)
                 heading_run.font.color.rgb = COLOR_MISSING_TEXT
                 shade_paragraph(heading_para, COLOR_MISSING_HEX)
 
-                # Add description from template (strip HTML tags, preserve link text)
+                # Convert HTML description to structured Word paragraphs
                 raw_desc = self._get_section_description(section)
-                # Convert <a href="url">text</a> to "text (url)"
-                plain_desc = re.sub(
+                # Resolve hyperlinks to "text (url)" form
+                desc = re.sub(
                     r'<a\s+href="([^"]+)"[^>]*>([^<]+)</a>',
                     lambda m: f"{m.group(2)} ({m.group(1)})",
                     raw_desc
                 )
-                # Strip remaining HTML tags and clean up whitespace
-                plain_desc = re.sub(r'<[^>]+>', ' ', plain_desc)
-                plain_desc = html.unescape(plain_desc)
-                plain_desc = re.sub(r'\s+', ' ', plain_desc).strip()
+                # Convert structural HTML to line breaks / bullets
+                desc = re.sub(r'<br\s*/?>', '\n', desc)
+                desc = re.sub(r'</?ul>', '\n', desc)
+                desc = re.sub(r'<li>', '• ', desc)
+                desc = re.sub(r'</li>', '\n', desc)
+                # Strip remaining tags and decode entities
+                desc = re.sub(r'<[^>]+>', '', desc)
+                desc = html.unescape(desc)
 
-                placeholder_para = marked_doc.add_paragraph()
-                placeholder_run = placeholder_para.add_run(plain_desc)
-                placeholder_run.font.size = Pt(11)
-                placeholder_run.italic = True
+                for line in desc.split('\n'):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    p = marked_doc.add_paragraph()
+                    run = p.add_run(line)
+                    run.font.size = Pt(10)
+                    if line.startswith('• '):
+                        p.paragraph_format.left_indent = Pt(18)
 
         # Insert growth mindset recommendations directly into relevant sections
         if self._growth_mindset_analysis.get('status') == 'success' and 'analysis' in self._growth_mindset_analysis:
