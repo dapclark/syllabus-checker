@@ -4410,6 +4410,36 @@ Be generous - if content relates to the topic, include it in "found"."""
                     anchor_para = first_cell.paragraphs[0] if first_cell.paragraphs else first_cell.add_paragraph()
                     _add_word_comment(marked_doc, anchor_para, next_comment_id(), comment_text)
 
+        # Add document-level accessibility issues (no paragraph/table anchor)
+        doc_level_issues = [
+            issue for issue in self.issues
+            if issue.para_info is None and issue.table_index is None
+        ]
+        if doc_level_issues:
+            marked_doc.add_paragraph()
+            banner_para = marked_doc.add_paragraph()
+            banner_run = banner_para.add_run("  ACCESSIBILITY — DOCUMENT-LEVEL ISSUES  ")
+            banner_run.bold = True
+            banner_run.font.size = Pt(14)
+            banner_run.font.color.rgb = COLOR_ACCESSIBILITY_TEXT
+            shade_paragraph(banner_para, COLOR_ACCESSIBILITY_HEX)
+
+            for issue in doc_level_issues:
+                marked_doc.add_paragraph()
+
+                # Issue type as subheading
+                sub_para = marked_doc.add_paragraph()
+                sub_run = sub_para.add_run(f"  {issue.issue_type}  ")
+                sub_run.bold = True
+                sub_run.font.size = Pt(11)
+                sub_run.font.color.rgb = COLOR_ACCESSIBILITY_TEXT
+                shade_paragraph(sub_para, COLOR_ACCESSIBILITY_HEX)
+
+                # Description
+                desc_para = marked_doc.add_paragraph()
+                desc_run = desc_para.add_run(issue.description)
+                desc_run.font.size = Pt(10)
+
         # Add missing sections block at the end of the document
         if self._missing_sections:
             # Primary "MISSING SECTIONS" banner
