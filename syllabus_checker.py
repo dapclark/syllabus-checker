@@ -156,6 +156,72 @@ class AccessibilityIssue:
 class SyllabusChecker:
     """Analyzes a syllabus document for completeness and accessibility"""
 
+    # User-friendly labels for Word comments and end-of-doc sections.
+    # Internal issue_type codes stay unchanged; only the display string changes.
+    ISSUE_DISPLAY_LABELS = {
+        # Heading structure
+        'ALL_CAPS_HEADING':                   'Heading Uses All Caps',
+        'LONG_HEADING':                        'Heading Is Too Long',
+        'H1_NOT_AT_TOP':                       'Move Heading 1 to Top of Document',
+        'MULTIPLE_H1':                         'Multiple Heading 1s Found',
+        # Font usage
+        'SMALL_FONT':                          'Font Size Too Small',
+        'DECORATIVE_FONT':                     'Replace Decorative Font',
+        'INCONSISTENT_FONTS':                  'Multiple Fonts Detected',
+        'BROKEN_STYLE_COPIED_CONTENT':         'Copied Content — Clean Up Styles',
+        # Text formatting
+        'EXCESSIVE_BOLD':                      'Use a Heading Style Instead of Manual Bold',
+        'EXCESSIVE_ITALIC':                    'Limit Continuous Italic Text',
+        'EXCESSIVE_UNDERLINE':                 'Underline Is Reserved for Hyperlinks',
+        'INCONSISTENT_FORMATTING':             'Inconsistent Inline Formatting',
+        'ALL_CAPS_BLOCK':                      'Avoid All-Caps Text Blocks',
+        'FULL_JUSTIFICATION':                  'Change to Left-Aligned Text',
+        'LOW_LINE_SPACING':                    'Increase Line Spacing',
+        'UNDERLINE_NON_LINK':                  'Underline Is Reserved for Hyperlinks',
+        'PSEUDO_TABLE':                        'Use a Word Table Instead of Tabs/Spaces',
+        # Color & contrast
+        'LOW_CONTRAST':                        'Low Color Contrast',
+        'COLOR_ONLY_MEANING':                  'Color Used as the Only Visual Indicator',
+        'COLOR_CODED_TABLE':                   'Table Uses Color to Convey Meaning',
+        'TEXT_OVER_BACKGROUND':                'Low Contrast: Text Over Colored Background',
+        # Tables
+        'TABLE_NO_HEADER':                     'Table Missing a Header Row',
+        'TABLE_MISSING_SCOPE':                 "Enable 'Repeat Header Rows' on This Table",
+        'TABLE_MISSING_CAPTION':               'Table Missing Alt Text Description',
+        'LAYOUT_TABLE':                        'Table Used for Layout Instead of Data',
+        'EMPTY_TABLE_ROW':                     'Delete Empty Table Row',
+        'EMPTY_TABLE_COLUMN':                  'Delete Empty Table Column',
+        'TABLE_MERGED_CELLS':                  'Merged Cells Disrupt Reading Order',
+        'TABLE_INCONSISTENT_NUMERIC_ALIGNMENT':'Inconsistent Number Alignment in Column',
+        'TABLE_COMPLEX_READING_ORDER':         'Complex Table Structure',
+        'TABLE_COLOR_CODED_MEANING':           'Table Uses Color to Convey Meaning',
+        'TABLE_EMBEDDED_IMAGES':               'Images Embedded in Table Cells',
+        # Links & navigation
+        'NON_DESCRIPTIVE_LINK':                'Add Descriptive Link Text',
+        'LONG_URL':                            'Replace URL with Descriptive Link Text',
+        'UNSTYLED_LINK':                       'Hyperlink Looks Like Regular Text',
+        'MISSING_TOC':                         'Add a Table of Contents',
+        'MISSING_BOOKMARKS':                   'Add Internal Navigation Links',
+        # Lists
+        'INCONSISTENT_LIST_HIERARCHY':         'Fix List Indentation Levels',
+        'LAYOUT_LIST':                         'List Style Used for Visual Layout',
+        # Images
+        'IMAGE_MISSING_ALT':                   'Image Missing Alt Text',
+        'DECORATIVE_IMAGE_QUESTIONABLE':       'Verify: Image Marked as Decorative',
+        'IMAGE_TEXT_CONTENT':                  'Image Appears to Contain Text',
+        # Document properties
+        'MISSING_TITLE':                       'Add a Document Title (File › Info › Properties)',
+        'INVALID_LANGUAGE':                    'Invalid Document Language Setting',
+        'MULTIPLE_LANGUAGES':                  'Multiple Language Tags Found',
+        'UNTAGGED_LANGUAGE':                   'Possible Untagged Foreign-Language Content',
+        # Readability & content
+        'NUMERIC_DATE_FORMAT':                 'Use a Spelled-Out Date Format',
+        'LONG_SENTENCE':                       'Sentence Is Too Long',
+        'FOOTNOTE_USAGE':                      'Consider Moving Footnote Inline',
+        'VISUAL_INDICATOR_NO_TEXT':            'Visual Symbol Needs a Text Explanation',
+        'MATH_NO_ACCESSIBLE_MARKUP':           'Use Equation Editor for Math Expressions',
+    }
+
     # Required sections based on UWM template (aligned with Quality Matters & AAC&U)
     REQUIRED_SECTIONS = {
         # Basic Course Info
@@ -4362,7 +4428,8 @@ Be generous - if content relates to the topic, include it in "found"."""
                         if para_text and (para_text in original_text or original_text in para_text):
                             # Add a Word comment — the speech-bubble annotation is
                             # sufficient to mark the issue; no body-text highlight needed.
-                            comment_text = f"{issue.issue_type}\n{issue.description}"
+                            label = self.ISSUE_DISPLAY_LABELS.get(issue.issue_type, issue.issue_type.replace('_', ' ').title())
+                            comment_text = f"{label}\n{issue.description}"
                             _add_word_comment(marked_doc, para, next_comment_id(), comment_text)
                             break
 
@@ -4380,7 +4447,8 @@ Be generous - if content relates to the topic, include it in "found"."""
                             para_text = para.text.strip()
 
                             if para_text and (para_text in original_text or original_text in para_text):
-                                comment_text = f"{issue.issue_type}\n{issue.description}"
+                                label = self.ISSUE_DISPLAY_LABELS.get(issue.issue_type, issue.issue_type.replace('_', ' ').title())
+                                comment_text = f"{label}\n{issue.description}"
                                 _add_word_comment(marked_doc, para, next_comment_id(), comment_text)
                                 break
 
@@ -4399,12 +4467,14 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                     issue_count = len(issues_list)
                     if issue_count == 1:
-                        comment_text = f"TABLE ISSUE\n{issues_list[0].issue_type}: {issues_list[0].description}"
+                        label = self.ISSUE_DISPLAY_LABELS.get(issues_list[0].issue_type, issues_list[0].issue_type.replace('_', ' ').title())
+                        comment_text = f"TABLE ISSUE\n{label}: {issues_list[0].description}"
                     else:
                         lines = [f"TABLE HAS {issue_count} ISSUES:"]
                         for itype, descs in issue_summary.items():
+                            label = self.ISSUE_DISPLAY_LABELS.get(itype, itype.replace('_', ' ').title())
                             extra = f" (+{len(descs)-1} more)" if len(descs) > 1 else ""
-                            lines.append(f"{itype}: {descs[0]}{extra}")
+                            lines.append(f"{label}: {descs[0]}{extra}")
                         comment_text = '\n'.join(lines)
 
                     anchor_para = first_cell.paragraphs[0] if first_cell.paragraphs else first_cell.add_paragraph()
@@ -4429,7 +4499,8 @@ Be generous - if content relates to the topic, include it in "found"."""
 
                 # Issue type as subheading
                 sub_para = marked_doc.add_paragraph()
-                sub_run = sub_para.add_run(f"  {issue.issue_type}  ")
+                label = self.ISSUE_DISPLAY_LABELS.get(issue.issue_type, issue.issue_type.replace('_', ' ').title())
+                sub_run = sub_para.add_run(f"  {label}  ")
                 sub_run.bold = True
                 sub_run.font.size = Pt(11)
                 sub_run.font.color.rgb = COLOR_ACCESSIBILITY_TEXT
