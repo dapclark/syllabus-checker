@@ -2003,12 +2003,12 @@ Be generous - if content relates to the topic, include it in "found"."""
                     # If all matches are exactly after periods, it's likely just double-spacing between sentences
                     non_sentence_spacing = []
                     for match in significant_matches:
-                        # Check if this is sentence spacing (period before the spaces)
+                        # Check if this is sentence/clause spacing (punctuation before the spaces)
                         before_pos = match.start() - 1
-                        if before_pos >= 0 and text[before_pos] not in '.!?':
+                        if before_pos >= 0 and text[before_pos] not in '.!?:;)"\'"\u201d\u2019':
                             non_sentence_spacing.append(match)
 
-                    if len(non_sentence_spacing) >= 2:
+                    if len(non_sentence_spacing) >= 3:
                         is_pseudo_table = True
                         reasons.append("multiple spacing gaps (columnar layout)")
 
