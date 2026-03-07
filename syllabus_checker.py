@@ -3765,6 +3765,7 @@ Be generous - if content relates to the topic, include it in "found"."""
             italic_chars = 0
             underline_chars = 0
             formatting_switches = 0
+            italic_only_switches = 0   # switches where ONLY italic changed (title-style toggling)
             prev_bold = False
             prev_italic = False
             prev_underline = False
@@ -3781,8 +3782,13 @@ Be generous - if content relates to the topic, include it in "found"."""
                     underline_chars += run_len
 
                 # Track formatting switches (inconsistent use)
-                if run.bold != prev_bold or run.italic != prev_italic or run.font.underline != prev_underline:
+                italic_changed    = run.italic        != prev_italic
+                bold_changed      = run.bold          != prev_bold
+                underline_changed = run.font.underline != prev_underline
+                if italic_changed or bold_changed or underline_changed:
                     formatting_switches += 1
+                    if italic_changed and not bold_changed and not underline_changed:
+                        italic_only_switches += 1
 
                 prev_bold = run.bold
                 prev_italic = run.italic
@@ -3837,14 +3843,23 @@ Be generous - if content relates to the topic, include it in "found"."""
                 # Flag inconsistent formatting (many switches relative to paragraph length)
                 # More than 8 formatting switches in a paragraph suggests inconsistent use
                 if formatting_switches > 8 and len(para.runs) > 10:
-                    preview = text[:60] + "..." if len(text) > 60 else text
-                    issue = AccessibilityIssue(
-                        issue_type="INCONSISTENT_FORMATTING",
-                        description=f"Paragraph has inconsistent formatting ({formatting_switches} format changes). Pick one emphasis style (bold or italic) and apply it consistently — avoid switching between multiple styles within the same paragraph: \"{preview}\"",
-                        location=para_info.location,
-                        para_info=para_info
+                    # Suppress for reading lists / bibliographies:
+                    # nearly all switches are pure italic toggling (e.g. author + italic title)
+                    # and the paragraph is comma-separated (many items in a list)
+                    comma_count = text.count(',')
+                    is_formatted_list = (
+                        italic_only_switches >= formatting_switches - 1
+                        and comma_count >= 5
                     )
-                    issues.append(issue)
+                    if not is_formatted_list:
+                        preview = text[:60] + "..." if len(text) > 60 else text
+                        issue = AccessibilityIssue(
+                            issue_type="INCONSISTENT_FORMATTING",
+                            description=f"Paragraph has inconsistent formatting ({formatting_switches} format changes). Pick one emphasis style (bold or italic) and apply it consistently — avoid switching between multiple styles within the same paragraph: \"{preview}\"",
+                            location=para_info.location,
+                            para_info=para_info
+                        )
+                        issues.append(issue)
 
         return issues
 
