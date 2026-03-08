@@ -4575,77 +4575,78 @@ Be generous - if content relates to the topic, include it in "found"."""
                     if line.startswith('• '):
                         p.paragraph_format.left_indent = Pt(18)
 
-        # Insert growth mindset recommendations directly into relevant sections
+        # Add full Belonging & Growth Mindset analysis (mirrors the web app display)
         if self._growth_mindset_analysis.get('status') == 'success' and 'analysis' in self._growth_mindset_analysis:
-            # Parse the analysis text to extract ready-to-use text sections
-            analysis_text = self._growth_mindset_analysis.get('analysis', '')
+            analysis_text = self._growth_mindset_analysis.get('analysis', '').strip()
+            if analysis_text:
+                marked_doc.add_paragraph()
 
-            # Split by question sections
-            question_pattern = r'## QUESTION \d+:([^\n]+)\n'
-            questions = re.split(question_pattern, analysis_text)
+                # Section banner
+                tone_header_para = marked_doc.add_paragraph()
+                tone_header_run = tone_header_para.add_run("  BELONGING & GROWTH MINDSET SUGGESTIONS  ")
+                tone_header_run.bold = True
+                tone_header_run.font.size = Pt(14)
+                tone_header_run.font.color.rgb = COLOR_TONE_TEXT
+                shade_paragraph(tone_header_para, COLOR_TONE_HEX)
 
-            # Collect all recommendations first
-            recommendations = []
-            for i in range(1, len(questions), 2):
-                if i+1 < len(questions):
-                    question_title = questions[i].strip()
-                    question_content = questions[i+1].strip()
-
-                    # Extract "Where to place it" and "Text to insert"
-                    where_match = re.search(r'\*\*Where to place it:\*\*\s*(.+?)(?=\*\*Text to insert:|$)',
-                                           question_content, re.DOTALL)
-                    text_match = re.search(r'\*\*Text to insert:\*\*\s*```\s*(.+?)\s*```',
-                                          question_content, re.DOTALL)
-
-                    if where_match and text_match:
-                        where_text = where_match.group(1).strip()
-                        insert_text = text_match.group(1).strip()
-                        recommendations.append({
-                            'title': question_title,
-                            'where': where_text,
-                            'text': insert_text
-                        })
-
-            # Track whether we've written the end-of-doc section header yet
-            tone_header_written = False
-
-            # Add all recommendations to the end-of-doc section
-            for rec in recommendations:
-                # Write the section header once before the first entry
-                if not tone_header_written:
-                    marked_doc.add_paragraph()
-                    tone_header_para = marked_doc.add_paragraph()
-                    tone_header_run = tone_header_para.add_run("  BELONGING & GROWTH MINDSET SUGGESTIONS  ")
-                    tone_header_run.bold = True
-                    tone_header_run.font.size = Pt(14)
-                    tone_header_run.font.color.rgb = COLOR_TONE_TEXT
-                    shade_paragraph(tone_header_para, COLOR_TONE_HEX)
-                    tone_header_written = True
+                subtitle_para = marked_doc.add_paragraph()
+                sub_run = subtitle_para.add_run(
+                    "AI-powered analysis of how well your syllabus promotes student belonging and growth mindset, "
+                    "with ready-to-use suggested language for each area."
+                )
+                sub_run.italic = True
+                sub_run.font.size = Pt(10)
+                sub_run.font.color.rgb = RGBColor(80, 80, 80)
 
                 marked_doc.add_paragraph()
 
-                # Add marker with UWM navy background
-                marker_para = marked_doc.add_paragraph()
-                marker_run = marker_para.add_run(f"  SUGGESTED TEXT — {rec['title']}  ")
-                marker_run.bold = True
-                marker_run.font.size = Pt(11)
-                marker_run.font.color.rgb = COLOR_TONE_TEXT
-                shade_paragraph(marker_para, COLOR_TONE_HEX)
+                in_code_block = False
+                for line in analysis_text.split('\n'):
+                    line = line.rstrip()
 
-                # Add placement guidance
-                where_para = marked_doc.add_paragraph()
-                where_run = where_para.add_run(f"Recommended placement: {rec['where']}")
-                where_run.font.size = Pt(9)
-                where_run.italic = True
-                where_run.font.color.rgb = RGBColor(100, 100, 100)
+                    # Toggle code block (copy-paste ready text)
+                    if line.startswith('```'):
+                        in_code_block = not in_code_block
+                        continue
 
-                # Add the ready-to-use text
-                text_para = marked_doc.add_paragraph()
-                text_run = text_para.add_run(rec['text'])
-                text_run.font.size = Pt(11)
+                    if in_code_block:
+                        # Render copy-paste text with light teal background
+                        para = marked_doc.add_paragraph()
+                        run = para.add_run(line if line else ' ')
+                        run.font.size = Pt(10)
+                        para.paragraph_format.left_indent = Pt(18)
+                        shade_paragraph(para, 'D6EEEE')  # very light teal
+                        continue
 
-                # Blank line
-                marked_doc.add_paragraph()
+                    if not line:
+                        marked_doc.add_paragraph()
+                        continue
+
+                    para = marked_doc.add_paragraph()
+
+                    if line.startswith('## '):
+                        # Question heading with navy background
+                        run = para.add_run(f"  {line[3:].strip()}  ")
+                        run.bold = True
+                        run.font.size = Pt(12)
+                        run.font.color.rgb = COLOR_TONE_TEXT
+                        shade_paragraph(para, COLOR_TONE_HEX)
+                    elif line.startswith('    - ') or line.startswith('    • '):
+                        try:
+                            para.style = marked_doc.styles['List Bullet 2']
+                        except KeyError:
+                            para.paragraph_format.left_indent = Pt(36)
+                            para.paragraph_format.first_line_indent = Pt(-18)
+                        add_markdown_runs(para, '\u2022 ' + line[6:], font_size=10)
+                    elif line.startswith('- ') or line.startswith('• '):
+                        try:
+                            para.style = marked_doc.styles['List Bullet']
+                        except KeyError:
+                            para.paragraph_format.left_indent = Pt(18)
+                            para.paragraph_format.first_line_indent = Pt(-18)
+                        add_markdown_runs(para, '\u2022 ' + line[2:], font_size=10)
+                    else:
+                        add_markdown_runs(para, line, font_size=10)
 
         # Add Clarity & Quality analysis as an appendix
         if quality_analysis and quality_analysis.get('status') == 'success':
